@@ -748,7 +748,7 @@ function sArenaMixin:Test()
                     frame.Trinket.Texture:SetTexture(self.trinketTexture)
                 end
             end
-            frame.Trinket.Texture:SetDesaturated(false)
+            frame.Trinket.Texture:SetDesaturated(db.profile.desaturateTrinketCD and i == 3)
         end
 
         frame.updateRacialOnTrinketSlot = shouldSwapRacialToTrinket
@@ -784,6 +784,7 @@ function sArenaMixin:Test()
                 frame.Dispel.Texture:SetTexture(dispelInfo.texture)
                 frame.Dispel:Show()
                 frame.Dispel.Cooldown:SetCooldown(currTime, math.random(5, 35))
+                frame.Dispel.Texture:SetDesaturated(db.profile.desaturateDispelCD and i >= 2)
             else
                 frame.Dispel.Texture:SetTexture(nil)
                 frame.Dispel:Hide()

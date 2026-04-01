@@ -4191,6 +4191,7 @@ local function setDRIcons()
                     end
                 end
                 LibStub("AceConfigRegistry-3.0"):NotifyChange("sArena")
+                info.handler:Test()
             end,
         }
 
@@ -4983,6 +4984,7 @@ else
                                         get = function(info) return info.handler.db.profile.colorMysteryGray end,
                                         set = function(info, val)
                                             info.handler.db.profile.colorMysteryGray = val
+                                            info.handler:Test()
                                         end,
                                     },
                                     showDecimalsClassIcon = {
@@ -5230,6 +5232,7 @@ else
                                         get = function(info) return info.handler.db.profile.desaturateTrinketCD end,
                                         set = function(info, val)
                                             info.handler.db.profile.desaturateTrinketCD = val
+                                            info.handler:Test()
                                         end
                                     },
                                     desaturateDispelCD = {
@@ -5241,6 +5244,7 @@ else
                                         get = function(info) return info.handler.db.profile.desaturateDispelCD end,
                                         set = function(info, val)
                                             info.handler.db.profile.desaturateDispelCD = val
+                                            info.handler:Test()
                                         end
                                     },
                                     disableOvershields = {
@@ -5390,6 +5394,7 @@ else
                                                 info.handler.db.profile.drCategoriesPerSpec = false
                                             end
                                             LibStub("AceConfigRegistry-3.0"):NotifyChange("sArena")
+                                            info.handler:Test()
                                         end,
                                     },
                                     drCategoriesPerSpec = {
@@ -5404,6 +5409,7 @@ else
                                                 info.handler.db.profile.drCategoriesPerClass = false
                                             end
                                             LibStub("AceConfigRegistry-3.0"):NotifyChange("sArena")
+                                            info.handler:Test()
                                         end,
                                     },
 
@@ -5474,6 +5480,7 @@ else
                                             else
                                                 db.profile.drCategories[key] = val
                                             end
+                                            info.handler:Test()
                                         end,
                                         values = drCategoryDisplay,
                                     },
@@ -5495,6 +5502,7 @@ else
                                         set = function(info, val)
                                             info.handler.db.profile.drStaticIcons = val
                                             LibStub("AceConfigRegistry-3.0"):NotifyChange("sArena")
+                                            info.handler:Test()
                                         end,
                                     },
                                     dynamicIconsPerClass = {
@@ -5510,6 +5518,7 @@ else
                                                 info.handler.db.profile.drStaticIconsPerSpec = false
                                             end
                                             LibStub("AceConfigRegistry-3.0"):NotifyChange("sArena")
+                                            info.handler:Test()
                                         end,
                                     },
                                     dynamicIconsPerSpec = {
@@ -5525,6 +5534,7 @@ else
                                                 info.handler.db.profile.drStaticIconsPerClass = false
                                             end
                                             LibStub("AceConfigRegistry-3.0"):NotifyChange("sArena")
+                                            info.handler:Test()
                                         end,
                                     },
                                     staticIconsSeparator = {
@@ -5574,6 +5584,7 @@ else
                                         db.profile.drIcons[key] = num or value
                                     end
                                     LibStub("AceConfigRegistry-3.0"):NotifyChange("sArena")
+                                    info.handler:Test()
                                 end,
                                 args = setDRIcons(),
                             },
@@ -5599,7 +5610,10 @@ else
                                     name = L["Option_Categories"],
                                     type = "multiselect",
                                     get = function(info, key) return info.handler.db.profile.racialCategories[key] end,
-                                    set = function(info, key, val) info.handler.db.profile.racialCategories[key] = val end,
+                                    set = function(info, key, val)
+                                        info.handler.db.profile.racialCategories[key] = val
+                                        info.handler:Test()
+                                    end,
                                     values = racialCategories,
                                 },
                             }
@@ -5618,6 +5632,7 @@ else
                                         get = function(info) return info.handler.db.profile.swapRacialTrinket end,
                                         set = function(info, val)
                                             info.handler.db.profile.swapRacialTrinket = val
+                                            info.handler:Test()
                                         end,
                                     },
                                     forceShowTrinketOnHuman = {
@@ -5633,6 +5648,7 @@ else
                                             if val then
                                                 info.handler.db.profile.replaceHumanRacialWithTrinket = false
                                             end
+                                            info.handler:Test()
                                         end,
                                     },
                                     replaceHumanRacialWithTrinket = {
@@ -5648,6 +5664,7 @@ else
                                             if val then
                                                 info.handler.db.profile.forceShowTrinketOnHuman = false
                                             end
+                                            info.handler:Test()
                                         end,
                                     },
                                 }
