@@ -214,6 +214,8 @@ L["Trinket_OnHealthBar"] = "Show Trinket on Health Bar"
 L["Trinket_OnHealthBar_Desc"] = "Mirror the trinket icon and cooldown next to the health bar of each arena frame."
 L["Trinket_HBSize"] = "Health Bar Trinket Size"
 L["DR_HB_Effects"] = "Effects"
+L["DR_NP_HideText"] = "Hide Cooldown Text"
+L["DR_NP_HideText_Desc"] = "Hide the cooldown countdown numbers on nameplate DR icons."
 L["DR_ImmuneGlow"] = "Immune Glow Effect"
 L["DR_ImmuneGlow_Desc"] = "Add a pulsing glow effect on DR icons when the target is immune (DR at maximum)."
 

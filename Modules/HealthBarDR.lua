@@ -355,6 +355,7 @@ function sArenaFrameMixin:UpdateNameplateDRPositions()
     if sc < 0.1 then sc = 0.1 elseif sc > 10 then sc = 10 end
 
     local fontSize = db.fontSize or 12
+    local hideText = db.hideText
 
     local numActive = 0
     local prevFrame
@@ -362,7 +363,12 @@ function sArenaFrameMixin:UpdateNameplateDRPositions()
         f:SetSize(size, size)
         f:SetScale(sc)
         if f.CDText then
-            f.CDText:SetFont("Fonts\\FRIZQT__.TTF", fontSize, "OUTLINE")
+            if hideText then
+                f.CDText:Hide()
+            else
+                f.CDText:SetFont("Fonts\\FRIZQT__.TTF", fontSize, "OUTLINE")
+                f.CDText:Show()
+            end
         end
         if f:IsShown() then
             f:ClearAllPoints()

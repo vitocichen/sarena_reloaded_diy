@@ -3508,6 +3508,16 @@ function sArenaMixin:GetLayoutOptionsTable(layoutName)
                         min = 6,
                         max = 32,
                         step = 1,
+                        disabled = function(info)
+                            local np = info.handler.db.profile.layoutSettings[layoutName].drNameplate
+                            return np and np.hideText
+                        end,
+                    },
+                    hideText = {
+                        order = 4,
+                        name = L["DR_NP_HideText"],
+                        desc = L["DR_NP_HideText_Desc"],
+                        type = "toggle",
                     },
                 },
             },

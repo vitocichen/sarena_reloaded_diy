@@ -217,6 +217,8 @@ L["Trinket_OnHealthBar"] = "在血条上显示饰品"
 L["Trinket_OnHealthBar_Desc"] = "在每个竞技场框体的血条旁边镜像显示饰品图标和冷却。"
 L["Trinket_HBSize"] = "血条饰品大小"
 L["DR_HB_Effects"] = "特效"
+L["DR_NP_HideText"] = "隐藏冷却数字"
+L["DR_NP_HideText_Desc"] = "隐藏名条递减图标上的冷却倒计时数字。"
 L["DR_ImmuneGlow"] = "免疫发光效果"
 L["DR_ImmuneGlow_Desc"] = "当目标处于免疫状态（递减满级）时，DR图标显示脉冲发光效果。"
 
