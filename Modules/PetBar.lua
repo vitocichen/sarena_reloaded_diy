@@ -147,41 +147,46 @@ function sArenaFrameMixin:RefreshPetBar()
     if maxHealth == 0 then maxHealth = 100 end
     if health == 0 and not dead then health = maxHealth end
 
-    self.PetBar.HealthBar:SetMinMaxValues(0, maxHealth)
-    self.PetBar.HealthBar:SetValue(health)
-
     local petSettings = layoutSettings.petBar
 
-    local name = UnitName(petUnit)
-    if name and petSettings.showName then
-        self.PetBar.NameText:SetText(name)
-        self.PetBar.NameText:Show()
-    else
-        self.PetBar.NameText:Hide()
-    end
+    local ok, err = pcall(function()
+        self.PetBar.HealthBar:SetMinMaxValues(0, maxHealth)
+        self.PetBar.HealthBar:SetValue(health)
 
-    if petSettings.classColor then
-        local _, class = UnitClass(petUnit)
-        if class and RAID_CLASS_COLORS[class] then
-            local c = RAID_CLASS_COLORS[class]
-            self.PetBar.HealthBar:SetStatusBarColor(c.r, c.g, c.b, 1)
-        else
-            local c = petSettings.color or {0, 1, 0, 1}
-            self.PetBar.HealthBar:SetStatusBarColor(c[1], c[2], c[3], c[4] or 1)
-        end
-    else
+        pcall(function()
+            local name = UnitName(petUnit)
+            if name and petSettings.showName and not (issecretvalue and issecretvalue(name)) then
+                self.PetBar.NameText:SetText(name)
+                self.PetBar.NameText:Show()
+            else
+                self.PetBar.NameText:Hide()
+            end
+        end)
+
         local c = petSettings.color or {0, 1, 0, 1}
-        self.PetBar.HealthBar:SetStatusBarColor(c[1], c[2], c[3], c[4] or 1)
+        pcall(function()
+            if petSettings.classColor then
+                local _, cls = UnitClass(petUnit)
+                if cls and not (issecretvalue and issecretvalue(cls)) and RAID_CLASS_COLORS[cls] then
+                    local cc = RAID_CLASS_COLORS[cls]
+                    self.PetBar.HealthBar:SetStatusBarColor(cc.r, cc.g, cc.b, 1)
+                    return
+                end
+            end
+            self.PetBar.HealthBar:SetStatusBarColor(c[1], c[2], c[3], c[4] or 1)
+        end)
+
+        local w = petSettings.width or 100
+        local h = petSettings.height or 20
+        self.PetBar:SetSize(w, h)
+        self.PetBar:SetScale(petSettings.scale or 1)
+        self.PetBar:ClearAllPoints()
+        self.PetBar:SetPoint("CENTER", self, "CENTER", petSettings.posX or 0, petSettings.posY or -30)
+    end)
+
+    if not ok then
+        print("|cffff0000[PetBar ERROR]|r " .. self.unit .. " " .. tostring(err))
     end
-
-    self:UpdatePetBarHealthText()
-
-    local w = petSettings.width or 100
-    local h = petSettings.height or 20
-    self.PetBar:SetSize(w, h)
-    self.PetBar:SetScale(petSettings.scale or 1)
-    self.PetBar:ClearAllPoints()
-    self.PetBar:SetPoint("CENTER", self, "CENTER", petSettings.posX or 0, petSettings.posY or -30)
 
     self.PetBar:Show()
 
@@ -190,8 +195,7 @@ function sArenaFrameMixin:RefreshPetBar()
         .. " points=" .. self.PetBar:GetNumPoints()
         .. " shown=" .. tostring(self.PetBar:IsShown())
         .. " parentShown=" .. tostring(self:IsShown())
-        .. " parentAlpha=" .. tostring(self:GetAlpha())
-        .. " w=" .. w .. " h=" .. h)
+        .. " parentAlpha=" .. tostring(self:GetAlpha()))
 end
 
 function sArenaFrameMixin:UpdatePetBarHealthText()
