@@ -3426,8 +3426,8 @@ function sArenaMixin:GetLayoutOptionsTable(layoutName)
     }
 
     optionsTable.drNameplate = {
-        order = 6.5,
-        name = L["Category_DRNameplate"],
+        order = 10,
+        name = L["Category_DRNameplate"] .. " |cffff8000(DIY)|r",
         type = "group",
         get = function(info)
             local hb = info.handler.db.profile.layoutSettings[layoutName].drNameplate
@@ -3819,8 +3819,8 @@ function sArenaMixin:GetLayoutOptionsTable(layoutName)
     }
 
     optionsTable.selfDR = {
-        order = 9,
-        name = L["Category_SelfDR"],
+        order = 11,
+        name = L["Category_SelfDR"] .. " |cffff8000(DIY)|r",
         type = "group",
         args = {
             enabled = {
