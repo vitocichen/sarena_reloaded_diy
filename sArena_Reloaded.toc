@@ -7,6 +7,7 @@
 ## OptionalDeps: sArena, sArena_Updated2_by_sammers
 ## X-Category: PvP/Arena
 ## X-Credits: Tekkub, Starship, Kouri, Kollektiv, Lyn, haste, evl, Zork, jturel, wardz, A3st (delayy), sammers21, Aeded, Xaryu, Mageiden, Probably more...
+## X-DIY: DK-姜世离(燃烧之刃)
 ## SavedVariables: sArena_ReloadedDB
 ## X-Curse-Project-ID: 1351104
 ## X-Wago-ID: 5NRebvG3

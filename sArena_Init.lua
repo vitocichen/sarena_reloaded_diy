@@ -8,7 +8,7 @@ sArenaMixin.isMoP = gameVersion:match("^5%.")
 sArenaMixin.isWrath = gameVersion:match("^3%.")
 sArenaMixin.isTBC = gameVersion:match("^2%.")
 
-sArenaMixin.addonTitle = "|T135884:13:13|t sArena |cffff8000Reloaded|r " .. (C_AddOns.GetAddOnMetadata("sArena_Reloaded", "Version") or "")
+sArenaMixin.addonTitle = "|T135884:13:13|t sArena |cffff8000Reloaded|r " .. (C_AddOns.GetAddOnMetadata("sArena_Reloaded", "Version") or "") .. " |cff888888DIY: DK-\229\167\156\228\184\150\231\166\187(\231\135\131\231\131\167\228\185\139\229\136\131)|r"
 sArenaMixin.layouts = {}
 sArenaMixin.defaultSettings = {
     profile = {
