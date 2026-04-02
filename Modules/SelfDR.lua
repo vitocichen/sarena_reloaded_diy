@@ -277,7 +277,7 @@ local function RenderUnit(unit, now)
 
     local shown = 0
     for _, cat in ipairs(CAT_ORDER) do
-        if db.categories and db.categories[cat] ~= false then
+        if not db.categories or db.categories[cat] ~= false then
             local cs = state[cat]
             if cs and cs.resetAt and cs.resetAt > now and not (activeLoC[unit] and activeLoC[unit][cat]) then
                 shown = shown + 1
@@ -485,7 +485,6 @@ end
 function sArenaMixin:ShowTestSelfDR()
     local selfDRdb = self.db and self.db.profile and self.db.profile.selfDR
     if not selfDRdb or not selfDRdb.enabled then
-        print("|cffff8800[SelfDR Test]|r EXIT: not enabled")
         self:HideTestSelfDR()
         return
     end
@@ -549,7 +548,6 @@ function sArenaMixin:ShowTestSelfDR()
     end
 
     RefreshTestDR()
-    print("|cff00ff00[SelfDR Test]|r started, mock=" .. tostring(not hasRealFrames))
 
     if self.selfDRTestTicker then self.selfDRTestTicker:Cancel() end
     self.selfDRTestTicker = C_Timer.NewTicker(0.5, function()
