@@ -379,13 +379,17 @@ function sArenaMixin:UpdateNameplateDRSettings(db, info, val)
     end
     if not db then return end
 
-    for i = 1, self.maxArenaOpponents do
-        local frame = self["arena" .. i]
-        if frame then
-            if not frame.drFramesNP then
-                frame:CreateNameplateDRFrames()
+    if self.testMode then
+        self:ShowTestNameplateDR()
+    else
+        for i = 1, self.maxArenaOpponents do
+            local frame = self["arena" .. i]
+            if frame then
+                if not frame.drFramesNP then
+                    frame:CreateNameplateDRFrames()
+                end
+                frame:UpdateNameplateDRPositions()
             end
-            frame:UpdateNameplateDRPositions()
         end
     end
 end
