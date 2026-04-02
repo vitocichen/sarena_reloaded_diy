@@ -65,11 +65,7 @@ function sArenaFrameMixin:CreatePetBar()
 
     eventFrame:SetScript("OnEvent", function(_, event, eventUnit)
         if event == "UNIT_PET" then
-            -- [DEBUG] Pet event probe
-            print("|cff00ccff[PetBar Event]|r UNIT_PET owner=" .. tostring(eventUnit) .. " myUnit=" .. self.unit)
-            if eventUnit == self.unit then
-                self:RefreshPetBar()
-            end
+            self:RefreshPetBar()
         elseif eventUnit == petUnit then
             if not UnitExists(petUnit) or UnitIsDeadOrGhost(petUnit) then
                 container:Hide()
@@ -118,12 +114,7 @@ function sArenaFrameMixin:RefreshPetBar()
 
     local petUnit = self.PetBar.petUnit
     local exists = UnitExists(petUnit)
-    local isSecret = issecretvalue and issecretvalue(exists)
-
-    -- [DEBUG] Pet bar probe - remove after testing
-    print("|cff00ccff[PetBar]|r " .. self.unit .. " petUnit=" .. petUnit .. " exists=" .. tostring(exists) .. " isSecret=" .. tostring(isSecret))
-
-    if isSecret then
+    if issecretvalue and issecretvalue(exists) then
         exists = true
     end
 
