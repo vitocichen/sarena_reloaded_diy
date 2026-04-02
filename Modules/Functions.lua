@@ -509,38 +509,6 @@ function sArenaMixin:InitializeMidnightDRFrames()
                     sArenaDRFrame.blizzFrame = blizzDRFrame
 
                     hooksecurefunc(blizzDRFrame.Icon, "SetTexture", function(_, texture)
-                        -- [DR PROBE] Test what operations work on the secret texture value
-                        if texture ~= nil then
-                            pcall(function()
-                                local results = {}
-                                -- Test 1: tonumber(tostring())
-                                local ok1, num = pcall(function() return tonumber(tostring(texture)) end)
-                                results[#results+1] = "toNum=" .. tostring(ok1 and num or "FAIL")
-
-                                -- Test 2: can we use the converted number as table key?
-                                local ok2, keyWorks = pcall(function()
-                                    local t = {}; t[num] = true; return t[num] == true
-                                end)
-                                results[#results+1] = "key=" .. tostring(ok2 and keyWorks or "FAIL")
-
-                                -- Test 3: can we compare the converted number?
-                                local ok3, cmpWorks = pcall(function() return num == num end)
-                                results[#results+1] = "cmp=" .. tostring(ok3 and cmpWorks or "FAIL")
-
-                                -- Test 4: can we directly compare the original secret value?
-                                local ok4, directCmp = pcall(function() return texture == texture end)
-                                results[#results+1] = "directCmp=" .. tostring(ok4 and directCmp or "FAIL")
-
-                                -- Test 5: can we use original as table key?
-                                local ok5, directKey = pcall(function()
-                                    local t = {}; t[texture] = "x"; return t[texture] == "x"
-                                end)
-                                results[#results+1] = "directKey=" .. tostring(ok5 and directKey or "FAIL")
-
-                                print("|cff00ff00[DR Probe]|r " .. tostring(texture) .. " | " .. table.concat(results, " "))
-                            end)
-                        end
-
                         if self.layoutdb and self.layoutdb.drFrameEnabled ~= false then
                             sArenaDRFrame.Icon:SetTexture(texture)
                         end
