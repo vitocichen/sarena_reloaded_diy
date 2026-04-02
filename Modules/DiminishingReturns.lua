@@ -18,41 +18,63 @@ end
 
 function sArenaFrameMixin:UpdateDRPositions()
 	local layoutdb = self.parent.layoutdb
-	local numActive = 0
-	local prevFrame
 	local spacing = layoutdb.dr.spacing
 	local growthDirection = layoutdb.dr.growthDirection
+	local fixedPositions = layoutdb.dr.fixedPositions
 	local useDrFrames = self.drFrames ~= nil
 	local frames = self.drFrames or drCategories
+	local baseSize = self.parent.drBaseSize or 28
 
-	for i = 1, #frames do
-		local frame = useDrFrames and frames[i] or self[frames[i]]
-		if frame and frame:IsShown() then
-			frame:ClearAllPoints()
-			if numActive == 0 then
-				local offset = (self.parent.drBaseSize or 28) / 2
+	if fixedPositions then
+		for i = 1, #frames do
+			local frame = useDrFrames and frames[i] or self[frames[i]]
+			if frame then
+				frame:ClearAllPoints()
+				local slotIndex = i - 1
+				local offset = baseSize / 2
 				if growthDirection == 4 then
-					frame:SetPoint("RIGHT", self, "CENTER", layoutdb.dr.posX + offset, layoutdb.dr.posY)
+					frame:SetPoint("RIGHT", self, "CENTER", layoutdb.dr.posX + offset - slotIndex * (baseSize + spacing), layoutdb.dr.posY)
 				elseif growthDirection == 3 then
-					frame:SetPoint("LEFT", self, "CENTER", layoutdb.dr.posX - offset, layoutdb.dr.posY)
+					frame:SetPoint("LEFT", self, "CENTER", layoutdb.dr.posX - offset + slotIndex * (baseSize + spacing), layoutdb.dr.posY)
 				elseif growthDirection == 1 then
-					frame:SetPoint("TOP", self, "CENTER", layoutdb.dr.posX, layoutdb.dr.posY + offset)
+					frame:SetPoint("TOP", self, "CENTER", layoutdb.dr.posX, layoutdb.dr.posY + offset - slotIndex * (baseSize + spacing))
 				elseif growthDirection == 2 then
-					frame:SetPoint("BOTTOM", self, "CENTER", layoutdb.dr.posX, layoutdb.dr.posY - offset)
-				end
-			else
-				if growthDirection == 4 then
-					frame:SetPoint("RIGHT", prevFrame, "LEFT", -spacing, 0)
-				elseif growthDirection == 3 then
-					frame:SetPoint("LEFT", prevFrame, "RIGHT", spacing, 0)
-				elseif growthDirection == 1 then
-					frame:SetPoint("TOP", prevFrame, "BOTTOM", 0, -spacing)
-				elseif growthDirection == 2 then
-					frame:SetPoint("BOTTOM", prevFrame, "TOP", 0, spacing)
+					frame:SetPoint("BOTTOM", self, "CENTER", layoutdb.dr.posX, layoutdb.dr.posY - offset + slotIndex * (baseSize + spacing))
 				end
 			end
-			numActive = numActive + 1
-			prevFrame = frame
+		end
+	else
+		local numActive = 0
+		local prevFrame
+		for i = 1, #frames do
+			local frame = useDrFrames and frames[i] or self[frames[i]]
+			if frame and frame:IsShown() then
+				frame:ClearAllPoints()
+				if numActive == 0 then
+					local offset = baseSize / 2
+					if growthDirection == 4 then
+						frame:SetPoint("RIGHT", self, "CENTER", layoutdb.dr.posX + offset, layoutdb.dr.posY)
+					elseif growthDirection == 3 then
+						frame:SetPoint("LEFT", self, "CENTER", layoutdb.dr.posX - offset, layoutdb.dr.posY)
+					elseif growthDirection == 1 then
+						frame:SetPoint("TOP", self, "CENTER", layoutdb.dr.posX, layoutdb.dr.posY + offset)
+					elseif growthDirection == 2 then
+						frame:SetPoint("BOTTOM", self, "CENTER", layoutdb.dr.posX, layoutdb.dr.posY - offset)
+					end
+				else
+					if growthDirection == 4 then
+						frame:SetPoint("RIGHT", prevFrame, "LEFT", -spacing, 0)
+					elseif growthDirection == 3 then
+						frame:SetPoint("LEFT", prevFrame, "RIGHT", spacing, 0)
+					elseif growthDirection == 1 then
+						frame:SetPoint("TOP", prevFrame, "BOTTOM", 0, -spacing)
+					elseif growthDirection == 2 then
+						frame:SetPoint("BOTTOM", prevFrame, "TOP", 0, spacing)
+					end
+				end
+				numActive = numActive + 1
+				prevFrame = frame
+			end
 		end
 	end
 end

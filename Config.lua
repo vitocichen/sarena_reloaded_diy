@@ -1099,6 +1099,21 @@ function sArenaMixin:GetLayoutOptionsTable(layoutName)
                     type = "group",
                     inline = true,
                     args = {
+                        fixedPositions = {
+                            order = 0.5,
+                            name  = L["DR_FixedPositions"],
+                            desc  = L["DR_FixedPositions_Desc"],
+                            type  = "toggle",
+                            width = "full",
+                            get = function(info)
+                                return info.handler.db.profile.layoutSettings[layoutName].dr.fixedPositions
+                            end,
+                            set = function(info, val)
+                                info.handler.db.profile.layoutSettings[layoutName].dr.fixedPositions = val
+                                self:UpdateDRSettings(info.handler.db.profile.layoutSettings[layoutName].dr)
+                                info.handler:Test()
+                            end,
+                        },
                         brightDRBorder = {
                             order = 1,
                             name  = L["DR_BrightBorder"],

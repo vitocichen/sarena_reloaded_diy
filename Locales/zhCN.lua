@@ -207,6 +207,9 @@ L["Castbar_IconSettings"] = "图标设置"
 -- Diminishing Returns Options
 ---------------------------------------
 
+L["DR_FixedPositions"] = "固定递减位置"
+L["DR_FixedPositions_Desc"] = "递减图标保持在固定槽位，而不是在某个递减消失时自动收缩重排。\n\n关闭（默认）：图标会自动补位，紧凑排列。\n开启：每个递减保持固定位置，消失后留空。"
+
 L["DR_BrightBorder"] = "明亮递减边框"
 L["DR_BlackBorder"] = "黑色递减边框"
 L["DR_BlackBorder_Desc"] = "将递减效果边框变为黑色。配合显示递减文字设置使用"

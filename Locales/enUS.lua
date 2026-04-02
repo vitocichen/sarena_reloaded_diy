@@ -204,6 +204,9 @@ L["Castbar_IconSettings"] = "Icon Settings"
 -- Diminishing Returns Options
 ---------------------------------------
 
+L["DR_FixedPositions"] = "Fixed DR Positions"
+L["DR_FixedPositions_Desc"] = "DR icons stay in fixed slot positions instead of dynamically collapsing when one disappears.\n\nWhen disabled (default): icons shift to fill gaps when a DR expires.\nWhen enabled: each DR keeps its slot position, leaving empty gaps."
+
 L["DR_BrightBorder"] = "Bright DR Border"
 L["DR_BlackBorder"] = "Black DR Border"
 L["DR_BlackBorder_Desc"] = "Makes DR borders black. Combine this with Show DR Text setting"
