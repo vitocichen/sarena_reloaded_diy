@@ -322,6 +322,8 @@ local function RenderUnit(unit, now)
 end
 
 local function OnTick()
+    if sArenaMixin.selfDRTestMode then return end
+
     local db = GetSelfDRSettings()
     if not db or not db.enabled then
         ResetAll()
@@ -430,51 +432,72 @@ function sArenaMixin:EnableSelfDR()
     end
 end
 
-local function GetOrCreateMockPartyFrame()
-    if sArenaMixin.selfDRMockFrame then return sArenaMixin.selfDRMockFrame end
+local TEST_UNITS = { "player", "party1", "party2" }
+local testMockFrames = {}
+local testMockContainer = nil
 
-    local mock = CreateFrame("Frame", "sArenaSelfDR_MockParty", UIParent, "BackdropTemplate")
-    mock:SetSize(120, 32)
-    mock:SetFrameStrata("MEDIUM")
-    mock:SetFrameLevel(50)
+local function CreateMockTestFrames()
+    if testMockContainer then return end
 
-    mock:SetBackdrop({
-        bgFile = "Interface\\Tooltips\\UI-Tooltip-Background",
-        edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
-        tile = true, tileSize = 16, edgeSize = 12,
-        insets = { left = 2, right = 2, top = 2, bottom = 2 },
-    })
-    mock:SetBackdropColor(0.1, 0.1, 0.1, 0.9)
-    mock:SetBackdropBorderColor(0.4, 0.4, 0.4, 1)
+    local _, playerClass = UnitClass("player")
+    local classColor = RAID_CLASS_COLORS[playerClass] or NORMAL_FONT_COLOR
+    local L = sArenaMixin.L
 
-    local hp = CreateFrame("StatusBar", nil, mock)
-    hp:SetPoint("TOPLEFT", 3, -3)
-    hp:SetPoint("BOTTOMRIGHT", -3, 3)
-    hp:SetStatusBarTexture("Interface\\TargetingFrame\\UI-StatusBar")
-    hp:SetStatusBarColor(0, 0.8, 0, 1)
-    hp:SetMinMaxValues(0, 100)
-    hp:SetValue(100)
+    testMockContainer = CreateFrame("Frame", "sArenaSelfDR_TestContainer", UIParent)
+    testMockContainer:SetClampedToScreen(true)
+    testMockContainer:EnableMouse(true)
+    testMockContainer:SetMovable(true)
+    testMockContainer:RegisterForDrag("LeftButton")
+    testMockContainer:SetScript("OnDragStart", function(s) s:StartMoving() end)
+    testMockContainer:SetScript("OnDragStop", function(s) s:StopMovingOrSizing() end)
+    testMockContainer:Hide()
 
-    local name = hp:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-    name:SetPoint("CENTER")
-    name:SetText(UnitName("player") or "Player")
-    name:SetTextColor(1, 1, 1, 1)
+    local width, height, padding = 140, 36, 4
+    local labels = {
+        UnitName("player") or "Player",
+        (L and L["SelfDR_TestParty1"] or "party1"),
+        (L and L["SelfDR_TestParty2"] or "party2"),
+    }
+    local hpValues = { 100, 75, 50 }
 
-    local label = mock:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-    label:SetPoint("TOP", mock, "BOTTOM", 0, -2)
-    label:SetText("|cff888888" .. (sArenaMixin.L and sArenaMixin.L["SelfDR_MockLabel"] or "Mock Party Frame") .. "|r")
+    for i = 1, 3 do
+        local f = CreateFrame("Frame", "sArenaSelfDR_TestFrame" .. i, testMockContainer, "BackdropTemplate")
+        f:SetSize(width, height)
+        f:SetBackdrop({
+            bgFile = "Interface\\Buttons\\WHITE8X8",
+            edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
+            edgeSize = 10,
+            insets = { left = 2, right = 2, top = 2, bottom = 2 },
+        })
+        f:SetBackdropColor(classColor.r * 0.4, classColor.g * 0.4, classColor.b * 0.4, 0.9)
+        f:SetBackdropBorderColor(0, 0, 0, 1)
 
-    mock:EnableMouse(true)
-    mock:SetMovable(true)
-    mock:RegisterForDrag("LeftButton")
-    mock:SetScript("OnDragStart", function(self) self:StartMoving() end)
-    mock:SetScript("OnDragStop", function(self) self:StopMovingOrSizing() end)
+        local hp = CreateFrame("StatusBar", nil, f)
+        hp:SetPoint("TOPLEFT", 3, -3)
+        hp:SetPoint("BOTTOMRIGHT", -3, 3)
+        hp:SetStatusBarTexture("Interface\\TargetingFrame\\UI-StatusBar")
+        hp:SetStatusBarColor(classColor.r, classColor.g, classColor.b, 0.8)
+        hp:SetMinMaxValues(0, 100)
+        hp:SetValue(hpValues[i])
 
-    mock:SetPoint("LEFT", UIParent, "CENTER", -300, 0)
-    mock:Hide()
+        local text = hp:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+        text:SetPoint("CENTER")
+        text:SetText(labels[i])
+        text:SetTextColor(1, 1, 1, 1)
 
-    sArenaMixin.selfDRMockFrame = mock
-    return mock
+        f:ClearAllPoints()
+        f:SetPoint("TOP", testMockContainer, "TOP", 0, -(i - 1) * (height + padding))
+
+        f.unit = TEST_UNITS[i]
+        testMockFrames[i] = f
+    end
+
+    testMockContainer:SetSize(width, height * 3 + padding * 2)
+    testMockContainer:SetPoint("LEFT", UIParent, "CENTER", -350, 0)
+
+    local hint = testMockContainer:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+    hint:SetPoint("TOP", testMockContainer, "BOTTOM", 0, -3)
+    hint:SetText("|cff888888" .. (L and L["SelfDR_MockLabel"] or "Mock Party Frame (drag to move)") .. "|r")
 end
 
 function sArenaMixin:ShowTestSelfDR()
@@ -484,85 +507,58 @@ function sArenaMixin:ShowTestSelfDR()
         return
     end
 
-    -- Use real party frame if available, otherwise create a mock
-    local anchor = FindPartyAnchor("player")
-    if not anchor then
-        local mock = GetOrCreateMockPartyFrame()
-        mock:Show()
-        anchor = mock
-    end
-    anchors["player"] = anchor
+    self.selfDRTestMode = true
+    CreateMockTestFrames()
 
-    local testData = {
-        { cat = "stun",    icon = CAT_FALLBACK_ICON.stun,    count = 2, resetIn = 12 },
-        { cat = "incap",   icon = CAT_FALLBACK_ICON.incap,   count = 1, resetIn = 8 },
-        { cat = "confuse", icon = CAT_FALLBACK_ICON.confuse,  count = 1, resetIn = 14 },
-    }
+    local hasRealFrames = false
+    for _, unit in ipairs(TEST_UNITS) do
+        local a = FindPartyAnchor(unit)
+        if a then hasRealFrames = true; break end
+    end
+
+    if not hasRealFrames then
+        testMockContainer:Show()
+        for _, f in ipairs(testMockFrames) do f:Show() end
+    end
 
     local now = GetTime()
+    local testData = {
+        { cat = "stun",    icon = CAT_FALLBACK_ICON.stun,    count = 2, resetIn = 14 },
+        { cat = "incap",   icon = CAT_FALLBACK_ICON.incap,   count = 1, resetIn = 10 },
+        { cat = "confuse", icon = CAT_FALLBACK_ICON.confuse,  count = 1, resetIn = 16 },
+    }
 
-    drStates["player"] = {}
-    for _, td in ipairs(testData) do
-        if not db.categories or db.categories[td.cat] ~= false then
-            drStates["player"][td.cat] = {
-                count = td.count,
-                icon = td.icon,
-                resetAt = now + td.resetIn,
-            }
+    for idx, unit in ipairs(TEST_UNITS) do
+        local anchor = FindPartyAnchor(unit)
+        if not anchor and testMockFrames[idx] then
+            anchor = testMockFrames[idx]
         end
-    end
+        if not anchor then anchor = testMockFrames[1] end
+        anchors[unit] = anchor
 
-    local w = GetOrCreateWidget("player")
-    w:ClearAllPoints()
-    w:SetPoint("CENTER", anchor, "CENTER", db.posX or 0, db.posY or 0)
-
-    local size = db.size or 24
-    local spacing = db.spacing or 2
-    local grow = db.growthDirection or 3
-    local fontSize = db.fontSize or 14
-    local shown = 0
-
-    for _, cat in ipairs(CAT_ORDER) do
-        if not db.categories or db.categories[cat] ~= false then
-            local cs = drStates["player"] and drStates["player"][cat]
-            if cs then
-                shown = shown + 1
-                local f = w.icons[shown]
-                if f then
-                    f:SetSize(size, size)
-                    f:ClearAllPoints()
-                    local offset = (shown - 1) * (size + spacing)
-                    if grow == 4 then f:SetPoint("CENTER", w, "CENTER", -offset, 0)
-                    elseif grow == 3 then f:SetPoint("CENTER", w, "CENTER", offset, 0)
-                    elseif grow == 1 then f:SetPoint("CENTER", w, "CENTER", 0, -offset)
-                    elseif grow == 2 then f:SetPoint("CENTER", w, "CENTER", 0, offset) end
-
-                    f.tex:SetTexture(cs.icon)
-                    f.cd:SetCooldown(cs.resetAt - DR_RESET_TIME, DR_RESET_TIME)
-                    f.text:SetFont("Fonts\\FRIZQT__.TTF", fontSize, "OUTLINE")
-                    f.text:SetFormattedText("%d", math.ceil(math.max(0, cs.resetAt - now)))
-
-                    if cs.count <= 1 then
-                        SetIconBorderColor(f, 0, 1, 0, 1)
-                    else
-                        SetIconBorderColor(f, 1, 0, 0, 1)
-                    end
-                    f:Show()
-                end
+        drStates[unit] = {}
+        for _, td in ipairs(testData) do
+            if not db.categories or db.categories[td.cat] ~= false then
+                drStates[unit][td.cat] = {
+                    count = td.count,
+                    icon = td.icon,
+                    resetAt = now + td.resetIn + (idx - 1) * 2,
+                }
             end
         end
-    end
-    for i = shown + 1, #w.icons do w.icons[i]:Hide() end
-    if shown > 0 then w:Show() end
 
-    if not self.selfDRTestTicker then
-        self.selfDRTestTicker = C_Timer.NewTicker(0.5, function()
-            if not self.testMode then
-                self:HideTestSelfDR()
-                return
-            end
-            local n = GetTime()
-            local state = drStates["player"]
+        RenderUnit(unit, now)
+    end
+
+    if self.selfDRTestTicker then self.selfDRTestTicker:Cancel() end
+    self.selfDRTestTicker = C_Timer.NewTicker(0.5, function()
+        if not self.testMode then
+            self:HideTestSelfDR()
+            return
+        end
+        local n = GetTime()
+        for idx2, unit2 in ipairs(TEST_UNITS) do
+            local state = drStates[unit2]
             if state then
                 local anyActive = false
                 for _, cs in pairs(state) do
@@ -574,36 +570,28 @@ function sArenaMixin:ShowTestSelfDR()
                             state[td.cat] = {
                                 count = td.count,
                                 icon = td.icon,
-                                resetAt = n + td.resetIn,
+                                resetAt = n + td.resetIn + (idx2 - 1) * 2,
                             }
                         end
                     end
                 end
-                -- Update countdown text
-                for i = 1, #w.icons do
-                    local f = w.icons[i]
-                    if f:IsShown() then
-                        local catName = CAT_ORDER[i]
-                        local cs2 = catName and state[catName]
-                        if cs2 and cs2.resetAt then
-                            f.text:SetFormattedText("%d", math.ceil(math.max(0, cs2.resetAt - n)))
-                        end
-                    end
-                end
             end
-        end)
-    end
+            RenderUnit(unit2, n)
+        end
+    end)
 end
 
 function sArenaMixin:HideTestSelfDR()
+    self.selfDRTestMode = nil
     if self.selfDRTestTicker then
         self.selfDRTestTicker:Cancel()
         self.selfDRTestTicker = nil
     end
-    drStates["player"] = nil
-    local w = widgets["player"]
-    if w then w:Hide() end
-    if self.selfDRMockFrame then
-        self.selfDRMockFrame:Hide()
+    for _, unit in ipairs(TEST_UNITS) do
+        drStates[unit] = nil
+        local w = widgets[unit]
+        if w then w:Hide() end
     end
+    if testMockContainer then testMockContainer:Hide() end
+    for _, f in ipairs(testMockFrames) do f:Hide() end
 end
