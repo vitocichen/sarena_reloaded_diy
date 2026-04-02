@@ -263,13 +263,13 @@ function sArenaFrameMixin:FindDR(combatEvent, spellID)
 	if mode == 2 then
 		frame:Hide()
 	end
-	if mode >= 2 and self.drFramesHB then
+	if mode >= 2 and self.drFramesNP then
 		local catIndex
 		for ci, cn in ipairs(drCategories) do
 			if cn == category then catIndex = ci; break end
 		end
 		if catIndex then
-			local hbf = self.drFramesHB[catIndex]
+			local hbf = self.drFramesNP[catIndex]
 			if hbf then
 				hbf.Icon:SetTexture(textureID)
 				local cdStart, cdDuration = frame.Cooldown:GetCooldownTimes()
@@ -277,9 +277,9 @@ function sArenaFrameMixin:FindDR(combatEvent, spellID)
 					hbf.Cooldown:SetCooldown(cdStart / 1000, cdDuration / 1000)
 				end
 				local bc = severityColor[frame.severity] or severityColor[1]
-				self:SetHealthBarDRBorderColor(catIndex, bc[1], bc[2], bc[3])
+				self:SetNameplateDRBorderColor(catIndex, bc[1], bc[2], bc[3])
 				hbf:Show()
-				self:UpdateHealthBarDRPositions()
+				self:UpdateNameplateDRPositions()
 			end
 		end
 	end

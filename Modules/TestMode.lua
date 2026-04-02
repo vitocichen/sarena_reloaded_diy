@@ -985,24 +985,24 @@ function sArenaMixin:Test()
 
         -- Healthbar DR test
         if drAnchorMode >= 2 then
-            if not frame.drFramesHB then
-                frame:CreateHealthBarDRFrames()
+            if not frame.drFramesNP then
+                frame:CreateNameplateDRFrames()
             end
             local hbTextures = { 136071, 135860, 136100, 136183 }
             local hbColors = { {1,0,0}, {0,1,0}, {0,1,0}, {0,1,0} }
-            for n = 1, math.min(4, #frame.drFramesHB) do
-                local hbf = frame.drFramesHB[n]
+            for n = 1, math.min(4, #frame.drFramesNP) do
+                local hbf = frame.drFramesNP[n]
                 if hbf then
                     hbf.Icon:SetTexture(hbTextures[n])
                     hbf.Cooldown:SetCooldown(currTime, math.random(12, 30))
-                    frame:SetHealthBarDRBorderColor(n, hbColors[n][1], hbColors[n][2], hbColors[n][3])
+                    frame:SetNameplateDRBorderColor(n, hbColors[n][1], hbColors[n][2], hbColors[n][3])
                     hbf:Show()
                 end
             end
-            frame:UpdateHealthBarDRPositions()
+            frame:UpdateNameplateDRPositions()
         else
-            if frame.drFramesHB then
-                frame:HideAllHealthBarDR()
+            if frame.drFramesNP then
+                frame:HideAllNameplateDR()
             end
         end
 
@@ -1241,8 +1241,8 @@ function sArenaMixin:Test()
                 if arenaFrame and arenaFrame.PetBar then
                     arenaFrame.PetBar:Hide()
                 end
-                if arenaFrame and arenaFrame.drFramesHB then
-                    arenaFrame:HideAllHealthBarDR()
+                if arenaFrame and arenaFrame.drFramesNP then
+                    arenaFrame:HideAllNameplateDR()
                 end
             end
         end)

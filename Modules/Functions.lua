@@ -460,7 +460,7 @@ function sArenaMixin:InitializeMidnightDRFrames()
             drTray:EnableMouse(false)
             arenaFrame.drFrames = {}
 
-            arenaFrame:CreateHealthBarDRFrames()
+            arenaFrame:CreateNameplateDRFrames()
 
             for drIndex = 1, NUM_DR_FRAMES do
                 local name = "sArenaEnemyFrame" .. i .. "_DR" .. drIndex
@@ -499,7 +499,7 @@ function sArenaMixin:InitializeMidnightDRFrames()
                             sArenaDRFrame.Icon:SetTexture(texture)
                         end
                         if mode >= 2 then
-                            local hbf = arenaFrame.drFramesHB and arenaFrame.drFramesHB[drIndex]
+                            local hbf = arenaFrame.drFramesNP and arenaFrame.drFramesNP[drIndex]
                             if hbf then hbf.Icon:SetTexture(texture) end
                         end
                     end)
@@ -513,10 +513,10 @@ function sArenaMixin:InitializeMidnightDRFrames()
                             sArenaDRFrame:Hide()
                         end
                         if mode >= 2 then
-                            local hbf = arenaFrame.drFramesHB and arenaFrame.drFramesHB[drIndex]
+                            local hbf = arenaFrame.drFramesNP and arenaFrame.drFramesNP[drIndex]
                             if hbf then
                                 hbf:Show()
-                                arenaFrame:UpdateHealthBarDRPositions()
+                                arenaFrame:UpdateNameplateDRPositions()
                             end
                         end
                     end)
@@ -527,12 +527,12 @@ function sArenaMixin:InitializeMidnightDRFrames()
                         sArenaDRFrame:Hide()
                         arenaFrame:UpdateDRPositions()
 
-                        local hbf = arenaFrame.drFramesHB and arenaFrame.drFramesHB[drIndex]
+                        local hbf = arenaFrame.drFramesNP and arenaFrame.drFramesNP[drIndex]
                         if hbf then
                             hbf.Icon:SetTexture(nil)
                             hbf.Cooldown:Clear()
                             hbf:Hide()
-                            arenaFrame:UpdateHealthBarDRPositions()
+                            arenaFrame:UpdateNameplateDRPositions()
                         end
                     end)
 
@@ -541,7 +541,7 @@ function sArenaMixin:InitializeMidnightDRFrames()
                         sArenaDRFrame.Cooldown.trueCD = true
                         C_Timer.After(16.1, function() sArenaDRFrame.Cooldown.trueCD = nil end)
 
-                        local hbf = arenaFrame.drFramesHB and arenaFrame.drFramesHB[drIndex]
+                        local hbf = arenaFrame.drFramesNP and arenaFrame.drFramesNP[drIndex]
                         if hbf then
                             hbf.Cooldown:SetCooldown(GetTime(), 16.1)
                         end
@@ -575,15 +575,15 @@ function sArenaMixin:InitializeMidnightDRFrames()
                         drText:SetAlphaFromBoolean(shown, 0, 1)
                         drTextImmune:SetAlphaFromBoolean(shown, 1, 0)
 
-                        local hbf = arenaFrame.drFramesHB and arenaFrame.drFramesHB[drIndex]
+                        local hbf = arenaFrame.drFramesNP and arenaFrame.drFramesNP[drIndex]
                         if hbf then
                             local r, g, b = shown and 1 or 0, shown and 0 or 1, 0
-                            arenaFrame:SetHealthBarDRBorderColor(drIndex, r, g, b)
+                            arenaFrame:SetNameplateDRBorderColor(drIndex, r, g, b)
                             if hbf.Cooldown and not sArenaDRFrame.Cooldown.trueCD and not self.db.profile.disableInstantDRCooldown then
                                 hbf.Cooldown:SetCooldown(GetTime(), 20)
                             end
-                            local glowEnabled = self.layoutdb and self.layoutdb.drHealthBar and self.layoutdb.drHealthBar.immuneGlow
-                            arenaFrame:SetHealthBarDRGlow(drIndex, glowEnabled and shown, 1, 0, 0)
+                            local glowEnabled = self.layoutdb and self.layoutdb.drNameplate and self.layoutdb.drNameplate.immuneGlow
+                            arenaFrame:SetNameplateDRGlow(drIndex, glowEnabled and shown, 1, 0, 0)
                         end
                     end)
                 end

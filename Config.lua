@@ -1108,7 +1108,7 @@ function sArenaMixin:GetLayoutOptionsTable(layoutName)
                             width = 1.5,
                             values = {
                                 [1] = L["DR_AnchorMode_Frame"],
-                                [2] = L["DR_AnchorMode_HealthBar"],
+                                [2] = L["DR_AnchorMode_Nameplate"],
                                 [3] = L["DR_AnchorMode_Both"],
                             },
                             get = function(info)
@@ -1117,8 +1117,8 @@ function sArenaMixin:GetLayoutOptionsTable(layoutName)
                             set = function(info, val)
                                 info.handler.db.profile.layoutSettings[layoutName].drAnchorMode = val
                                 self:UpdateDRSettings(info.handler.db.profile.layoutSettings[layoutName].dr)
-                                if info.handler.db.profile.layoutSettings[layoutName].drHealthBar then
-                                    self:UpdateHealthBarDRSettings(info.handler.db.profile.layoutSettings[layoutName].drHealthBar)
+                                if info.handler.db.profile.layoutSettings[layoutName].drNameplate then
+                                    self:UpdateNameplateDRSettings(info.handler.db.profile.layoutSettings[layoutName].drNameplate)
                                 end
                                 info.handler:Test()
                             end,
@@ -3422,25 +3422,25 @@ function sArenaMixin:GetLayoutOptionsTable(layoutName)
         },
     }
 
-    optionsTable.drHealthBar = {
+    optionsTable.drNameplate = {
         order = 6.5,
-        name = L["Category_DRHealthBar"],
+        name = L["Category_DRNameplate"],
         type = "group",
         hidden = function(info)
             local mode = info.handler.db.profile.layoutSettings[layoutName].drAnchorMode or 1
             return mode < 2
         end,
         get = function(info)
-            local hb = info.handler.db.profile.layoutSettings[layoutName].drHealthBar
+            local hb = info.handler.db.profile.layoutSettings[layoutName].drNameplate
             return hb and hb[info[#info]]
         end,
         set = function(info, val)
-            local hb = info.handler.db.profile.layoutSettings[layoutName].drHealthBar
+            local hb = info.handler.db.profile.layoutSettings[layoutName].drNameplate
             if not hb then
-                info.handler.db.profile.layoutSettings[layoutName].drHealthBar = {}
-                hb = info.handler.db.profile.layoutSettings[layoutName].drHealthBar
+                info.handler.db.profile.layoutSettings[layoutName].drNameplate = {}
+                hb = info.handler.db.profile.layoutSettings[layoutName].drNameplate
             end
-            self:UpdateHealthBarDRSettings(hb, info, val)
+            self:UpdateNameplateDRSettings(hb, info, val)
         end,
         args = {
             positioning = {

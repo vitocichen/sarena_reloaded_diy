@@ -61,7 +61,7 @@ layout.defaultSettings = {
         brightDRBorder = true,
     },
     drAnchorMode = 1,
-    drHealthBar = {
+    drNameplate = {
         posX = 2,
         posY = 0,
         size = 22,

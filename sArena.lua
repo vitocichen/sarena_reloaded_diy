@@ -617,6 +617,13 @@ function sArenaMixin:OnEvent(event, ...)
             frame:UpdateFocus(frame.unit)
         end
 
+    elseif event == "NAME_PLATE_UNIT_REMOVED" then
+        local token = ...
+        if token then self:ClearNameplateAnchorCache(token) end
+        self:RefreshAllNameplateDR()
+    elseif event == "NAME_PLATE_UNIT_ADDED"
+        or event == "PLAYER_TARGET_CHANGED" or event == "PLAYER_FOCUS_CHANGED" then
+        self:RefreshAllNameplateDR()
     elseif (event == "UNIT_TARGET") then
         for i = 1, self.maxArenaOpponents do
             local frame = self["arena" .. i]
@@ -680,6 +687,10 @@ function sArenaMixin:OnEvent(event, ...)
             end
             self:RegisterWidgetEvents()
             self:RegisterInterruptEvents()
+            self:RegisterEvent("NAME_PLATE_UNIT_ADDED")
+            self:RegisterEvent("NAME_PLATE_UNIT_REMOVED")
+            self:RegisterEvent("PLAYER_TARGET_CHANGED")
+            self:RegisterEvent("PLAYER_FOCUS_CHANGED")
             self:UpdatePlayerSpec()
             if self.TestTitle then
                 self.TestTitle:Hide()
@@ -708,6 +719,17 @@ function sArenaMixin:OnEvent(event, ...)
             end
             self:UnregisterWidgetEvents()
             self:UnregisterInterruptEvents()
+            self:UnregisterEvent("NAME_PLATE_UNIT_ADDED")
+            self:UnregisterEvent("NAME_PLATE_UNIT_REMOVED")
+            self:UnregisterEvent("PLAYER_TARGET_CHANGED")
+            self:UnregisterEvent("PLAYER_FOCUS_CHANGED")
+            self:ClearAllNameplateAnchors()
+            for i = 1, self.maxArenaOpponents do
+                local frame = self["arena" .. i]
+                if frame and frame.drFramesNP then
+                    frame:HideAllNameplateDR()
+                end
+            end
             self:ResetShadowsightTimer()
         end
     elseif event == "CHAT_MSG_BG_SYSTEM_NEUTRAL" then
@@ -1447,8 +1469,8 @@ function sArenaMixin:SetLayout(_, layout)
         self:UpdatePetBarSettings(self.layoutdb.petBar)
     end
 
-    if self.layoutdb.drHealthBar then
-        self:UpdateHealthBarDRSettings(self.layoutdb.drHealthBar)
+    if self.layoutdb.drNameplate then
+        self:UpdateNameplateDRSettings(self.layoutdb.drNameplate)
     end
 
     self:UpdateHealthBarTrinketSettings()

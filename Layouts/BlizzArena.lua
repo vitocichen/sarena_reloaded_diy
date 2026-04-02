@@ -52,7 +52,7 @@ layout.defaultSettings = {
         growthDirection = 4,
     },
     drAnchorMode = 1,
-    drHealthBar = {
+    drNameplate = {
         posX = 2,
         posY = 0,
         size = 22,
