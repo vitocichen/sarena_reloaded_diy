@@ -230,6 +230,7 @@ L["SelfDR_Cat_Stun"] = "昏迷"
 L["SelfDR_Cat_Incap"] = "瘫痪"
 L["SelfDR_Cat_Confuse"] = "恐惧/迷惑"
 L["SelfDR_Cat_Root"] = "定身/沉默"
+L["SelfDR_MockLabel"] = "模拟小队框体（拖拽移动）"
 
 L["DR_FixedPositions"] = "固定递减位置"
 L["DR_FixedPositions_Desc"] = "递减图标保持在固定槽位，而不是在某个递减消失时自动收缩重排。\n\n关闭（默认）：图标会自动补位，紧凑排列。\n开启：每个递减保持固定位置，消失后留空。"

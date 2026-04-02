@@ -430,6 +430,53 @@ function sArenaMixin:EnableSelfDR()
     end
 end
 
+local function GetOrCreateMockPartyFrame()
+    if sArenaMixin.selfDRMockFrame then return sArenaMixin.selfDRMockFrame end
+
+    local mock = CreateFrame("Frame", "sArenaSelfDR_MockParty", UIParent, "BackdropTemplate")
+    mock:SetSize(120, 32)
+    mock:SetFrameStrata("MEDIUM")
+    mock:SetFrameLevel(50)
+
+    mock:SetBackdrop({
+        bgFile = "Interface\\Tooltips\\UI-Tooltip-Background",
+        edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
+        tile = true, tileSize = 16, edgeSize = 12,
+        insets = { left = 2, right = 2, top = 2, bottom = 2 },
+    })
+    mock:SetBackdropColor(0.1, 0.1, 0.1, 0.9)
+    mock:SetBackdropBorderColor(0.4, 0.4, 0.4, 1)
+
+    local hp = CreateFrame("StatusBar", nil, mock)
+    hp:SetPoint("TOPLEFT", 3, -3)
+    hp:SetPoint("BOTTOMRIGHT", -3, 3)
+    hp:SetStatusBarTexture("Interface\\TargetingFrame\\UI-StatusBar")
+    hp:SetStatusBarColor(0, 0.8, 0, 1)
+    hp:SetMinMaxValues(0, 100)
+    hp:SetValue(100)
+
+    local name = hp:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+    name:SetPoint("CENTER")
+    name:SetText(UnitName("player") or "Player")
+    name:SetTextColor(1, 1, 1, 1)
+
+    local label = mock:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+    label:SetPoint("TOP", mock, "BOTTOM", 0, -2)
+    label:SetText("|cff888888" .. (sArenaMixin.L and sArenaMixin.L["SelfDR_MockLabel"] or "Mock Party Frame") .. "|r")
+
+    mock:EnableMouse(true)
+    mock:SetMovable(true)
+    mock:RegisterForDrag("LeftButton")
+    mock:SetScript("OnDragStart", function(self) self:StartMoving() end)
+    mock:SetScript("OnDragStop", function(self) self:StopMovingOrSizing() end)
+
+    mock:SetPoint("LEFT", UIParent, "CENTER", -300, 0)
+    mock:Hide()
+
+    sArenaMixin.selfDRMockFrame = mock
+    return mock
+end
+
 function sArenaMixin:ShowTestSelfDR()
     local db = self.db and self.db.profile and self.db.profile.selfDR
     if not db or not db.enabled then
@@ -437,14 +484,14 @@ function sArenaMixin:ShowTestSelfDR()
         return
     end
 
-    -- Find any usable anchor for the player
+    -- Use real party frame if available, otherwise create a mock
     local anchor = FindPartyAnchor("player")
     if not anchor then
-        local pf = _G.PlayerFrame
-        if pf and pf.IsShown and pf:IsShown() then
-            anchor = pf
-        end
+        local mock = GetOrCreateMockPartyFrame()
+        mock:Show()
+        anchor = mock
     end
+    anchors["player"] = anchor
 
     local testData = {
         { cat = "stun",    icon = CAT_FALLBACK_ICON.stun,    count = 2, resetIn = 12 },
@@ -465,21 +512,9 @@ function sArenaMixin:ShowTestSelfDR()
         end
     end
 
-    -- Directly render test icons, bypassing anchor requirement if needed
     local w = GetOrCreateWidget("player")
     w:ClearAllPoints()
-    if anchor then
-        anchors["player"] = anchor
-        w:SetPoint("CENTER", anchor, "CENTER", db.posX or 0, db.posY or 0)
-    else
-        -- No party frame visible: show relative to the sArena test frames
-        local arenaFrame = self.arena1
-        if arenaFrame and arenaFrame:IsShown() then
-            w:SetPoint("RIGHT", arenaFrame, "LEFT", (db.posX or 0) - 20, db.posY or 0)
-        else
-            w:SetPoint("CENTER", UIParent, "CENTER", db.posX or 0, (db.posY or 0) + 200)
-        end
-    end
+    w:SetPoint("CENTER", anchor, "CENTER", db.posX or 0, db.posY or 0)
 
     local size = db.size or 24
     local spacing = db.spacing or 2
@@ -568,4 +603,7 @@ function sArenaMixin:HideTestSelfDR()
     drStates["player"] = nil
     local w = widgets["player"]
     if w then w:Hide() end
+    if self.selfDRMockFrame then
+        self.selfDRMockFrame:Hide()
+    end
 end

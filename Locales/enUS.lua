@@ -227,6 +227,7 @@ L["SelfDR_Cat_Stun"] = "Stun"
 L["SelfDR_Cat_Incap"] = "Incapacitate"
 L["SelfDR_Cat_Confuse"] = "Fear/Disorient"
 L["SelfDR_Cat_Root"] = "Root/Silence"
+L["SelfDR_MockLabel"] = "Mock Party Frame (drag to move)"
 
 L["DR_FixedPositions"] = "Fixed DR Positions"
 L["DR_FixedPositions_Desc"] = "DR icons stay in fixed slot positions instead of dynamically collapsing when one disappears.\n\nWhen disabled (default): icons shift to fill gaps when a DR expires.\nWhen enabled: each DR keeps its slot position, leaving empty gaps."
