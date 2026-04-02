@@ -3584,7 +3584,7 @@ function sArenaMixin:GetLayoutOptionsTable(layoutName)
 
     optionsTable.petBar = {
         order = 8,
-        name = L["Category_PetBar"],
+        name = L["Category_PetBar"] .. " |cffff8000(DIY)|r",
         type = "group",
         get = function(info)
             local petBar = info.handler.db.profile.layoutSettings[layoutName].petBar
