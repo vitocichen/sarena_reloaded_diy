@@ -375,8 +375,8 @@ function sArenaFrameMixin:UpdateNameplateDRPositions()
             for _, tex in ipairs(f.BorderTextures) do
                 local r, g, b = tex:GetVertexColor()
                 tex:SetColorTexture(r or 0, g or 1, b or 0, 1)
-                if tex:GetHeight() <= 2 then tex:SetHeight(borderSz) end
-                if tex:GetWidth() <= 2 then tex:SetWidth(borderSz) end
+                tex:SetHeight(borderSz)
+                tex:SetWidth(borderSz)
             end
         end
         if f.CDText and not hideText then
@@ -567,8 +567,8 @@ function sArenaMixin:ShowTestNameplateDR()
             local borderSz = db.borderSize or 1
             if f.BorderTextures then
                 for _, tex in ipairs(f.BorderTextures) do
-                    if tex:GetHeight() <= 2 then tex:SetHeight(borderSz) end
-                    if tex:GetWidth() <= 2 then tex:SetWidth(borderSz) end
+                    tex:SetHeight(borderSz)
+                    tex:SetWidth(borderSz)
                 end
             end
             f:Show()
