@@ -142,13 +142,30 @@ function sArenaFrameMixin:RefreshPetBar()
 
     local petSettings = layoutSettings.petBar
 
-    -- Position must be set independently to avoid being blocked by health bar errors
-    pcall(function()
+    local posOk, posErr = pcall(function()
         self.PetBar:SetSize(petSettings.width or 100, petSettings.height or 20)
         self.PetBar:SetScale(petSettings.scale or 1)
         self.PetBar:ClearAllPoints()
         self.PetBar:SetPoint("CENTER", self, "CENTER", petSettings.posX or 0, petSettings.posY or -30)
     end)
+
+    if not posOk then
+        print("|cffff0000[PetBar POS-ERR]|r " .. tostring(posErr))
+        -- Fallback: use arena frame's screen position
+        pcall(function()
+            local cx, cy = self:GetCenter()
+            local es = self:GetEffectiveScale()
+            local ps = UIParent:GetEffectiveScale()
+            if cx and cy and es and ps then
+                self.PetBar:SetSize(petSettings.width or 100, petSettings.height or 20)
+                self.PetBar:SetScale(petSettings.scale or 1)
+                self.PetBar:ClearAllPoints()
+                self.PetBar:SetPoint("CENTER", UIParent, "BOTTOMLEFT",
+                    cx * es / ps + (petSettings.posX or 0),
+                    cy * es / ps + (petSettings.posY or -30))
+            end
+        end)
+    end
 
     pcall(function()
         self.PetBar.HealthBar:SetMinMaxValues(0, maxHealth)
@@ -179,6 +196,20 @@ function sArenaFrameMixin:RefreshPetBar()
     end)
 
     self.PetBar:Show()
+
+    -- [DEBUG] Diagnostic: check final state after all pcalls
+    local pts = self.PetBar:GetNumPoints()
+    local shown = self.PetBar:IsShown()
+    local w, h = self.PetBar:GetSize()
+    local alpha = self.PetBar:GetAlpha()
+    local pAlpha = (self.PetBar:GetParent() and self.PetBar:GetParent():GetAlpha()) or -1
+    print("|cff00ffff[PetBar DIAG]|r " .. self.unit
+        .. " posOk=" .. tostring(posOk)
+        .. " pts=" .. pts
+        .. " shown=" .. tostring(shown)
+        .. " size=" .. tostring(w) .. "x" .. tostring(h)
+        .. " alpha=" .. tostring(alpha)
+        .. " parentAlpha=" .. tostring(pAlpha))
 end
 
 function sArenaFrameMixin:UpdatePetBarHealthText()
