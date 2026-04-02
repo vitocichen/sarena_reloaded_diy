@@ -337,6 +337,13 @@ function sArenaFrameMixin:UpdateNameplateDRPositions()
     local arenaUnit = "arena" .. self:GetID()
     local anchor = self.parent:GetNameplateAnchorForArena(arenaUnit)
 
+    -- [DEBUG] Nameplate anchor probe
+    local numShown = 0
+    for _, f in ipairs(self.drFramesNP) do if f:IsShown() then numShown = numShown + 1 end end
+    if numShown > 0 or anchor then
+        print("|cffff8800[NP-DR]|r " .. arenaUnit .. " anchor=" .. tostring(anchor ~= nil) .. " shown=" .. numShown)
+    end
+
     if not anchor or IsForbidden(anchor) then
         for _, f in ipairs(self.drFramesNP) do f:Hide() end
         return

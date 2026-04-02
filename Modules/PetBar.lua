@@ -124,12 +124,21 @@ function sArenaFrameMixin:RefreshPetBar()
     end
 
     local health = UnitHealth(petUnit)
-    if health == 0 or UnitIsDeadOrGhost(petUnit) then
+    local maxHealth = UnitHealthMax(petUnit)
+    local dead = UnitIsDeadOrGhost(petUnit)
+    local hasPoints = self.PetBar:GetNumPoints() > 0
+
+    -- [DEBUG] Pet refresh probe
+    print("|cffff00ff[PetBar SHOW]|r " .. self.unit .. " pet=" .. petUnit
+        .. " hp=" .. tostring(health) .. "/" .. tostring(maxHealth)
+        .. " dead=" .. tostring(dead) .. " hasPoints=" .. tostring(hasPoints)
+        .. " visible=" .. tostring(self.PetBar:IsShown()))
+
+    if health == 0 or dead then
         self.PetBar:Hide()
         return
     end
 
-    local maxHealth = UnitHealthMax(petUnit)
     self.PetBar.HealthBar:SetMinMaxValues(0, maxHealth)
     self.PetBar.HealthBar:SetValue(health)
 
