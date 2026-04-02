@@ -399,8 +399,114 @@ function sArenaMixin:RefreshAllNameplateDR()
     end
 end
 
+function sArenaMixin:GetBestTestNameplate()
+    local ok, plates = pcall(C_NamePlate.GetNamePlates)
+    if not ok or not plates then return nil end
+
+    for _, unit in ipairs({"target", "mouseover"}) do
+        if SafeUnitExists(unit) then
+            for _, np in ipairs(plates) do
+                if np and not IsForbidden(np) then
+                    local tok = PlateToken(np)
+                    if tok then
+                        local r = SafeUnitIsUnit(tok, unit)
+                        if r == true then
+                            return SafeIndex(np, "UnitFrame") or np
+                        end
+                    end
+                end
+            end
+        end
+    end
+
+    for _, np in ipairs(plates) do
+        if np and not IsForbidden(np) then
+            local uf = SafeIndex(np, "UnitFrame") or np
+            if uf and not IsForbidden(uf) then
+                local shownOk, shown = pcall(function() return uf:IsShown() end)
+                if shownOk and shown then return uf end
+            end
+        end
+    end
+    return nil
+end
+
+function sArenaMixin:ShowTestNameplateDR()
+    local layoutdb = self.layoutdb
+    if not layoutdb or not layoutdb.drNameplate then return end
+
+    local anchor = self:GetBestTestNameplate()
+    if not anchor then return end
+
+    local db = layoutdb.drNameplate
+    local size = db.size or 22
+    local spacing = db.spacing or 2
+    local grow = db.growthDirection or 3
+    local posX = db.posX or 0
+    local posY = db.posY or 0
+
+    local us = (anchor.GetEffectiveScale and anchor:GetEffectiveScale()) or 1
+    local ps = (UIParent.GetEffectiveScale and UIParent:GetEffectiveScale()) or 1
+    local sc = us / ps
+    if sc < 0.1 then sc = 0.1 elseif sc > 10 then sc = 10 end
+
+    local testTextures = { 136071, 132298, 136100, 136183 }
+    local testColors = { {1,0,0}, {0,1,0}, {0,1,0}, {0,1,0} }
+    local now = GetTime()
+
+    local frame = self.arena1
+    if not frame then return end
+    if not frame.drFramesNP then frame:CreateNameplateDRFrames() end
+
+    local prevFrame
+    for n = 1, math.min(4, #frame.drFramesNP) do
+        local f = frame.drFramesNP[n]
+        if f then
+            f:SetParent(UIParent)
+            f:SetSize(size, size)
+            f:SetScale(sc)
+            f:ClearAllPoints()
+
+            if n == 1 then
+                if grow == 4 then
+                    f:SetPoint("RIGHT", anchor, "CENTER", posX, posY)
+                elseif grow == 3 then
+                    f:SetPoint("LEFT", anchor, "CENTER", posX, posY)
+                elseif grow == 1 then
+                    f:SetPoint("TOP", anchor, "CENTER", posX, posY)
+                else
+                    f:SetPoint("BOTTOM", anchor, "CENTER", posX, posY)
+                end
+            else
+                if grow == 4 then
+                    f:SetPoint("RIGHT", prevFrame, "LEFT", -spacing, 0)
+                elseif grow == 3 then
+                    f:SetPoint("LEFT", prevFrame, "RIGHT", spacing, 0)
+                elseif grow == 1 then
+                    f:SetPoint("TOP", prevFrame, "BOTTOM", 0, -spacing)
+                else
+                    f:SetPoint("BOTTOM", prevFrame, "TOP", 0, spacing)
+                end
+            end
+
+            f.Icon:SetTexture(testTextures[n])
+            f.Cooldown:SetCooldown(now, math.random(12, 30))
+            frame:SetNameplateDRBorderColor(n, testColors[n][1], testColors[n][2], testColors[n][3])
+            f:Show()
+            prevFrame = f
+        end
+    end
+end
+
+function sArenaMixin:HideTestNameplateDR()
+    local frame = self.arena1
+    if frame and frame.drFramesNP then
+        frame:HideAllNameplateDR()
+    end
+end
+
 -- =============================================
--- Healthbar Trinket Mirror (unchanged)
+-- Healthbar Trinket Mirror
 -- =============================================
 
 function sArenaFrameMixin:CreateHealthBarTrinket()

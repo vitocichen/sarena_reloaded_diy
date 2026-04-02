@@ -983,28 +983,7 @@ function sArenaMixin:Test()
             end
         end
 
-        -- Healthbar DR test
-        if drAnchorMode >= 2 then
-            if not frame.drFramesNP then
-                frame:CreateNameplateDRFrames()
-            end
-            local hbTextures = { 136071, 135860, 136100, 136183 }
-            local hbColors = { {1,0,0}, {0,1,0}, {0,1,0}, {0,1,0} }
-            for n = 1, math.min(4, #frame.drFramesNP) do
-                local hbf = frame.drFramesNP[n]
-                if hbf then
-                    hbf.Icon:SetTexture(hbTextures[n])
-                    hbf.Cooldown:SetCooldown(currTime, math.random(12, 30))
-                    frame:SetNameplateDRBorderColor(n, hbColors[n][1], hbColors[n][2], hbColors[n][3])
-                    hbf:Show()
-                end
-            end
-            frame:UpdateNameplateDRPositions()
-        else
-            if frame.drFramesNP then
-                frame:HideAllNameplateDR()
-            end
-        end
+        -- Nameplate DR test: handled once after loop via ShowTestNameplateDR
 
         -- Cast Bar
         if data.castName then
@@ -1146,6 +1125,14 @@ function sArenaMixin:Test()
         end
 
         frame:ShowTestPetBar()
+    end
+
+    -- Nameplate DR test: show on nearest nameplate
+    local drAnchorModeGlobal = db.profile.layoutSettings[db.profile.currentLayout].drAnchorMode or 1
+    if drAnchorModeGlobal >= 2 then
+        self:ShowTestNameplateDR()
+    else
+        self:HideTestNameplateDR()
     end
 
     local arenaTargetsOnPartyOn = widgetSettings.partyTargetIndicators
