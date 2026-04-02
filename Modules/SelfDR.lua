@@ -514,36 +514,75 @@ function sArenaMixin:ShowTestSelfDR()
         { cat = "confuse", icon = CAT_FALLBACK_ICON.confuse,  count = 1, resetIn = 16 },
     }
 
+    local testStates = {}
+
     local function RefreshTestDR()
         local now = GetTime()
+        local size = selfDRdb.size or 24
+        local spacing = selfDRdb.spacing or 2
+        local grow = selfDRdb.growthDirection or 3
+        local fontSize = selfDRdb.fontSize or 14
+
         for idx, unit in ipairs(TEST_UNITS) do
             local anchor = FindPartyAnchor(unit)
             if not anchor and testMockFrames[idx] then
                 anchor = testMockFrames[idx]
             end
-            anchors[unit] = anchor
+            if not anchor then return end
 
-            if not drStates[unit] then drStates[unit] = {} end
-            local state = drStates[unit]
+            if not testStates[unit] then testStates[unit] = {} end
+            local state = testStates[unit]
 
-            -- Refresh expired test data
             local anyActive = false
             for _, cs in pairs(state) do
                 if cs.resetAt and cs.resetAt > now then anyActive = true end
             end
             if not anyActive then
                 for _, td in ipairs(testData) do
-                    if not selfDRdb.categories or selfDRdb.categories[td.cat] ~= false then
-                        state[td.cat] = {
-                            count = td.count,
-                            icon = td.icon,
-                            resetAt = now + td.resetIn + (idx - 1) * 2,
-                        }
-                    end
+                    state[td.cat] = {
+                        count = td.count,
+                        icon = td.icon,
+                        resetAt = now + td.resetIn + (idx - 1) * 2,
+                    }
                 end
             end
 
-            RenderUnit(unit, now)
+            local w = GetOrCreateWidget(unit)
+            w:ClearAllPoints()
+            w:SetPoint("CENTER", anchor, "CENTER", selfDRdb.posX or 0, selfDRdb.posY or 0)
+            w:SetFrameStrata("HIGH")
+            w:SetFrameLevel(200)
+
+            local shown = 0
+            for _, cat in ipairs(CAT_ORDER) do
+                local cs = state[cat]
+                if cs and cs.resetAt and cs.resetAt > now then
+                    shown = shown + 1
+                    local f = w.icons[shown]
+                    if f then
+                        f:SetSize(size, size)
+                        f:ClearAllPoints()
+                        local offset = (shown - 1) * (size + spacing)
+                        if grow == 4 then f:SetPoint("CENTER", w, "CENTER", -offset, 0)
+                        elseif grow == 3 then f:SetPoint("CENTER", w, "CENTER", offset, 0)
+                        elseif grow == 1 then f:SetPoint("CENTER", w, "CENTER", 0, -offset)
+                        else f:SetPoint("CENTER", w, "CENTER", 0, offset) end
+
+                        f.tex:SetTexture(cs.icon)
+                        f.cd:SetCooldown(cs.resetAt - DR_RESET_TIME, DR_RESET_TIME)
+                        f.text:SetFont("Fonts\\FRIZQT__.TTF", fontSize, "OUTLINE")
+                        f.text:SetFormattedText("%d", math.ceil(math.max(0, cs.resetAt - now)))
+                        if cs.count <= 1 then
+                            SetIconBorderColor(f, 0, 1, 0, 1)
+                        else
+                            SetIconBorderColor(f, 1, 0, 0, 1)
+                        end
+                        f:Show()
+                    end
+                end
+            end
+            for i = shown + 1, #w.icons do w.icons[i]:Hide() end
+            if shown > 0 then w:Show() else w:Hide() end
         end
     end
 
@@ -566,10 +605,11 @@ function sArenaMixin:HideTestSelfDR()
         self.selfDRTestTicker = nil
     end
     for _, unit in ipairs(TEST_UNITS) do
-        drStates[unit] = nil
-        activeLoC[unit] = nil
         local w = widgets[unit]
-        if w then w:Hide() end
+        if w then
+            for _, icon in ipairs(w.icons) do icon:Hide() end
+            w:Hide()
+        end
     end
     if testMockContainer then testMockContainer:Hide() end
     for _, f in ipairs(testMockFrames) do f:Hide() end
