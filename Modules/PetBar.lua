@@ -134,10 +134,18 @@ function sArenaFrameMixin:RefreshPetBar()
         .. " dead=" .. tostring(dead) .. " hasPoints=" .. tostring(hasPoints)
         .. " visible=" .. tostring(self.PetBar:IsShown()))
 
-    if health == 0 or dead then
-        self.PetBar:Hide()
-        return
+    local healthIsSecret = issecretvalue and issecretvalue(health)
+    local deadIsSecret = issecretvalue and issecretvalue(dead)
+
+    if not healthIsSecret and not deadIsSecret then
+        if health == 0 and dead then
+            self.PetBar:Hide()
+            return
+        end
     end
+
+    if maxHealth == 0 then maxHealth = 100 end
+    if health == 0 and not dead then health = maxHealth end
 
     self.PetBar.HealthBar:SetMinMaxValues(0, maxHealth)
     self.PetBar.HealthBar:SetValue(health)
@@ -167,6 +175,15 @@ function sArenaFrameMixin:RefreshPetBar()
     end
 
     self:UpdatePetBarHealthText()
+
+    if self.PetBar:GetNumPoints() == 0 then
+        local w = petSettings.width or 100
+        local h = petSettings.height or 20
+        self.PetBar:SetSize(w, h)
+        self.PetBar:SetScale(petSettings.scale or 1)
+        self.PetBar:SetPoint("CENTER", self, "CENTER", petSettings.posX or 0, petSettings.posY or -30)
+    end
+
     self.PetBar:Show()
 end
 
