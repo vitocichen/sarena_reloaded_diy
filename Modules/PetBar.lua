@@ -312,7 +312,11 @@ function sArenaMixin:UpdatePetBarSettings(db, info, val)
                 petBar.dragSetup = true
             end
 
-            frame:RefreshPetBar()
+            if self.testMode then
+                frame:ShowTestPetBar()
+            else
+                frame:RefreshPetBar()
+            end
         end
     end
 end
