@@ -1093,36 +1093,30 @@ function sArenaMixin:GetLayoutOptionsTable(layoutName)
                 end
             end,
             args = {
+                drFrameEnabled = {
+                    order = 0.1,
+                    name = L["DR_FrameEnabled"],
+                    desc = L["DR_FrameEnabled_Desc"],
+                    type = "toggle",
+                    width = "full",
+                    get = function(info)
+                        return info.handler.db.profile.layoutSettings[layoutName].drFrameEnabled ~= false
+                    end,
+                    set = function(info, val)
+                        info.handler.db.profile.layoutSettings[layoutName].drFrameEnabled = val
+                        self:UpdateDRSettings(info.handler.db.profile.layoutSettings[layoutName].dr)
+                        info.handler:Test()
+                    end,
+                },
                 options = {
                     order = 0.2,
                     name = L["Options"],
                     type = "group",
                     inline = true,
+                    disabled = function(info)
+                        return info.handler.db.profile.layoutSettings[layoutName].drFrameEnabled == false
+                    end,
                     args = {
-                        drAnchorMode = {
-                            order = 0.1,
-                            name = L["DR_AnchorMode"],
-                            desc = L["DR_AnchorMode_Desc"],
-                            type = "select",
-                            style = "dropdown",
-                            width = 1.5,
-                            values = {
-                                [1] = L["DR_AnchorMode_Frame"],
-                                [2] = L["DR_AnchorMode_Nameplate"],
-                                [3] = L["DR_AnchorMode_Both"],
-                            },
-                            get = function(info)
-                                return info.handler.db.profile.layoutSettings[layoutName].drAnchorMode or 1
-                            end,
-                            set = function(info, val)
-                                info.handler.db.profile.layoutSettings[layoutName].drAnchorMode = val
-                                self:UpdateDRSettings(info.handler.db.profile.layoutSettings[layoutName].dr)
-                                if info.handler.db.profile.layoutSettings[layoutName].drNameplate then
-                                    self:UpdateNameplateDRSettings(info.handler.db.profile.layoutSettings[layoutName].drNameplate)
-                                end
-                                info.handler:Test()
-                            end,
-                        },
                         fixedPositions = {
                             order = 0.5,
                             name  = L["DR_FixedPositions"],
@@ -1273,6 +1267,9 @@ function sArenaMixin:GetLayoutOptionsTable(layoutName)
                     name = L["Positioning"],
                     type = "group",
                     inline = true,
+                    disabled = function(info)
+                        return info.handler.db.profile.layoutSettings[layoutName].drFrameEnabled == false
+                    end,
                     args = {
                         posX = {
                             order = 1,
@@ -1320,6 +1317,9 @@ function sArenaMixin:GetLayoutOptionsTable(layoutName)
                     name = L["Sizing"],
                     type = "group",
                     inline = true,
+                    disabled = function(info)
+                        return info.handler.db.profile.layoutSettings[layoutName].drFrameEnabled == false
+                    end,
                     args = {
                         size = {
                             order = 1,
@@ -1365,6 +1365,9 @@ function sArenaMixin:GetLayoutOptionsTable(layoutName)
                     type = "group",
                     inline = true,
                     hidden = function() return isMidnight end,
+                    disabled = function(info)
+                        return info.handler.db.profile.layoutSettings[layoutName].drFrameEnabled == false
+                    end,
                     args = {},
                 },
             },
@@ -3426,10 +3429,6 @@ function sArenaMixin:GetLayoutOptionsTable(layoutName)
         order = 6.5,
         name = L["Category_DRNameplate"],
         type = "group",
-        hidden = function(info)
-            local mode = info.handler.db.profile.layoutSettings[layoutName].drAnchorMode or 1
-            return mode < 2
-        end,
         get = function(info)
             local hb = info.handler.db.profile.layoutSettings[layoutName].drNameplate
             return hb and hb[info[#info]]
@@ -3443,11 +3442,31 @@ function sArenaMixin:GetLayoutOptionsTable(layoutName)
             self:UpdateNameplateDRSettings(hb, info, val)
         end,
         args = {
+            drNameplateEnabled = {
+                order = 0,
+                name = L["DR_NameplateEnabled"],
+                desc = L["DR_NameplateEnabled_Desc"],
+                type = "toggle",
+                width = "full",
+                get = function(info)
+                    return info.handler.db.profile.layoutSettings[layoutName].drNameplateEnabled or false
+                end,
+                set = function(info, val)
+                    info.handler.db.profile.layoutSettings[layoutName].drNameplateEnabled = val
+                    if info.handler.db.profile.layoutSettings[layoutName].drNameplate then
+                        self:UpdateNameplateDRSettings(info.handler.db.profile.layoutSettings[layoutName].drNameplate)
+                    end
+                    info.handler:Test()
+                end,
+            },
             positioning = {
                 order = 1,
                 name = L["Positioning"],
                 type = "group",
                 inline = true,
+                disabled = function(info)
+                    return not info.handler.db.profile.layoutSettings[layoutName].drNameplateEnabled
+                end,
                 args = {
                     posX = {
                         order = 1,
@@ -3483,6 +3502,9 @@ function sArenaMixin:GetLayoutOptionsTable(layoutName)
                 name = L["Sizing"],
                 type = "group",
                 inline = true,
+                disabled = function(info)
+                    return not info.handler.db.profile.layoutSettings[layoutName].drNameplateEnabled
+                end,
                 args = {
                     size = {
                         order = 1,
@@ -3544,6 +3566,9 @@ function sArenaMixin:GetLayoutOptionsTable(layoutName)
                 name = L["DR_HB_Effects"],
                 type = "group",
                 inline = true,
+                disabled = function(info)
+                    return not info.handler.db.profile.layoutSettings[layoutName].drNameplateEnabled
+                end,
                 args = {
                     immuneGlow = {
                         order = 1,

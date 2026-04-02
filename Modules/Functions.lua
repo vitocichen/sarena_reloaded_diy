@@ -394,6 +394,26 @@ function sArenaMixin:DatabaseCleanup(db)
         end
         db.profile.dbClean2 = true
     end
+
+    -- Migrate drAnchorMode to drFrameEnabled/drNameplateEnabled
+    if db.profile.layoutSettings then
+        for _, layoutSettings in pairs(db.profile.layoutSettings) do
+            if layoutSettings.drAnchorMode ~= nil then
+                local mode = layoutSettings.drAnchorMode
+                if mode == 1 then
+                    layoutSettings.drFrameEnabled = true
+                    layoutSettings.drNameplateEnabled = false
+                elseif mode == 2 then
+                    layoutSettings.drFrameEnabled = false
+                    layoutSettings.drNameplateEnabled = true
+                elseif mode == 3 then
+                    layoutSettings.drFrameEnabled = true
+                    layoutSettings.drNameplateEnabled = true
+                end
+                layoutSettings.drAnchorMode = nil
+            end
+        end
+    end
 end
 
 -- function sArenaMixin:ToggleObjectivesFrame(instanceType)
@@ -489,30 +509,23 @@ function sArenaMixin:InitializeMidnightDRFrames()
                     sArenaDRFrame.blizzFrame = blizzDRFrame
 
                     hooksecurefunc(blizzDRFrame.Icon, "SetTexture", function(_, texture)
-                        -- [DEBUG] Secret value probe - remove after testing
-                        if texture ~= nil then
-                            local isSecret = issecretvalue and issecretvalue(texture) or false
-                            print("|cff00ff00[sArena DR Probe]|r texture=" .. tostring(texture) .. " isSecret=" .. tostring(isSecret) .. " type=" .. type(texture))
-                        end
-                        local mode = self.layoutdb and self.layoutdb.drAnchorMode or 1
-                        if mode ~= 2 then
+                        if self.layoutdb and self.layoutdb.drFrameEnabled ~= false then
                             sArenaDRFrame.Icon:SetTexture(texture)
                         end
-                        if mode >= 2 then
+                        if self.layoutdb and self.layoutdb.drNameplateEnabled then
                             local hbf = arenaFrame.drFramesNP and arenaFrame.drFramesNP[drIndex]
                             if hbf then hbf.Icon:SetTexture(texture) end
                         end
                     end)
 
                     hooksecurefunc(blizzDRFrame, "Show", function()
-                        local mode = self.layoutdb and self.layoutdb.drAnchorMode or 1
-                        if mode ~= 2 then
+                        if self.layoutdb and self.layoutdb.drFrameEnabled ~= false then
                             sArenaDRFrame:Show()
                             arenaFrame:UpdateDRPositions()
                         else
                             sArenaDRFrame:Hide()
                         end
-                        if mode >= 2 then
+                        if self.layoutdb and self.layoutdb.drNameplateEnabled then
                             local hbf = arenaFrame.drFramesNP and arenaFrame.drFramesNP[drIndex]
                             if hbf then
                                 hbf:Show()

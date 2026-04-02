@@ -16,7 +16,7 @@ function sArenaFrameMixin:CreatePetBar()
     local id = self:GetID()
     local petUnit = "arenapet" .. id
 
-    local container = CreateFrame("Frame", "sArenaPetBarContainer" .. id, self)
+    local container = CreateFrame("Frame", "sArenaPetBarContainer" .. id, UIParent)
     container:SetSize(100, 20)
     container:SetFrameStrata("MEDIUM")
     container:SetFrameLevel(self:GetFrameLevel() + 1)
@@ -128,12 +128,6 @@ function sArenaFrameMixin:RefreshPetBar()
     local dead = UnitIsDeadOrGhost(petUnit)
     local hasPoints = self.PetBar:GetNumPoints() > 0
 
-    -- [DEBUG] Pet refresh probe
-    print("|cffff00ff[PetBar SHOW]|r " .. self.unit .. " pet=" .. petUnit
-        .. " hp=" .. tostring(health) .. "/" .. tostring(maxHealth)
-        .. " dead=" .. tostring(dead) .. " hasPoints=" .. tostring(hasPoints)
-        .. " visible=" .. tostring(self.PetBar:IsShown()))
-
     local healthIsSecret = issecretvalue and issecretvalue(health)
     local deadIsSecret = issecretvalue and issecretvalue(dead)
 
@@ -184,18 +178,7 @@ function sArenaFrameMixin:RefreshPetBar()
         self.PetBar:SetPoint("CENTER", self, "CENTER", petSettings.posX or 0, petSettings.posY or -30)
     end)
 
-    if not ok then
-        print("|cffff0000[PetBar ERROR]|r " .. self.unit .. " " .. tostring(err))
-    end
-
     self.PetBar:Show()
-
-    -- [DEBUG] Confirm show
-    print("|cff00ff00[PetBar OK]|r " .. self.unit
-        .. " points=" .. self.PetBar:GetNumPoints()
-        .. " shown=" .. tostring(self.PetBar:IsShown())
-        .. " parentShown=" .. tostring(self:IsShown())
-        .. " parentAlpha=" .. tostring(self:GetAlpha()))
 end
 
 function sArenaFrameMixin:UpdatePetBarHealthText()

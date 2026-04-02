@@ -259,11 +259,10 @@ function sArenaFrameMixin:FindDR(combatEvent, spellID)
 		end
 	end
 
-	local mode = self.parent.layoutdb and self.parent.layoutdb.drAnchorMode or 1
-	if mode == 2 then
+	if self.parent.layoutdb and self.parent.layoutdb.drFrameEnabled == false then
 		frame:Hide()
 	end
-	if mode >= 2 and self.drFramesNP then
+	if self.parent.layoutdb and self.parent.layoutdb.drNameplateEnabled and self.drFramesNP then
 		local catIndex
 		for ci, cn in ipairs(drCategories) do
 			if cn == category then catIndex = ci; break end

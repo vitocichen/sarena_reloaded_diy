@@ -65,7 +65,8 @@ layout.defaultSettings = {
         growthDirection = 4,
         thinPixelBorder = true,
     },
-    drAnchorMode = 1,
+    drFrameEnabled = true,
+    drNameplateEnabled = false,
     drNameplate = {
         posX = 2,
         posY = 0,

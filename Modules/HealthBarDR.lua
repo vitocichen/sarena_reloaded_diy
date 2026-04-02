@@ -341,15 +341,13 @@ function sArenaFrameMixin:UpdateNameplateDRPositions()
     local posX = db.posX or 0
     local posY = db.posY or 0
 
+    if not layoutdb.drNameplateEnabled then
+        for _, f in ipairs(self.drFramesNP) do f:Hide() end
+        return
+    end
+
     local arenaUnit = "arena" .. self:GetID()
     local anchor = self.parent:GetNameplateAnchorForArena(arenaUnit)
-
-    -- [DEBUG] Nameplate anchor probe
-    local numShown = 0
-    for _, f in ipairs(self.drFramesNP) do if f:IsShown() then numShown = numShown + 1 end end
-    if numShown > 0 or anchor then
-        print("|cffff8800[NP-DR]|r " .. arenaUnit .. " anchor=" .. tostring(anchor ~= nil) .. " shown=" .. numShown)
-    end
 
     if not anchor or IsForbidden(anchor) then
         for _, f in ipairs(self.drFramesNP) do f:Hide() end
@@ -537,9 +535,18 @@ function sArenaMixin:ShowTestNameplateDR()
                 end
             end
 
+            f:SetAlpha(db.alpha or 1.0)
             f.Icon:SetTexture(testTextures[n])
             f.Cooldown:SetCooldown(now, math.random(12, 30))
             f.Cooldown:SetHideCountdownNumbers(db.hideText and true or false)
+
+            if not f.CDText then
+                for _, region in next, { f.Cooldown:GetRegions() } do
+                    if region:GetObjectType() == "FontString" then
+                        f.CDText = region; break
+                    end
+                end
+            end
             if f.CDText and not db.hideText then
                 local fontFile = f.CDText.fontFile or select(1, f.CDText:GetFont())
                 local flags = f.CDText.fontFlags or select(3, f.CDText:GetFont())
@@ -547,7 +554,15 @@ function sArenaMixin:ShowTestNameplateDR()
                     pcall(function() f.CDText:SetFont(fontFile, db.fontSize or 12, flags or "OUTLINE") end)
                 end
             end
+
             frame:SetNameplateDRBorderColor(n, testColors[n][1], testColors[n][2], testColors[n][3])
+            local borderSz = db.borderSize or 1
+            if f.BorderTextures then
+                for _, tex in ipairs(f.BorderTextures) do
+                    if tex:GetHeight() <= 2 then tex:SetHeight(borderSz) end
+                    if tex:GetWidth() <= 2 then tex:SetWidth(borderSz) end
+                end
+            end
             f:Show()
             prevFrame = f
         end

@@ -970,9 +970,8 @@ function sArenaMixin:Test()
             end
         end
 
-        -- Hide frame DR icons when anchor mode is "healthbar only"
-        local drAnchorMode = db.profile.layoutSettings[db.profile.currentLayout].drAnchorMode or 1
-        if drAnchorMode == 2 then
+        -- Hide frame DR icons when frame DR is disabled
+        if db.profile.layoutSettings[db.profile.currentLayout].drFrameEnabled == false then
             local useDrFrames = frame.drFrames ~= nil
             local drList2 = frame.drFrames or self.drCategories
             if drList2 then
@@ -1128,8 +1127,7 @@ function sArenaMixin:Test()
     end
 
     -- Nameplate DR test: show on nearest nameplate
-    local drAnchorModeGlobal = db.profile.layoutSettings[db.profile.currentLayout].drAnchorMode or 1
-    if drAnchorModeGlobal >= 2 then
+    if db.profile.layoutSettings[db.profile.currentLayout].drNameplateEnabled then
         self:ShowTestNameplateDR()
     else
         self:HideTestNameplateDR()
