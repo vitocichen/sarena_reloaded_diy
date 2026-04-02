@@ -82,7 +82,7 @@ Implement the full DR customization feature:
   - Modify SetTexture hook: lookup category from texture via reverse map, apply icon override and category filter
   - Modify Show hook: skip showing if category is disabled
   - Modify Hide hook: clear `.drCategory` tag
-2. `**Config.lua**`:
+2. `**Config.lua`**:
   - Line 5617: Remove `disabled = function() return isMidnight end` from categories group
   - Line 5727: Remove `disabled = function() return isMidnight end` from dynamicIcons group
   - Add Midnight-specific description notes in both groups explaining texture-matching limitation
