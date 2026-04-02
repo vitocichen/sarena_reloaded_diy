@@ -440,25 +440,22 @@ local function CreateMockTestFrames()
     if testMockContainer then return end
 
     local _, playerClass = UnitClass("player")
-    local classColor = RAID_CLASS_COLORS[playerClass] or NORMAL_FONT_COLOR
-    local L = sArenaMixin.L
+    local colour = RAID_CLASS_COLORS[playerClass] or NORMAL_FONT_COLOR
+
+    -- Exact MiniCC dimensions and style
+    local width, height = 144, 72
+    local padding = 10
 
     testMockContainer = CreateFrame("Frame", "sArenaSelfDR_TestContainer", UIParent)
+    testMockContainer:SetSize(width + padding * 2, height * 3 + padding * 2)
     testMockContainer:SetClampedToScreen(true)
     testMockContainer:EnableMouse(true)
     testMockContainer:SetMovable(true)
     testMockContainer:RegisterForDrag("LeftButton")
     testMockContainer:SetScript("OnDragStart", function(s) s:StartMoving() end)
     testMockContainer:SetScript("OnDragStop", function(s) s:StopMovingOrSizing() end)
+    testMockContainer:SetPoint("CENTER", UIParent, "CENTER", -450, 0)
     testMockContainer:Hide()
-
-    local width, height, padding = 140, 36, 4
-    local labels = {
-        UnitName("player") or "Player",
-        (L and L["SelfDR_TestParty1"] or "party1"),
-        (L and L["SelfDR_TestParty2"] or "party2"),
-    }
-    local hpValues = { 100, 75, 50 }
 
     for i = 1, 3 do
         local f = CreateFrame("Frame", "sArenaSelfDR_TestFrame" .. i, testMockContainer, "BackdropTemplate")
@@ -466,50 +463,41 @@ local function CreateMockTestFrames()
         f:SetBackdrop({
             bgFile = "Interface\\Buttons\\WHITE8X8",
             edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
-            edgeSize = 10,
+            edgeSize = 12,
             insets = { left = 2, right = 2, top = 2, bottom = 2 },
         })
-        f:SetBackdropColor(classColor.r * 0.4, classColor.g * 0.4, classColor.b * 0.4, 0.9)
+        f:SetBackdropColor(colour.r, colour.g, colour.b, 0.9)
         f:SetBackdropBorderColor(0, 0, 0, 1)
 
-        local hp = CreateFrame("StatusBar", nil, f)
-        hp:SetPoint("TOPLEFT", 3, -3)
-        hp:SetPoint("BOTTOMRIGHT", -3, 3)
-        hp:SetStatusBarTexture("Interface\\TargetingFrame\\UI-StatusBar")
-        hp:SetStatusBarColor(classColor.r, classColor.g, classColor.b, 0.8)
-        hp:SetMinMaxValues(0, 100)
-        hp:SetValue(hpValues[i])
-
-        local text = hp:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-        text:SetPoint("CENTER")
-        text:SetText(labels[i])
-        text:SetTextColor(1, 1, 1, 1)
+        f.Text = f:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
+        f.Text:SetPoint("CENTER")
+        f.Text:SetText(("party%d"):format(i))
+        f.Text:SetTextColor(1, 1, 1)
 
         f:ClearAllPoints()
-        f:SetPoint("TOP", testMockContainer, "TOP", 0, -(i - 1) * (height + padding))
+        f:SetPoint("TOP", testMockContainer, "TOP", 0, (i - 1) * -height - padding)
 
         f.unit = TEST_UNITS[i]
         testMockFrames[i] = f
     end
-
-    testMockContainer:SetSize(width, height * 3 + padding * 2)
-    testMockContainer:SetPoint("LEFT", UIParent, "CENTER", -350, 0)
-
-    local hint = testMockContainer:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-    hint:SetPoint("TOP", testMockContainer, "BOTTOM", 0, -3)
-    hint:SetText("|cff888888" .. (L and L["SelfDR_MockLabel"] or "Mock Party Frame (drag to move)") .. "|r")
 end
 
 function sArenaMixin:ShowTestSelfDR()
-    local db = self.db and self.db.profile and self.db.profile.selfDR
-    if not db or not db.enabled then
+    local selfDRdb = self.db and self.db.profile and self.db.profile.selfDR
+    if not selfDRdb or not selfDRdb.enabled then
+        print("|cffff8800[SelfDR Test]|r EXIT: not enabled")
         self:HideTestSelfDR()
         return
     end
 
     self.selfDRTestMode = true
+
+    -- Stop the real ticker to prevent interference
+    if ticker then ticker:Cancel(); ticker = nil end
+
     CreateMockTestFrames()
 
+    -- Use real party frames if visible, otherwise mock frames
     local hasRealFrames = false
     for _, unit in ipairs(TEST_UNITS) do
         local a = FindPartyAnchor(unit)
@@ -521,63 +509,55 @@ function sArenaMixin:ShowTestSelfDR()
         for _, f in ipairs(testMockFrames) do f:Show() end
     end
 
-    local now = GetTime()
     local testData = {
         { cat = "stun",    icon = CAT_FALLBACK_ICON.stun,    count = 2, resetIn = 14 },
         { cat = "incap",   icon = CAT_FALLBACK_ICON.incap,   count = 1, resetIn = 10 },
         { cat = "confuse", icon = CAT_FALLBACK_ICON.confuse,  count = 1, resetIn = 16 },
     }
 
-    for idx, unit in ipairs(TEST_UNITS) do
-        local anchor = FindPartyAnchor(unit)
-        if not anchor and testMockFrames[idx] then
-            anchor = testMockFrames[idx]
-        end
-        if not anchor then anchor = testMockFrames[1] end
-        anchors[unit] = anchor
-
-        drStates[unit] = {}
-        for _, td in ipairs(testData) do
-            if not db.categories or db.categories[td.cat] ~= false then
-                drStates[unit][td.cat] = {
-                    count = td.count,
-                    icon = td.icon,
-                    resetAt = now + td.resetIn + (idx - 1) * 2,
-                }
+    local function RefreshTestDR()
+        local now = GetTime()
+        for idx, unit in ipairs(TEST_UNITS) do
+            local anchor = FindPartyAnchor(unit)
+            if not anchor and testMockFrames[idx] then
+                anchor = testMockFrames[idx]
             end
-        end
+            anchors[unit] = anchor
 
-        RenderUnit(unit, now)
-    end
+            if not drStates[unit] then drStates[unit] = {} end
+            local state = drStates[unit]
 
-    if self.selfDRTestTicker then self.selfDRTestTicker:Cancel() end
-    self.selfDRTestTicker = C_Timer.NewTicker(0.5, function()
-        if not self.testMode then
-            self:HideTestSelfDR()
-            return
-        end
-        local n = GetTime()
-        for idx2, unit2 in ipairs(TEST_UNITS) do
-            local state = drStates[unit2]
-            if state then
-                local anyActive = false
-                for _, cs in pairs(state) do
-                    if cs.resetAt and cs.resetAt > n then anyActive = true end
-                end
-                if not anyActive then
-                    for _, td in ipairs(testData) do
-                        if not db.categories or db.categories[td.cat] ~= false then
-                            state[td.cat] = {
-                                count = td.count,
-                                icon = td.icon,
-                                resetAt = n + td.resetIn + (idx2 - 1) * 2,
-                            }
-                        end
+            -- Refresh expired test data
+            local anyActive = false
+            for _, cs in pairs(state) do
+                if cs.resetAt and cs.resetAt > now then anyActive = true end
+            end
+            if not anyActive then
+                for _, td in ipairs(testData) do
+                    if not selfDRdb.categories or selfDRdb.categories[td.cat] ~= false then
+                        state[td.cat] = {
+                            count = td.count,
+                            icon = td.icon,
+                            resetAt = now + td.resetIn + (idx - 1) * 2,
+                        }
                     end
                 end
             end
-            RenderUnit(unit2, n)
+
+            RenderUnit(unit, now)
         end
+    end
+
+    RefreshTestDR()
+    print("|cff00ff00[SelfDR Test]|r started, mock=" .. tostring(not hasRealFrames))
+
+    if self.selfDRTestTicker then self.selfDRTestTicker:Cancel() end
+    self.selfDRTestTicker = C_Timer.NewTicker(0.5, function()
+        if not self.testMode and not self.selfDRTestMode then
+            self:HideTestSelfDR()
+            return
+        end
+        RefreshTestDR()
     end)
 end
 
@@ -589,9 +569,18 @@ function sArenaMixin:HideTestSelfDR()
     end
     for _, unit in ipairs(TEST_UNITS) do
         drStates[unit] = nil
+        activeLoC[unit] = nil
         local w = widgets[unit]
         if w then w:Hide() end
     end
     if testMockContainer then testMockContainer:Hide() end
     for _, f in ipairs(testMockFrames) do f:Hide() end
+
+    -- Restart real ticker if selfDR is enabled and not in test
+    local selfDRdb = sArenaMixin.db and sArenaMixin.db.profile and sArenaMixin.db.profile.selfDR
+    if selfDRdb and selfDRdb.enabled and InArena() then
+        if not ticker then
+            ticker = C_Timer.NewTicker(SCAN_INTERVAL, OnTick)
+        end
+    end
 end
