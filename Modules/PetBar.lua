@@ -10,6 +10,10 @@ local UnitName = UnitName
 local UnitIsDeadOrGhost = UnitIsDeadOrGhost
 local floor = math.floor
 
+local function IsSec(v)
+    return issecretvalue and issecretvalue(v) or false
+end
+
 function sArenaFrameMixin:CreatePetBar()
     if self.PetBar then return end
 
@@ -20,7 +24,7 @@ function sArenaFrameMixin:CreatePetBar()
     container:SetSize(100, 20)
     container:SetFrameStrata("MEDIUM")
     container:SetFrameLevel(self:GetFrameLevel() + 1)
-    container:Hide()
+    container:SetAlpha(0)
 
     local healthBar = CreateFrame("StatusBar", "sArenaPetBarHealth" .. id, container)
     healthBar:SetAllPoints()
@@ -47,8 +51,9 @@ function sArenaFrameMixin:CreatePetBar()
     nameText:SetJustifyH("LEFT")
     container.NameText = nameText
 
-    local secure = CreateFrame("Button", "sArenaPetBarSecure" .. id, container, "SecureActionButtonTemplate")
-    secure:SetAllPoints()
+    -- Secure button parented to UIParent (NOT container) to avoid combat lockdown blocking container ops
+    local secure = CreateFrame("Button", "sArenaPetBarSecure" .. id, UIParent, "SecureActionButtonTemplate")
+    secure:SetAllPoints(container)
     secure:SetAttribute("*type1", "target")
     secure:SetAttribute("*type2", "focus")
     secure:SetAttribute("unit", petUnit)
@@ -67,27 +72,31 @@ function sArenaFrameMixin:CreatePetBar()
         if event == "UNIT_PET" then
             self:RefreshPetBar()
         elseif eventUnit == petUnit then
-            if not UnitExists(petUnit) or UnitIsDeadOrGhost(petUnit) then
-                container:Hide()
-                return
-            end
-            if not container:IsShown() then
+            pcall(function()
+                if not UnitExists(petUnit) or UnitIsDeadOrGhost(petUnit) then
+                    container:SetAlpha(0)
+                    return
+                end
+            end)
+            if container:GetAlpha() == 0 then
                 self:RefreshPetBar()
                 return
             end
-            if event == "UNIT_HEALTH" then
-                local health = UnitHealth(petUnit)
-                if health == 0 then
-                    container:Hide()
-                    return
+            pcall(function()
+                if event == "UNIT_HEALTH" then
+                    local health = UnitHealth(petUnit)
+                    if not IsSec(health) and health == 0 then
+                        container:SetAlpha(0)
+                        return
+                    end
+                    container.HealthBar:SetValue(health)
+                    self:UpdatePetBarHealthText()
+                elseif event == "UNIT_MAXHEALTH" then
+                    container.HealthBar:SetMinMaxValues(0, UnitHealthMax(petUnit))
+                    container.HealthBar:SetValue(UnitHealth(petUnit))
+                    self:UpdatePetBarHealthText()
                 end
-                container.HealthBar:SetValue(health)
-                self:UpdatePetBarHealthText()
-            elseif event == "UNIT_MAXHEALTH" then
-                container.HealthBar:SetMinMaxValues(0, UnitHealthMax(petUnit))
-                container.HealthBar:SetValue(UnitHealth(petUnit))
-                self:UpdatePetBarHealthText()
-            end
+            end)
         end
     end)
 
@@ -101,43 +110,41 @@ function sArenaFrameMixin:RefreshPetBar()
 
     local db = self.parent.db
     if not db then
-        self.PetBar:Hide()
+        self.PetBar:SetAlpha(0)
         return
     end
 
     local layoutName = db.profile.currentLayout
     local layoutSettings = db.profile.layoutSettings[layoutName]
     if not layoutSettings or not layoutSettings.petBar or not layoutSettings.petBar.enabled then
-        self.PetBar:Hide()
+        self.PetBar:SetAlpha(0)
         return
     end
 
     local petUnit = self.PetBar.petUnit
     local exists = UnitExists(petUnit)
-    if issecretvalue and issecretvalue(exists) then
-        exists = true
-    end
+    if IsSec(exists) then exists = true end
 
     if not exists then
-        self.PetBar:Hide()
+        self.PetBar:SetAlpha(0)
         return
     end
 
     local petSettings = layoutSettings.petBar
 
-    -- Health check: all UnitHealth/UnitIsDeadOrGhost can return secret values on Midnight
+    -- Health check — all Unit* calls can return secret values on Midnight
     local skipShow = false
     pcall(function()
         local health = UnitHealth(petUnit)
         local maxHealth = UnitHealthMax(petUnit)
         local dead = UnitIsDeadOrGhost(petUnit)
 
-        local hSec = issecretvalue and issecretvalue(health)
-        local mSec = issecretvalue and issecretvalue(maxHealth)
-        local dSec = issecretvalue and issecretvalue(dead)
+        local hSec = IsSec(health)
+        local mSec = IsSec(maxHealth)
+        local dSec = IsSec(dead)
 
         if not hSec and not dSec and health == 0 and dead then
-            self.PetBar:Hide()
+            self.PetBar:SetAlpha(0)
             skipShow = true
             return
         end
@@ -153,17 +160,15 @@ function sArenaFrameMixin:RefreshPetBar()
     if skipShow then return end
 
     -- Position
-    pcall(function()
-        self.PetBar:SetSize(petSettings.width or 100, petSettings.height or 20)
-        self.PetBar:SetScale(petSettings.scale or 1)
-        self.PetBar:ClearAllPoints()
-        self.PetBar:SetPoint("CENTER", self, "CENTER", petSettings.posX or 0, petSettings.posY or -30)
-    end)
+    self.PetBar:SetSize(petSettings.width or 100, petSettings.height or 20)
+    self.PetBar:SetScale(petSettings.scale or 1)
+    self.PetBar:ClearAllPoints()
+    self.PetBar:SetPoint("CENTER", self, "CENTER", petSettings.posX or 0, petSettings.posY or -30)
 
     -- Name
     pcall(function()
         local name = UnitName(petUnit)
-        if name and petSettings.showName and not (issecretvalue and issecretvalue(name)) then
+        if name and petSettings.showName and not IsSec(name) then
             self.PetBar.NameText:SetText(name)
             self.PetBar.NameText:Show()
         else
@@ -176,7 +181,7 @@ function sArenaFrameMixin:RefreshPetBar()
         local c = petSettings.color or {0, 1, 0, 1}
         if petSettings.classColor then
             local _, cls = UnitClass(petUnit)
-            if cls and not (issecretvalue and issecretvalue(cls)) and RAID_CLASS_COLORS[cls] then
+            if cls and not IsSec(cls) and RAID_CLASS_COLORS[cls] then
                 local cc = RAID_CLASS_COLORS[cls]
                 self.PetBar.HealthBar:SetStatusBarColor(cc.r, cc.g, cc.b, 1)
                 return
@@ -185,19 +190,11 @@ function sArenaFrameMixin:RefreshPetBar()
         self.PetBar.HealthBar:SetStatusBarColor(c[1], c[2], c[3], c[4] or 1)
     end)
 
-    self.PetBar:Show()
-
-    -- [DEBUG] Remove after confirming fix
-    pcall(function()
-        print("|cff00ffff[PetBar OK]|r " .. self.unit
-            .. " pts=" .. self.PetBar:GetNumPoints()
-            .. " shown=" .. tostring(self.PetBar:IsShown())
-            .. " alpha=" .. tostring(self.PetBar:GetAlpha()))
-    end)
+    self.PetBar:SetAlpha(1)
 end
 
 function sArenaFrameMixin:UpdatePetBarHealthText()
-    if not self.PetBar or not self.PetBar:IsShown() then return end
+    if not self.PetBar or self.PetBar:GetAlpha() == 0 then return end
 
     local db = self.parent.db
     if not db then return end
@@ -215,33 +212,37 @@ function sArenaFrameMixin:UpdatePetBarHealthText()
         return
     end
 
-    local petUnit = self.PetBar.petUnit
-    local health = UnitHealth(petUnit)
-    local maxHealth = UnitHealthMax(petUnit)
+    pcall(function()
+        local petUnit = self.PetBar.petUnit
+        local health = UnitHealth(petUnit)
+        local maxHealth = UnitHealthMax(petUnit)
 
-    if petSettings.healthTextPercent then
-        if isMidnight and UnitHealthPercent and CurveConstants then
-            local pct = UnitHealthPercent(petUnit, nil, CurveConstants.ScaleTo100)
-            self.PetBar.HealthText:SetFormattedText("%0.f%%", pct or 0)
-        elseif maxHealth > 0 then
-            self.PetBar.HealthText:SetText(floor(health / maxHealth * 100 + 0.5) .. "%")
+        if IsSec(health) or IsSec(maxHealth) then return end
+
+        if petSettings.healthTextPercent then
+            if isMidnight and UnitHealthPercent and CurveConstants then
+                local pct = UnitHealthPercent(petUnit, nil, CurveConstants.ScaleTo100)
+                self.PetBar.HealthText:SetFormattedText("%0.f%%", pct or 0)
+            elseif maxHealth > 0 then
+                self.PetBar.HealthText:SetText(floor(health / maxHealth * 100 + 0.5) .. "%")
+            else
+                self.PetBar.HealthText:SetText("0%")
+            end
         else
-            self.PetBar.HealthText:SetText("0%")
+            if health >= 1000000 then
+                self.PetBar.HealthText:SetText(string.format("%.1fM", health / 1000000))
+            elseif health >= 1000 then
+                self.PetBar.HealthText:SetText(string.format("%.1fK", health / 1000))
+            else
+                self.PetBar.HealthText:SetText(tostring(health))
+            end
         end
-    else
-        if health >= 1000000 then
-            self.PetBar.HealthText:SetText(string.format("%.1fM", health / 1000000))
-        elseif health >= 1000 then
-            self.PetBar.HealthText:SetText(string.format("%.1fK", health / 1000))
-        else
-            self.PetBar.HealthText:SetText(tostring(health))
-        end
-    end
+    end)
 end
 
 function sArenaFrameMixin:ResetPetBar()
     if not self.PetBar then return end
-    self.PetBar:Hide()
+    self.PetBar:SetAlpha(0)
     self.PetBar:ClearAllPoints()
     self.PetBar.HealthBar:SetStatusBarColor(0, 1, 0, 1)
     self.PetBar.NameText:SetText("")
@@ -257,7 +258,7 @@ function sArenaFrameMixin:ShowTestPetBar()
     local layoutName = db.profile.currentLayout
     local layoutSettings = db.profile.layoutSettings[layoutName]
     if not layoutSettings or not layoutSettings.petBar or not layoutSettings.petBar.enabled then
-        self.PetBar:Hide()
+        self.PetBar:SetAlpha(0)
         return
     end
 
@@ -294,7 +295,7 @@ function sArenaFrameMixin:ShowTestPetBar()
     local c = petSettings.color or {0, 1, 0, 1}
     self.PetBar.HealthBar:SetStatusBarColor(c[1], c[2], c[3], c[4] or 1)
 
-    self.PetBar:Show()
+    self.PetBar:SetAlpha(1)
 end
 
 function sArenaMixin:UpdatePetBarSettings(db, info, val)

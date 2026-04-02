@@ -1224,7 +1224,7 @@ function sArenaMixin:Test()
             for i = 1, self.maxArenaOpponents do
                 local arenaFrame = self["arena" .. i]
                 if arenaFrame and arenaFrame.PetBar then
-                    arenaFrame.PetBar:Hide()
+                    arenaFrame.PetBar:SetAlpha(0)
                 end
                 if arenaFrame and arenaFrame.drFramesNP then
                     arenaFrame:HideAllNameplateDR()
