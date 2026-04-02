@@ -97,10 +97,14 @@ function sArenaFrameMixin:CreatePetBar()
 end
 
 function sArenaFrameMixin:RefreshPetBar()
-    if not self.PetBar then return end
+    if not self.PetBar then
+        print("|cffff8800[PetBar]|r " .. (self.unit or "?") .. " EXIT: no PetBar frame")
+        return
+    end
 
     local db = self.parent.db
     if not db then
+        print("|cffff8800[PetBar]|r " .. self.unit .. " EXIT: no db")
         self.PetBar:Hide()
         return
     end
@@ -108,6 +112,10 @@ function sArenaFrameMixin:RefreshPetBar()
     local layoutName = db.profile.currentLayout
     local layoutSettings = db.profile.layoutSettings[layoutName]
     if not layoutSettings or not layoutSettings.petBar or not layoutSettings.petBar.enabled then
+        print("|cffff8800[PetBar]|r " .. self.unit .. " EXIT: not enabled"
+            .. " ls=" .. tostring(layoutSettings ~= nil)
+            .. " pb=" .. tostring(layoutSettings and layoutSettings.petBar ~= nil)
+            .. " en=" .. tostring(layoutSettings and layoutSettings.petBar and layoutSettings.petBar.enabled))
         self.PetBar:Hide()
         return
     end
@@ -119,9 +127,12 @@ function sArenaFrameMixin:RefreshPetBar()
     end
 
     if not exists then
+        print("|cffff8800[PetBar]|r " .. self.unit .. " EXIT: pet not exists (" .. petUnit .. ")")
         self.PetBar:Hide()
         return
     end
+
+    print("|cff00ff00[PetBar]|r " .. self.unit .. " PASSED all checks, pet=" .. petUnit)
 
     local health = UnitHealth(petUnit)
     local maxHealth = UnitHealthMax(petUnit)
