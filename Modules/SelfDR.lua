@@ -429,3 +429,79 @@ function sArenaMixin:EnableSelfDR()
         wipe(anchors)
     end
 end
+
+function sArenaMixin:ShowTestSelfDR()
+    local db = self.db and self.db.profile and self.db.profile.selfDR
+    if not db or not db.enabled then
+        self:HideTestSelfDR()
+        return
+    end
+
+    local anchor = FindPartyAnchor("player")
+    if not anchor then
+        anchor = _G.PlayerFrame or UIParent
+    end
+
+    anchors["player"] = anchor
+
+    local now = GetTime()
+    local testData = {
+        { cat = "stun",    icon = CAT_FALLBACK_ICON.stun,    count = 2, resetIn = 12 },
+        { cat = "incap",   icon = CAT_FALLBACK_ICON.incap,   count = 1, resetIn = 8 },
+        { cat = "confuse", icon = CAT_FALLBACK_ICON.confuse,  count = 1, resetIn = 14 },
+    }
+
+    drStates["player"] = {}
+    for _, td in ipairs(testData) do
+        if db.categories and db.categories[td.cat] ~= false then
+            drStates["player"][td.cat] = {
+                count = td.count,
+                icon = td.icon,
+                resetAt = now + td.resetIn,
+            }
+        end
+    end
+
+    RenderUnit("player", now)
+
+    if not self.selfDRTestTicker then
+        self.selfDRTestTicker = C_Timer.NewTicker(0.5, function()
+            if not self.testMode then
+                self:HideTestSelfDR()
+                return
+            end
+            local n = GetTime()
+            local state = drStates["player"]
+            if state then
+                local anyActive = false
+                for cat, cs in pairs(state) do
+                    if cs.resetAt and cs.resetAt > n then
+                        anyActive = true
+                    end
+                end
+                if not anyActive then
+                    for _, td in ipairs(testData) do
+                        if db.categories and db.categories[td.cat] ~= false then
+                            drStates["player"][td.cat] = {
+                                count = td.count,
+                                icon = td.icon,
+                                resetAt = n + td.resetIn,
+                            }
+                        end
+                    end
+                end
+            end
+            RenderUnit("player", n)
+        end)
+    end
+end
+
+function sArenaMixin:HideTestSelfDR()
+    if self.selfDRTestTicker then
+        self.selfDRTestTicker:Cancel()
+        self.selfDRTestTicker = nil
+    end
+    drStates["player"] = nil
+    local w = widgets["player"]
+    if w then w:Hide() end
+end

@@ -1133,6 +1133,13 @@ function sArenaMixin:Test()
         self:HideTestNameplateDR()
     end
 
+    -- Self DR test
+    if db.profile.selfDR and db.profile.selfDR.enabled then
+        self:ShowTestSelfDR()
+    else
+        self:HideTestSelfDR()
+    end
+
     local arenaTargetsOnPartyOn = widgetSettings.partyTargetIndicators
         and widgetSettings.partyTargetIndicators.enabled
         and widgetSettings.partyTargetIndicators.arenaOnParty
@@ -1230,6 +1237,7 @@ function sArenaMixin:Test()
                     arenaFrame:HideAllNameplateDR()
                 end
             end
+            self:HideTestSelfDR()
         end)
 
         self:SetupDrag(self.TestTitle, self, nil, "UpdateFrameSettings")
