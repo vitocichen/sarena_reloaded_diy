@@ -1099,6 +1099,30 @@ function sArenaMixin:GetLayoutOptionsTable(layoutName)
                     type = "group",
                     inline = true,
                     args = {
+                        drAnchorMode = {
+                            order = 0.1,
+                            name = L["DR_AnchorMode"],
+                            desc = L["DR_AnchorMode_Desc"],
+                            type = "select",
+                            style = "dropdown",
+                            width = 1.5,
+                            values = {
+                                [1] = L["DR_AnchorMode_Frame"],
+                                [2] = L["DR_AnchorMode_HealthBar"],
+                                [3] = L["DR_AnchorMode_Both"],
+                            },
+                            get = function(info)
+                                return info.handler.db.profile.layoutSettings[layoutName].drAnchorMode or 1
+                            end,
+                            set = function(info, val)
+                                info.handler.db.profile.layoutSettings[layoutName].drAnchorMode = val
+                                self:UpdateDRSettings(info.handler.db.profile.layoutSettings[layoutName].dr)
+                                if info.handler.db.profile.layoutSettings[layoutName].drHealthBar then
+                                    self:UpdateHealthBarDRSettings(info.handler.db.profile.layoutSettings[layoutName].drHealthBar)
+                                end
+                                info.handler:Test()
+                            end,
+                        },
                         fixedPositions = {
                             order = 0.5,
                             name  = L["DR_FixedPositions"],
@@ -3392,6 +3416,89 @@ function sArenaMixin:GetLayoutOptionsTable(layoutName)
                             info.handler:UpdateDRTextPositions(layout.textSettings, info, nil)
                             LibStub("AceConfigRegistry-3.0"):NotifyChange("sArena")
                         end,
+                    },
+                },
+            },
+        },
+    }
+
+    optionsTable.drHealthBar = {
+        order = 6.5,
+        name = L["Category_DRHealthBar"],
+        type = "group",
+        hidden = function(info)
+            local mode = info.handler.db.profile.layoutSettings[layoutName].drAnchorMode or 1
+            return mode < 2
+        end,
+        get = function(info)
+            local hb = info.handler.db.profile.layoutSettings[layoutName].drHealthBar
+            return hb and hb[info[#info]]
+        end,
+        set = function(info, val)
+            local hb = info.handler.db.profile.layoutSettings[layoutName].drHealthBar
+            if not hb then
+                info.handler.db.profile.layoutSettings[layoutName].drHealthBar = {}
+                hb = info.handler.db.profile.layoutSettings[layoutName].drHealthBar
+            end
+            self:UpdateHealthBarDRSettings(hb, info, val)
+        end,
+        args = {
+            positioning = {
+                order = 1,
+                name = L["Positioning"],
+                type = "group",
+                inline = true,
+                args = {
+                    posX = {
+                        order = 1,
+                        name = L["Horizontal"],
+                        type = "range",
+                        min = -300,
+                        max = 300,
+                        softMin = -150,
+                        softMax = 150,
+                        step = 1,
+                    },
+                    posY = {
+                        order = 2,
+                        name = L["Vertical"],
+                        type = "range",
+                        min = -300,
+                        max = 300,
+                        softMin = -150,
+                        softMax = 150,
+                        step = 1,
+                    },
+                    growthDirection = {
+                        order = 3,
+                        name = L["Option_GrowthDirection"],
+                        type = "select",
+                        style = "dropdown",
+                        values = growthValues,
+                    },
+                },
+            },
+            sizing = {
+                order = 2,
+                name = L["Sizing"],
+                type = "group",
+                inline = true,
+                args = {
+                    size = {
+                        order = 1,
+                        name = L["Size"],
+                        type = "range",
+                        min = 8,
+                        max = 80,
+                        step = 1,
+                    },
+                    spacing = {
+                        order = 2,
+                        name = L["Spacing"],
+                        type = "range",
+                        min = 0,
+                        max = 20,
+                        step = 1,
                     },
                 },
             },

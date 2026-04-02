@@ -460,6 +460,8 @@ function sArenaMixin:InitializeMidnightDRFrames()
             drTray:EnableMouse(false)
             arenaFrame.drFrames = {}
 
+            arenaFrame:CreateHealthBarDRFrames()
+
             for drIndex = 1, NUM_DR_FRAMES do
                 local name = "sArenaEnemyFrame" .. i .. "_DR" .. drIndex
                 local sArenaDRFrame = CreateFrame("Frame", name, arenaFrame, "sArenaDRFrameTemplate")
@@ -492,12 +494,31 @@ function sArenaMixin:InitializeMidnightDRFrames()
                             local isSecret = issecretvalue and issecretvalue(texture) or false
                             print("|cff00ff00[sArena DR Probe]|r texture=" .. tostring(texture) .. " isSecret=" .. tostring(isSecret) .. " type=" .. type(texture))
                         end
-                        sArenaDRFrame.Icon:SetTexture(texture)
+                        local mode = self.layoutdb and self.layoutdb.drAnchorMode or 1
+                        if mode ~= 2 then
+                            sArenaDRFrame.Icon:SetTexture(texture)
+                        end
+                        if mode >= 2 then
+                            local hbf = arenaFrame.drFramesHB and arenaFrame.drFramesHB[drIndex]
+                            if hbf then hbf.Icon:SetTexture(texture) end
+                        end
                     end)
 
                     hooksecurefunc(blizzDRFrame, "Show", function()
-                        sArenaDRFrame:Show()
-                        arenaFrame:UpdateDRPositions()
+                        local mode = self.layoutdb and self.layoutdb.drAnchorMode or 1
+                        if mode ~= 2 then
+                            sArenaDRFrame:Show()
+                            arenaFrame:UpdateDRPositions()
+                        else
+                            sArenaDRFrame:Hide()
+                        end
+                        if mode >= 2 then
+                            local hbf = arenaFrame.drFramesHB and arenaFrame.drFramesHB[drIndex]
+                            if hbf then
+                                hbf:Show()
+                                arenaFrame:UpdateHealthBarDRPositions()
+                            end
+                        end
                     end)
 
                     hooksecurefunc(blizzDRFrame, "Hide", function()
@@ -505,12 +526,25 @@ function sArenaMixin:InitializeMidnightDRFrames()
                         sArenaDRFrame.Cooldown:Clear()
                         sArenaDRFrame:Hide()
                         arenaFrame:UpdateDRPositions()
+
+                        local hbf = arenaFrame.drFramesHB and arenaFrame.drFramesHB[drIndex]
+                        if hbf then
+                            hbf.Icon:SetTexture(nil)
+                            hbf.Cooldown:Clear()
+                            hbf:Hide()
+                            arenaFrame:UpdateHealthBarDRPositions()
+                        end
                     end)
 
                     hooksecurefunc(blizzDRFrame.Cooldown, "SetCooldown", function(_, start, duration)
                         sArenaDRFrame.Cooldown:SetCooldown(GetTime(), 16.1)
                         sArenaDRFrame.Cooldown.trueCD = true
                         C_Timer.After(16.1, function() sArenaDRFrame.Cooldown.trueCD = nil end)
+
+                        local hbf = arenaFrame.drFramesHB and arenaFrame.drFramesHB[drIndex]
+                        if hbf then
+                            hbf.Cooldown:SetCooldown(GetTime(), 16.1)
+                        end
                     end)
 
                     local green = CreateColor(0, 1, 0, 1)
@@ -540,6 +574,15 @@ function sArenaMixin:InitializeMidnightDRFrames()
                         local drTextImmune = sArenaDRFrame.DRTextFrame.DRTextImmune
                         drText:SetAlphaFromBoolean(shown, 0, 1)
                         drTextImmune:SetAlphaFromBoolean(shown, 1, 0)
+
+                        local hbf = arenaFrame.drFramesHB and arenaFrame.drFramesHB[drIndex]
+                        if hbf then
+                            local r, g, b = shown and 1 or 0, shown and 0 or 1, 0
+                            arenaFrame:SetHealthBarDRBorderColor(drIndex, r, g, b)
+                            if hbf.Cooldown and not sArenaDRFrame.Cooldown.trueCD and not self.db.profile.disableInstantDRCooldown then
+                                hbf.Cooldown:SetCooldown(GetTime(), 20)
+                            end
+                        end
                     end)
                 end
             end

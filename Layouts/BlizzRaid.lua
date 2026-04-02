@@ -65,6 +65,14 @@ layout.defaultSettings = {
         growthDirection = 4,
         thinPixelBorder = true,
     },
+    drAnchorMode = 1,
+    drHealthBar = {
+        posX = 2,
+        posY = 0,
+        size = 22,
+        spacing = 2,
+        growthDirection = 3,
+    },
     widgets = {
         enabled = true,
         posX = 9,

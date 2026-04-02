@@ -1446,6 +1446,10 @@ function sArenaMixin:SetLayout(_, layout)
         self:UpdatePetBarSettings(self.layoutdb.petBar)
     end
 
+    if self.layoutdb.drHealthBar then
+        self:UpdateHealthBarDRSettings(self.layoutdb.drHealthBar)
+    end
+
     self.optionsTable.args.layoutSettingsGroup.args = self.layouts[layout].optionsTable and self.layouts[layout].optionsTable or emptyLayoutOptionsTable
     LibStub("AceConfigRegistry-3.0"):NotifyChange("sArena")
 

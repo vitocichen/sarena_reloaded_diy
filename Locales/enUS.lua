@@ -204,6 +204,13 @@ L["Castbar_IconSettings"] = "Icon Settings"
 -- Diminishing Returns Options
 ---------------------------------------
 
+L["DR_AnchorMode"] = "DR Display Location"
+L["DR_AnchorMode_Desc"] = "Choose where DR icons are displayed."
+L["DR_AnchorMode_Frame"] = "Arena Frame Only"
+L["DR_AnchorMode_HealthBar"] = "Health Bar Only"
+L["DR_AnchorMode_Both"] = "Arena Frame + Health Bar"
+L["Category_DRHealthBar"] = "DR on Health Bar"
+
 L["DR_FixedPositions"] = "Fixed DR Positions"
 L["DR_FixedPositions_Desc"] = "DR icons stay in fixed slot positions instead of dynamically collapsing when one disappears.\n\nWhen disabled (default): icons shift to fill gaps when a DR expires.\nWhen enabled: each DR keeps its slot position, leaving empty gaps."
 

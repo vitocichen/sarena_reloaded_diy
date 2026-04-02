@@ -970,6 +970,42 @@ function sArenaMixin:Test()
             end
         end
 
+        -- Hide frame DR icons when anchor mode is "healthbar only"
+        local drAnchorMode = db.profile.layoutSettings[db.profile.currentLayout].drAnchorMode or 1
+        if drAnchorMode == 2 then
+            local useDrFrames = frame.drFrames ~= nil
+            local drList2 = frame.drFrames or self.drCategories
+            if drList2 then
+                for n = 1, #drList2 do
+                    local drFrame = useDrFrames and drList2[n] or frame[drList2[n]]
+                    if drFrame then drFrame:Hide() end
+                end
+            end
+        end
+
+        -- Healthbar DR test
+        if drAnchorMode >= 2 then
+            if not frame.drFramesHB then
+                frame:CreateHealthBarDRFrames()
+            end
+            local hbTextures = { 136071, 135860, 136100, 136183 }
+            local hbColors = { {1,0,0}, {0,1,0}, {0,1,0}, {0,1,0} }
+            for n = 1, math.min(4, #frame.drFramesHB) do
+                local hbf = frame.drFramesHB[n]
+                if hbf then
+                    hbf.Icon:SetTexture(hbTextures[n])
+                    hbf.Cooldown:SetCooldown(currTime, math.random(12, 30))
+                    frame:SetHealthBarDRBorderColor(n, hbColors[n][1], hbColors[n][2], hbColors[n][3])
+                    hbf:Show()
+                end
+            end
+            frame:UpdateHealthBarDRPositions()
+        else
+            if frame.drFramesHB then
+                frame:HideAllHealthBarDR()
+            end
+        end
+
         -- Cast Bar
         if data.castName then
             local layout = self.db.profile.layoutSettings[self.db.profile.currentLayout]
@@ -1204,6 +1240,9 @@ function sArenaMixin:Test()
                 local arenaFrame = self["arena" .. i]
                 if arenaFrame and arenaFrame.PetBar then
                     arenaFrame.PetBar:Hide()
+                end
+                if arenaFrame and arenaFrame.drFramesHB then
+                    arenaFrame:HideAllHealthBarDR()
                 end
             end
         end)

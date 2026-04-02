@@ -207,6 +207,13 @@ L["Castbar_IconSettings"] = "图标设置"
 -- Diminishing Returns Options
 ---------------------------------------
 
+L["DR_AnchorMode"] = "递减显示位置"
+L["DR_AnchorMode_Desc"] = "选择递减图标显示在哪里。"
+L["DR_AnchorMode_Frame"] = "仅竞技场框体"
+L["DR_AnchorMode_HealthBar"] = "仅血条"
+L["DR_AnchorMode_Both"] = "框体 + 血条"
+L["Category_DRHealthBar"] = "血条上的递减"
+
 L["DR_FixedPositions"] = "固定递减位置"
 L["DR_FixedPositions_Desc"] = "递减图标保持在固定槽位，而不是在某个递减消失时自动收缩重排。\n\n关闭（默认）：图标会自动补位，紧凑排列。\n开启：每个递减保持固定位置，消失后留空。"
 

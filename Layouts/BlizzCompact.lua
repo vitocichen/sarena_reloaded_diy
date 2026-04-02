@@ -63,6 +63,14 @@ layout.defaultSettings = {
         brightDRBorder = true,
         showDRText = true,
     },
+    drAnchorMode = 1,
+    drHealthBar = {
+        posX = 2,
+        posY = 0,
+        size = 22,
+        spacing = 2,
+        growthDirection = 3,
+    },
     widgets = {
         combatIndicator = {
             posX = 0,
