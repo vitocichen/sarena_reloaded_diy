@@ -804,6 +804,7 @@ function sArenaMixin:Initialize()
         self:UpdateNoTrinketTexture()
         LibStub("AceConfigDialog-3.0"):AddToBlizOptions("sArena", "sArena |cffff8000Reloaded|r |T135884:13:13|t")
         self:SetLayout(_, db.profile.currentLayout)
+        self:EnableSelfDR()
     else
         C_Timer.After(5, function()
             self:Print(L["Print_MultipleVersionsLoaded"])

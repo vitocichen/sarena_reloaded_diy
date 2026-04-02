@@ -6284,6 +6284,118 @@ else
                     },
                 },
             },
+            selfDR = {
+                order = 8.5,
+                name = L["Category_SelfDR"],
+                type = "group",
+                args = {
+                    enabled = {
+                        order = 1,
+                        name = L["SelfDR_Enable"],
+                        desc = L["SelfDR_Enable_Desc"],
+                        type = "toggle",
+                        width = "full",
+                        get = function(info) return info.handler.db.profile.selfDR.enabled end,
+                        set = function(info, val)
+                            info.handler.db.profile.selfDR.enabled = val
+                            info.handler:EnableSelfDR()
+                        end,
+                    },
+                    positioning = {
+                        order = 2,
+                        name = L["Positioning"],
+                        type = "group",
+                        inline = true,
+                        args = {
+                            posX = {
+                                order = 1,
+                                name = L["Horizontal"],
+                                type = "range",
+                                min = -500, max = 500, step = 1,
+                                get = function(info) return info.handler.db.profile.selfDR.posX end,
+                                set = function(info, val) info.handler.db.profile.selfDR.posX = val end,
+                            },
+                            posY = {
+                                order = 2,
+                                name = L["Vertical"],
+                                type = "range",
+                                min = -500, max = 500, step = 1,
+                                get = function(info) return info.handler.db.profile.selfDR.posY end,
+                                set = function(info, val) info.handler.db.profile.selfDR.posY = val end,
+                            },
+                            growthDirection = {
+                                order = 3,
+                                name = L["Option_GrowthDirection"],
+                                type = "select",
+                                style = "dropdown",
+                                values = growthValues,
+                                get = function(info) return info.handler.db.profile.selfDR.growthDirection end,
+                                set = function(info, val) info.handler.db.profile.selfDR.growthDirection = val end,
+                            },
+                        },
+                    },
+                    sizing = {
+                        order = 3,
+                        name = L["Sizing"],
+                        type = "group",
+                        inline = true,
+                        args = {
+                            size = {
+                                order = 1,
+                                name = L["Size"],
+                                type = "range",
+                                min = 12, max = 80, step = 1,
+                                get = function(info) return info.handler.db.profile.selfDR.size end,
+                                set = function(info, val) info.handler.db.profile.selfDR.size = val end,
+                            },
+                            spacing = {
+                                order = 2,
+                                name = L["Spacing"],
+                                type = "range",
+                                min = 0, max = 20, step = 1,
+                                get = function(info) return info.handler.db.profile.selfDR.spacing end,
+                                set = function(info, val) info.handler.db.profile.selfDR.spacing = val end,
+                            },
+                            fontSize = {
+                                order = 3,
+                                name = L["Option_FontSize"],
+                                type = "range",
+                                min = 8, max = 32, step = 1,
+                                get = function(info) return info.handler.db.profile.selfDR.fontSize end,
+                                set = function(info, val) info.handler.db.profile.selfDR.fontSize = val end,
+                            },
+                        },
+                    },
+                    categories = {
+                        order = 4,
+                        name = L["Option_Categories"],
+                        type = "group",
+                        inline = true,
+                        args = {
+                            stun = {
+                                order = 1, name = L["SelfDR_Cat_Stun"], type = "toggle",
+                                get = function(info) local c = info.handler.db.profile.selfDR.categories; return c and c.stun ~= false end,
+                                set = function(info, val) info.handler.db.profile.selfDR.categories = info.handler.db.profile.selfDR.categories or {}; info.handler.db.profile.selfDR.categories.stun = val end,
+                            },
+                            incap = {
+                                order = 2, name = L["SelfDR_Cat_Incap"], type = "toggle",
+                                get = function(info) local c = info.handler.db.profile.selfDR.categories; return c and c.incap ~= false end,
+                                set = function(info, val) info.handler.db.profile.selfDR.categories = info.handler.db.profile.selfDR.categories or {}; info.handler.db.profile.selfDR.categories.incap = val end,
+                            },
+                            confuse = {
+                                order = 3, name = L["SelfDR_Cat_Confuse"], type = "toggle",
+                                get = function(info) local c = info.handler.db.profile.selfDR.categories; return c and c.confuse ~= false end,
+                                set = function(info, val) info.handler.db.profile.selfDR.categories = info.handler.db.profile.selfDR.categories or {}; info.handler.db.profile.selfDR.categories.confuse = val end,
+                            },
+                            root = {
+                                order = 4, name = L["SelfDR_Cat_Root"], type = "toggle",
+                                get = function(info) local c = info.handler.db.profile.selfDR.categories; return c and c.root ~= false end,
+                                set = function(info, val) info.handler.db.profile.selfDR.categories = info.handler.db.profile.selfDR.categories or {}; info.handler.db.profile.selfDR.categories.root = val end,
+                            },
+                        },
+                    },
+                },
+            },
             importExport = {
                 order = 9,
                 name = L["Option_ImportExport"],

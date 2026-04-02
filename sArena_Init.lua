@@ -45,5 +45,20 @@ sArenaMixin.defaultSettings = {
         layoutSettings = {},
         invertClassIconCooldown = true,
         rightClickFocus = true,
+        selfDR = {
+            enabled = false,
+            posX = 0,
+            posY = 0,
+            size = 24,
+            spacing = 2,
+            growthDirection = 3,
+            fontSize = 14,
+            categories = {
+                stun = true,
+                incap = true,
+                confuse = true,
+                root = true,
+            },
+        },
     }
 }
