@@ -582,6 +582,8 @@ function sArenaMixin:InitializeMidnightDRFrames()
                             if hbf.Cooldown and not sArenaDRFrame.Cooldown.trueCD and not self.db.profile.disableInstantDRCooldown then
                                 hbf.Cooldown:SetCooldown(GetTime(), 20)
                             end
+                            local glowEnabled = self.layoutdb and self.layoutdb.drHealthBar and self.layoutdb.drHealthBar.immuneGlow
+                            arenaFrame:SetHealthBarDRGlow(drIndex, glowEnabled and shown, 1, 0, 0)
                         end
                     end)
                 end
@@ -636,6 +638,11 @@ function sArenaFrameMixin:HookMidnightTrinket()
                     self.Racial.Cooldown:Clear()
                 end
             end
+
+            if self.TrinketHB and db.profile.trinketOnHealthBar and db.profile.trinketOnHealthBar.enabled then
+                self.TrinketHB.Cooldown:SetCooldownFromDurationObject(durationObj)
+                self.TrinketHB:Show()
+            end
         end)
 
         hooksecurefunc(trinketFrame.Icon, "SetTexture", function(_, texture)
@@ -651,6 +658,10 @@ function sArenaFrameMixin:HookMidnightTrinket()
                 else
                     self.Trinket.Texture:SetTexture(texture)
                 end
+            end
+
+            if self.TrinketHB and db.profile.trinketOnHealthBar and db.profile.trinketOnHealthBar.enabled then
+                self.TrinketHB.Icon:SetTexture(texture)
             end
         end)
 

@@ -67,6 +67,7 @@ layout.defaultSettings = {
         size = 22,
         spacing = 2,
         growthDirection = 3,
+        immuneGlow = false,
     },
     widgets = {
         combatIndicator = {

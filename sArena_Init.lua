@@ -45,6 +45,12 @@ sArenaMixin.defaultSettings = {
         layoutSettings = {},
         invertClassIconCooldown = true,
         rightClickFocus = true,
+        trinketOnHealthBar = {
+            enabled = false,
+            size = 20,
+            posX = 0,
+            posY = 0,
+        },
         selfDR = {
             enabled = false,
             posX = 0,

@@ -1451,6 +1451,8 @@ function sArenaMixin:SetLayout(_, layout)
         self:UpdateHealthBarDRSettings(self.layoutdb.drHealthBar)
     end
 
+    self:UpdateHealthBarTrinketSettings()
+
     self.optionsTable.args.layoutSettingsGroup.args = self.layouts[layout].optionsTable and self.layouts[layout].optionsTable or emptyLayoutOptionsTable
     LibStub("AceConfigRegistry-3.0"):NotifyChange("sArena")
 
@@ -1791,6 +1793,7 @@ function sArenaFrameMixin:OnLoad()
     self:SetupTrinketCooldownDone()
 
     self:CreatePetBar()
+    self:CreateHealthBarTrinket()
 end
 
 function sArenaFrameMixin:OnEvent(event, eventUnit, arg1)

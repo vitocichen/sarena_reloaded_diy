@@ -3502,6 +3502,21 @@ function sArenaMixin:GetLayoutOptionsTable(layoutName)
                     },
                 },
             },
+            effects = {
+                order = 3,
+                name = L["DR_HB_Effects"],
+                type = "group",
+                inline = true,
+                args = {
+                    immuneGlow = {
+                        order = 1,
+                        name = L["DR_ImmuneGlow"],
+                        desc = L["DR_ImmuneGlow_Desc"],
+                        type = "toggle",
+                        width = "full",
+                    },
+                },
+            },
         },
     }
 
@@ -5591,6 +5606,38 @@ else
                                             info.handler.db.profile.desaturateTrinketCD = val
                                             info.handler:Test()
                                         end
+                                    },
+                                    trinketOnHealthBar = {
+                                        order = 2.15,
+                                        name = L["Trinket_OnHealthBar"],
+                                        desc = L["Trinket_OnHealthBar_Desc"],
+                                        type = "toggle",
+                                        width = "full",
+                                        get = function(info) return info.handler.db.profile.trinketOnHealthBar and info.handler.db.profile.trinketOnHealthBar.enabled end,
+                                        set = function(info, val)
+                                            info.handler.db.profile.trinketOnHealthBar = info.handler.db.profile.trinketOnHealthBar or {}
+                                            info.handler.db.profile.trinketOnHealthBar.enabled = val
+                                            for i = 1, info.handler.maxArenaOpponents do
+                                                local frame = info.handler["arena" .. i]
+                                                if frame then
+                                                    if not frame.TrinketHB then frame:CreateHealthBarTrinket() end
+                                                    frame:UpdateHealthBarTrinketPosition()
+                                                end
+                                            end
+                                            info.handler:Test()
+                                        end,
+                                    },
+                                    trinketHBSize = {
+                                        order = 2.16,
+                                        name = L["Trinket_HBSize"],
+                                        type = "range",
+                                        min = 12, max = 60, step = 1,
+                                        hidden = function(info) return not (info.handler.db.profile.trinketOnHealthBar and info.handler.db.profile.trinketOnHealthBar.enabled) end,
+                                        get = function(info) return info.handler.db.profile.trinketOnHealthBar and info.handler.db.profile.trinketOnHealthBar.size or 20 end,
+                                        set = function(info, val)
+                                            info.handler.db.profile.trinketOnHealthBar.size = val
+                                            info.handler:UpdateHealthBarTrinketSettings()
+                                        end,
                                     },
                                     desaturateDispelCD = {
                                         order = 2.2,

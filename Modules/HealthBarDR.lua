@@ -195,3 +195,131 @@ function sArenaMixin:UpdateHealthBarDRSettings(db, info, val)
         end
     end
 end
+
+-- =============================================
+-- Healthbar Trinket Mirror
+-- =============================================
+
+function sArenaFrameMixin:CreateHealthBarTrinket()
+    if self.TrinketHB then return end
+
+    local name = "sArenaEnemyFrame" .. self:GetID() .. "_HBTrinket"
+    local f = CreateFrame("Frame", name, self)
+    f:SetSize(20, 20)
+    f:SetFrameStrata("HIGH")
+    f:SetFrameLevel(self:GetFrameLevel() + 12)
+    f:Hide()
+
+    local icon = f:CreateTexture(nil, "ARTWORK")
+    icon:SetAllPoints()
+    f.Icon = icon
+
+    local bg = f:CreateTexture(nil, "BACKGROUND")
+    bg:SetAllPoints()
+    bg:SetColorTexture(0, 0, 0, 0.7)
+
+    local cd = CreateFrame("Cooldown", name .. "CD", f, "CooldownFrameTemplate")
+    cd:SetAllPoints()
+    cd:SetDrawBling(false)
+    cd:SetReverse(false)
+    cd:SetSwipeColor(0, 0, 0, 0.6)
+    f.Cooldown = cd
+
+    local borderFrame = CreateFrame("Frame", nil, f)
+    borderFrame:SetPoint("TOPLEFT", -1, 1)
+    borderFrame:SetPoint("BOTTOMRIGHT", 1, -1)
+    borderFrame:SetFrameLevel(f:GetFrameLevel() + 2)
+    local bTop = borderFrame:CreateTexture(nil, "OVERLAY")
+    bTop:SetHeight(1); bTop:SetPoint("TOPLEFT"); bTop:SetPoint("TOPRIGHT"); bTop:SetColorTexture(1, 1, 0, 1)
+    local bBot = borderFrame:CreateTexture(nil, "OVERLAY")
+    bBot:SetHeight(1); bBot:SetPoint("BOTTOMLEFT"); bBot:SetPoint("BOTTOMRIGHT"); bBot:SetColorTexture(1, 1, 0, 1)
+    local bLeft = borderFrame:CreateTexture(nil, "OVERLAY")
+    bLeft:SetWidth(1); bLeft:SetPoint("TOPLEFT"); bLeft:SetPoint("BOTTOMLEFT"); bLeft:SetColorTexture(1, 1, 0, 1)
+    local bRight = borderFrame:CreateTexture(nil, "OVERLAY")
+    bRight:SetWidth(1); bRight:SetPoint("TOPRIGHT"); bRight:SetPoint("BOTTOMRIGHT"); bRight:SetColorTexture(1, 1, 0, 1)
+    f.BorderTextures = { bTop, bBot, bLeft, bRight }
+
+    self.TrinketHB = f
+end
+
+function sArenaFrameMixin:UpdateHealthBarTrinketPosition()
+    if not self.TrinketHB then return end
+
+    local db = self.parent.db
+    if not db then return end
+
+    local trinketHBSettings = db.profile.trinketOnHealthBar
+    if not trinketHBSettings or not trinketHBSettings.enabled then
+        self.TrinketHB:Hide()
+        return
+    end
+
+    local size = trinketHBSettings.size or 20
+    local posX = trinketHBSettings.posX or 0
+    local posY = trinketHBSettings.posY or 0
+
+    self.TrinketHB:SetSize(size, size)
+    self.TrinketHB:ClearAllPoints()
+    self.TrinketHB:SetPoint("LEFT", self.HealthBar, "RIGHT", posX + 2, posY)
+end
+
+function sArenaMixin:UpdateHealthBarTrinketSettings(info, val)
+    if val ~= nil and info then
+        self.db.profile.trinketOnHealthBar[info[#info]] = val
+    end
+
+    for i = 1, self.maxArenaOpponents do
+        local frame = self["arena" .. i]
+        if frame then
+            if not frame.TrinketHB then
+                frame:CreateHealthBarTrinket()
+            end
+            frame:UpdateHealthBarTrinketPosition()
+        end
+    end
+end
+
+-- =============================================
+-- DR Immune Glow Effect
+-- =============================================
+
+local glowFramePool = {}
+
+local function CreateGlowTexture(parent)
+    local glow = parent:CreateTexture(nil, "OVERLAY", nil, 7)
+    glow:SetPoint("TOPLEFT", -3, 3)
+    glow:SetPoint("BOTTOMRIGHT", 3, -3)
+    glow:SetTexture("Interface\\Buttons\\UI-ActionButton-Border")
+    glow:SetBlendMode("ADD")
+    glow:SetAlpha(0)
+    return glow
+end
+
+function sArenaFrameMixin:SetHealthBarDRGlow(slot, enabled, r, g, b)
+    if not self.drFramesHB then return end
+    local f = self.drFramesHB[slot]
+    if not f then return end
+
+    if not f.GlowTexture then
+        f.GlowTexture = CreateGlowTexture(f)
+    end
+
+    if enabled then
+        f.GlowTexture:SetVertexColor(r or 1, g or 0, b or 0)
+        f.GlowTexture:SetAlpha(0.8)
+        if not f.glowAnim then
+            local ag = f.GlowTexture:CreateAnimationGroup()
+            ag:SetLooping("BOUNCE")
+            local fade = ag:CreateAnimation("Alpha")
+            fade:SetFromAlpha(0.8)
+            fade:SetToAlpha(0.3)
+            fade:SetDuration(0.6)
+            fade:SetSmoothing("IN_OUT")
+            f.glowAnim = ag
+        end
+        f.glowAnim:Play()
+    else
+        if f.glowAnim then f.glowAnim:Stop() end
+        f.GlowTexture:SetAlpha(0)
+    end
+end
