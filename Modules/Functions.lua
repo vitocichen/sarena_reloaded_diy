@@ -487,6 +487,11 @@ function sArenaMixin:InitializeMidnightDRFrames()
                     sArenaDRFrame.blizzFrame = blizzDRFrame
 
                     hooksecurefunc(blizzDRFrame.Icon, "SetTexture", function(_, texture)
+                        -- [DEBUG] Secret value probe - remove after testing
+                        if texture ~= nil then
+                            local isSecret = issecretvalue and issecretvalue(texture) or false
+                            print("|cff00ff00[sArena DR Probe]|r texture=" .. tostring(texture) .. " isSecret=" .. tostring(isSecret) .. " type=" .. type(texture))
+                        end
                         sArenaDRFrame.Icon:SetTexture(texture)
                     end)
 
