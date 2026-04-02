@@ -260,6 +260,14 @@ function sArenaFrameMixin:CreateNameplateDRFrames()
         bRight:SetWidth(1); bRight:SetPoint("TOPRIGHT"); bRight:SetPoint("BOTTOMRIGHT"); bRight:SetColorTexture(0, 1, 0, 1)
         f.BorderTextures = { bTop, bBot, bLeft, bRight }
 
+        local textHolder = CreateFrame("Frame", nil, f)
+        textHolder:SetAllPoints()
+        textHolder:SetFrameLevel(cd:GetFrameLevel() + 3)
+        f.CDText = textHolder:CreateFontString(nil, "OVERLAY")
+        f.CDText:SetFont("Fonts\\FRIZQT__.TTF", 12, "OUTLINE")
+        f.CDText:SetPoint("CENTER", 0, 0)
+        f.CDText:SetTextColor(1, 1, 1, 1)
+
         f.GlowTexture = f:CreateTexture(nil, "OVERLAY", nil, 7)
         f.GlowTexture:SetPoint("TOPLEFT", -3, 3)
         f.GlowTexture:SetPoint("BOTTOMRIGHT", 3, -3)
@@ -339,11 +347,16 @@ function sArenaFrameMixin:UpdateNameplateDRPositions()
     local sc = us / ps
     if sc < 0.1 then sc = 0.1 elseif sc > 10 then sc = 10 end
 
+    local fontSize = db.fontSize or 12
+
     local numActive = 0
     local prevFrame
     for _, f in ipairs(self.drFramesNP) do
         f:SetSize(size, size)
         f:SetScale(sc)
+        if f.CDText then
+            f.CDText:SetFont("Fonts\\FRIZQT__.TTF", fontSize, "OUTLINE")
+        end
         if f:IsShown() then
             f:ClearAllPoints()
             if numActive == 0 then

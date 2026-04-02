@@ -3500,6 +3500,15 @@ function sArenaMixin:GetLayoutOptionsTable(layoutName)
                         max = 20,
                         step = 1,
                     },
+                    fontSize = {
+                        order = 3,
+                        name = L["Option_FontSize"],
+                        desc = L["Option_FontSize_Desc"],
+                        type = "range",
+                        min = 6,
+                        max = 32,
+                        step = 1,
+                    },
                 },
             },
             effects = {
