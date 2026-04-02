@@ -8,10 +8,51 @@ local UnitExists = UnitExists
 local UnitClass = UnitClass
 local UnitName = UnitName
 local UnitIsDeadOrGhost = UnitIsDeadOrGhost
+local UnitIsUnit = UnitIsUnit
 local floor = math.floor
 
 local function IsSec(v)
     return issecretvalue and issecretvalue(v) or false
+end
+
+local function CreatePixelBorder(parent, size, r, g, b, a)
+    local border = CreateFrame("Frame", nil, parent)
+    border:SetPoint("TOPLEFT", -size, size)
+    border:SetPoint("BOTTOMRIGHT", size, -size)
+    border:SetFrameLevel(parent:GetFrameLevel() + 1)
+
+    local top = border:CreateTexture(nil, "OVERLAY")
+    top:SetHeight(size); top:SetPoint("TOPLEFT"); top:SetPoint("TOPRIGHT")
+    top:SetColorTexture(r, g, b, a)
+
+    local bot = border:CreateTexture(nil, "OVERLAY")
+    bot:SetHeight(size); bot:SetPoint("BOTTOMLEFT"); bot:SetPoint("BOTTOMRIGHT")
+    bot:SetColorTexture(r, g, b, a)
+
+    local left = border:CreateTexture(nil, "OVERLAY")
+    left:SetWidth(size); left:SetPoint("TOPLEFT"); left:SetPoint("BOTTOMLEFT")
+    left:SetColorTexture(r, g, b, a)
+
+    local right = border:CreateTexture(nil, "OVERLAY")
+    right:SetWidth(size); right:SetPoint("TOPRIGHT"); right:SetPoint("BOTTOMRIGHT")
+    right:SetColorTexture(r, g, b, a)
+
+    border.textures = { top, bot, left, right }
+
+    function border:SetBorderColor(r2, g2, b2, a2)
+        for _, tex in ipairs(self.textures) do
+            tex:SetColorTexture(r2, g2, b2, a2 or 1)
+        end
+    end
+
+    function border:SetBorderSize(sz)
+        for _, tex in ipairs(self.textures) do
+            tex:SetHeight(sz)
+            tex:SetWidth(sz)
+        end
+    end
+
+    return border
 end
 
 function sArenaFrameMixin:CreatePetBar()
@@ -26,8 +67,16 @@ function sArenaFrameMixin:CreatePetBar()
     container:SetFrameLevel(self:GetFrameLevel() + 1)
     container:SetAlpha(0)
 
+    -- Background
+    local bg = container:CreateTexture(nil, "BACKGROUND", nil, -1)
+    bg:SetAllPoints()
+    bg:SetColorTexture(0, 0, 0, 0.8)
+    container.Background = bg
+
+    -- Health bar
     local healthBar = CreateFrame("StatusBar", "sArenaPetBarHealth" .. id, container)
-    healthBar:SetAllPoints()
+    healthBar:SetPoint("TOPLEFT", 1, -1)
+    healthBar:SetPoint("BOTTOMRIGHT", -1, 1)
     healthBar:SetStatusBarTexture("Interface\\TargetingFrame\\UI-StatusBar")
     healthBar:SetStatusBarColor(0, 1, 0, 1)
     healthBar:SetMinMaxValues(0, 100)
@@ -39,36 +88,56 @@ function sArenaFrameMixin:CreatePetBar()
     hpUnderlay:SetColorTexture(0, 0, 0, 0.6)
     container.HealthBar.hpUnderlay = hpUnderlay
 
+    -- Pixel border (default: dark)
+    local frameBorder = CreatePixelBorder(container, 1, 0, 0, 0, 1)
+    container.FrameBorder = frameBorder
+
+    -- Target highlight border (hidden by default)
+    local targetBorder = CreatePixelBorder(container, 2, 1, 1, 1, 1)
+    targetBorder:SetPoint("TOPLEFT", -2, 2)
+    targetBorder:SetPoint("BOTTOMRIGHT", 2, -2)
+    targetBorder:SetFrameLevel(container:GetFrameLevel() + 3)
+    targetBorder:Hide()
+    container.TargetBorder = targetBorder
+
+    -- Health text
     local healthText = healthBar:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
     healthText:SetPoint("RIGHT", healthBar, "RIGHT", -2, 0)
     healthText:SetTextColor(1, 1, 1, 1)
     healthText:SetJustifyH("RIGHT")
     container.HealthText = healthText
 
+    -- Name text
     local nameText = healthBar:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
     nameText:SetPoint("LEFT", healthBar, "LEFT", 2, 0)
     nameText:SetTextColor(1, 1, 1, 1)
     nameText:SetJustifyH("LEFT")
     container.NameText = nameText
 
-    -- Secure button parented to UIParent (NOT container) to avoid combat lockdown blocking container ops
+    -- Secure button (parented to UIParent to avoid combat lockdown)
     local secure = CreateFrame("Button", "sArenaPetBarSecure" .. id, UIParent, "SecureActionButtonTemplate")
     secure:SetAllPoints(container)
     secure:SetAttribute("*type1", "target")
     secure:SetAttribute("*type2", "focus")
     secure:SetAttribute("unit", petUnit)
     secure:RegisterForClicks("AnyDown", "AnyUp")
-    secure:SetFrameLevel(container:GetFrameLevel() + 2)
+    secure:SetFrameLevel(container:GetFrameLevel() + 5)
     container.Secure = secure
 
+    -- Event frame
     local eventFrame = CreateFrame("Frame")
     eventFrame.petUnit = petUnit
     eventFrame.parentFrame = self
     eventFrame:RegisterUnitEvent("UNIT_HEALTH", petUnit)
     eventFrame:RegisterUnitEvent("UNIT_MAXHEALTH", petUnit)
     eventFrame:RegisterEvent("UNIT_PET")
+    eventFrame:RegisterEvent("PLAYER_TARGET_CHANGED")
 
     eventFrame:SetScript("OnEvent", function(_, event, eventUnit)
+        if event == "PLAYER_TARGET_CHANGED" then
+            self:UpdatePetBarTargetHighlight()
+            return
+        end
         if event == "UNIT_PET" then
             self:RefreshPetBar()
         elseif eventUnit == petUnit then
@@ -105,6 +174,35 @@ function sArenaFrameMixin:CreatePetBar()
     self.PetBar = container
 end
 
+function sArenaFrameMixin:UpdatePetBarTargetHighlight()
+    if not self.PetBar or not self.PetBar.TargetBorder then return end
+    if self.PetBar:GetAlpha() == 0 then
+        self.PetBar.TargetBorder:Hide()
+        return
+    end
+
+    local petUnit = self.PetBar.petUnit
+    local isTarget = false
+    pcall(function()
+        local result = UnitIsUnit("target", petUnit)
+        if not IsSec(result) then
+            isTarget = result
+        end
+    end)
+
+    local db = self.parent and self.parent.db
+    local layoutName = db and db.profile.currentLayout
+    local petSettings = layoutName and db.profile.layoutSettings[layoutName] and db.profile.layoutSettings[layoutName].petBar
+
+    if isTarget then
+        local c = (petSettings and petSettings.targetBorderColor) or {1, 1, 0, 1}
+        self.PetBar.TargetBorder:SetBorderColor(c[1], c[2], c[3], c[4] or 1)
+        self.PetBar.TargetBorder:Show()
+    else
+        self.PetBar.TargetBorder:Hide()
+    end
+end
+
 function sArenaFrameMixin:RefreshPetBar()
     if not self.PetBar then return end
 
@@ -132,7 +230,7 @@ function sArenaFrameMixin:RefreshPetBar()
 
     local petSettings = layoutSettings.petBar
 
-    -- Health check — all Unit* calls can return secret values on Midnight
+    -- Health check
     local skipShow = false
     pcall(function()
         local health = UnitHealth(petUnit)
@@ -165,6 +263,14 @@ function sArenaFrameMixin:RefreshPetBar()
     self.PetBar:ClearAllPoints()
     self.PetBar:SetPoint("CENTER", self, "CENTER", petSettings.posX or 0, petSettings.posY or -30)
 
+    -- Border color
+    if self.PetBar.FrameBorder then
+        local bc = petSettings.borderColor or {0, 0, 0, 1}
+        self.PetBar.FrameBorder:SetBorderColor(bc[1], bc[2], bc[3], bc[4] or 1)
+        local bs = petSettings.borderSize or 1
+        self.PetBar.FrameBorder:SetBorderSize(bs)
+    end
+
     -- Name
     pcall(function()
         local name = UnitName(petUnit)
@@ -191,6 +297,7 @@ function sArenaFrameMixin:RefreshPetBar()
     end)
 
     self.PetBar:SetAlpha(1)
+    self:UpdatePetBarTargetHighlight()
 end
 
 function sArenaFrameMixin:UpdatePetBarHealthText()
@@ -247,6 +354,9 @@ function sArenaFrameMixin:ResetPetBar()
     self.PetBar.HealthBar:SetStatusBarColor(0, 1, 0, 1)
     self.PetBar.NameText:SetText("")
     self.PetBar.HealthText:SetText("")
+    if self.PetBar.TargetBorder then
+        self.PetBar.TargetBorder:Hide()
+    end
 end
 
 function sArenaFrameMixin:ShowTestPetBar()
@@ -295,6 +405,23 @@ function sArenaFrameMixin:ShowTestPetBar()
     local c = petSettings.color or {0, 1, 0, 1}
     self.PetBar.HealthBar:SetStatusBarColor(c[1], c[2], c[3], c[4] or 1)
 
+    -- Border
+    if self.PetBar.FrameBorder then
+        local bc = petSettings.borderColor or {0, 0, 0, 1}
+        self.PetBar.FrameBorder:SetBorderColor(bc[1], bc[2], bc[3], bc[4] or 1)
+        local bs = petSettings.borderSize or 1
+        self.PetBar.FrameBorder:SetBorderSize(bs)
+    end
+
+    -- Show target border on first test frame
+    if id == 1 and self.PetBar.TargetBorder then
+        local tc = petSettings.targetBorderColor or {1, 1, 0, 1}
+        self.PetBar.TargetBorder:SetBorderColor(tc[1], tc[2], tc[3], tc[4] or 1)
+        self.PetBar.TargetBorder:Show()
+    elseif self.PetBar.TargetBorder then
+        self.PetBar.TargetBorder:Hide()
+    end
+
     self.PetBar:SetAlpha(1)
 end
 
@@ -315,7 +442,10 @@ function sArenaMixin:UpdatePetBarSettings(db, info, val)
             petBar:SetScale(db.scale or 1)
             petBar:SetPoint("CENTER", frame, "CENTER", db.posX or 0, db.posY or -30)
 
-            local bgColor = db.bgColor or {0, 0, 0, 0.6}
+            local bgColor = db.bgColor or {0, 0, 0, 0.8}
+            if petBar.Background then
+                petBar.Background:SetColorTexture(bgColor[1], bgColor[2], bgColor[3], bgColor[4] or 0.8)
+            end
             petBar.HealthBar.hpUnderlay:SetColorTexture(bgColor[1], bgColor[2], bgColor[3], bgColor[4] or 0.6)
 
             local texturePath = LSM:Fetch(LSM.MediaType.STATUSBAR, db.texture or "sArena Default")
@@ -332,6 +462,14 @@ function sArenaMixin:UpdatePetBarSettings(db, info, val)
                 petBar.NameText:Show()
             else
                 petBar.NameText:Hide()
+            end
+
+            -- Border
+            if petBar.FrameBorder then
+                local bc = db.borderColor or {0, 0, 0, 1}
+                petBar.FrameBorder:SetBorderColor(bc[1], bc[2], bc[3], bc[4] or 1)
+                local bs = db.borderSize or 1
+                petBar.FrameBorder:SetBorderSize(bs)
             end
 
             if not petBar.dragSetup then
