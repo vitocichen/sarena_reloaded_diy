@@ -437,23 +437,26 @@ function sArenaMixin:ShowTestSelfDR()
         return
     end
 
+    -- Find any usable anchor for the player
     local anchor = FindPartyAnchor("player")
     if not anchor then
-        anchor = _G.PlayerFrame or UIParent
+        local pf = _G.PlayerFrame
+        if pf and pf.IsShown and pf:IsShown() then
+            anchor = pf
+        end
     end
 
-    anchors["player"] = anchor
-
-    local now = GetTime()
     local testData = {
         { cat = "stun",    icon = CAT_FALLBACK_ICON.stun,    count = 2, resetIn = 12 },
         { cat = "incap",   icon = CAT_FALLBACK_ICON.incap,   count = 1, resetIn = 8 },
         { cat = "confuse", icon = CAT_FALLBACK_ICON.confuse,  count = 1, resetIn = 14 },
     }
 
+    local now = GetTime()
+
     drStates["player"] = {}
     for _, td in ipairs(testData) do
-        if db.categories and db.categories[td.cat] ~= false then
+        if not db.categories or db.categories[td.cat] ~= false then
             drStates["player"][td.cat] = {
                 count = td.count,
                 icon = td.icon,
@@ -462,7 +465,60 @@ function sArenaMixin:ShowTestSelfDR()
         end
     end
 
-    RenderUnit("player", now)
+    -- Directly render test icons, bypassing anchor requirement if needed
+    local w = GetOrCreateWidget("player")
+    w:ClearAllPoints()
+    if anchor then
+        anchors["player"] = anchor
+        w:SetPoint("CENTER", anchor, "CENTER", db.posX or 0, db.posY or 0)
+    else
+        -- No party frame visible: show relative to the sArena test frames
+        local arenaFrame = self.arena1
+        if arenaFrame and arenaFrame:IsShown() then
+            w:SetPoint("RIGHT", arenaFrame, "LEFT", (db.posX or 0) - 20, db.posY or 0)
+        else
+            w:SetPoint("CENTER", UIParent, "CENTER", db.posX or 0, (db.posY or 0) + 200)
+        end
+    end
+
+    local size = db.size or 24
+    local spacing = db.spacing or 2
+    local grow = db.growthDirection or 3
+    local fontSize = db.fontSize or 14
+    local shown = 0
+
+    for _, cat in ipairs(CAT_ORDER) do
+        if not db.categories or db.categories[cat] ~= false then
+            local cs = drStates["player"] and drStates["player"][cat]
+            if cs then
+                shown = shown + 1
+                local f = w.icons[shown]
+                if f then
+                    f:SetSize(size, size)
+                    f:ClearAllPoints()
+                    local offset = (shown - 1) * (size + spacing)
+                    if grow == 4 then f:SetPoint("CENTER", w, "CENTER", -offset, 0)
+                    elseif grow == 3 then f:SetPoint("CENTER", w, "CENTER", offset, 0)
+                    elseif grow == 1 then f:SetPoint("CENTER", w, "CENTER", 0, -offset)
+                    elseif grow == 2 then f:SetPoint("CENTER", w, "CENTER", 0, offset) end
+
+                    f.tex:SetTexture(cs.icon)
+                    f.cd:SetCooldown(cs.resetAt - DR_RESET_TIME, DR_RESET_TIME)
+                    f.text:SetFont("Fonts\\FRIZQT__.TTF", fontSize, "OUTLINE")
+                    f.text:SetFormattedText("%d", math.ceil(math.max(0, cs.resetAt - now)))
+
+                    if cs.count <= 1 then
+                        SetIconBorderColor(f, 0, 1, 0, 1)
+                    else
+                        SetIconBorderColor(f, 1, 0, 0, 1)
+                    end
+                    f:Show()
+                end
+            end
+        end
+    end
+    for i = shown + 1, #w.icons do w.icons[i]:Hide() end
+    if shown > 0 then w:Show() end
 
     if not self.selfDRTestTicker then
         self.selfDRTestTicker = C_Timer.NewTicker(0.5, function()
@@ -474,15 +530,13 @@ function sArenaMixin:ShowTestSelfDR()
             local state = drStates["player"]
             if state then
                 local anyActive = false
-                for cat, cs in pairs(state) do
-                    if cs.resetAt and cs.resetAt > n then
-                        anyActive = true
-                    end
+                for _, cs in pairs(state) do
+                    if cs.resetAt and cs.resetAt > n then anyActive = true end
                 end
                 if not anyActive then
                     for _, td in ipairs(testData) do
-                        if db.categories and db.categories[td.cat] ~= false then
-                            drStates["player"][td.cat] = {
+                        if not db.categories or db.categories[td.cat] ~= false then
+                            state[td.cat] = {
                                 count = td.count,
                                 icon = td.icon,
                                 resetAt = n + td.resetIn,
@@ -490,8 +544,18 @@ function sArenaMixin:ShowTestSelfDR()
                         end
                     end
                 end
+                -- Update countdown text
+                for i = 1, #w.icons do
+                    local f = w.icons[i]
+                    if f:IsShown() then
+                        local catName = CAT_ORDER[i]
+                        local cs2 = catName and state[catName]
+                        if cs2 and cs2.resetAt then
+                            f.text:SetFormattedText("%d", math.ceil(math.max(0, cs2.resetAt - n)))
+                        end
+                    end
+                end
             end
-            RenderUnit("player", n)
         end)
     end
 end
