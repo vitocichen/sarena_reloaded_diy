@@ -97,14 +97,10 @@ function sArenaFrameMixin:CreatePetBar()
 end
 
 function sArenaFrameMixin:RefreshPetBar()
-    if not self.PetBar then
-        print("|cffff8800[PetBar]|r " .. (self.unit or "?") .. " EXIT: no PetBar frame")
-        return
-    end
+    if not self.PetBar then return end
 
     local db = self.parent.db
     if not db then
-        print("|cffff8800[PetBar]|r " .. self.unit .. " EXIT: no db")
         self.PetBar:Hide()
         return
     end
@@ -112,10 +108,6 @@ function sArenaFrameMixin:RefreshPetBar()
     local layoutName = db.profile.currentLayout
     local layoutSettings = db.profile.layoutSettings[layoutName]
     if not layoutSettings or not layoutSettings.petBar or not layoutSettings.petBar.enabled then
-        print("|cffff8800[PetBar]|r " .. self.unit .. " EXIT: not enabled"
-            .. " ls=" .. tostring(layoutSettings ~= nil)
-            .. " pb=" .. tostring(layoutSettings and layoutSettings.petBar ~= nil)
-            .. " en=" .. tostring(layoutSettings and layoutSettings.petBar and layoutSettings.petBar.enabled))
         self.PetBar:Hide()
         return
     end
@@ -127,62 +119,48 @@ function sArenaFrameMixin:RefreshPetBar()
     end
 
     if not exists then
-        print("|cffff8800[PetBar]|r " .. self.unit .. " EXIT: pet not exists (" .. petUnit .. ")")
         self.PetBar:Hide()
         return
     end
 
-    print("|cff00ff00[PetBar]|r " .. self.unit .. " PASSED all checks, pet=" .. petUnit)
-
-    local health = UnitHealth(petUnit)
-    local maxHealth = UnitHealthMax(petUnit)
-    local dead = UnitIsDeadOrGhost(petUnit)
-
-    local healthIsSecret = issecretvalue and issecretvalue(health)
-    local deadIsSecret = issecretvalue and issecretvalue(dead)
-
-    if not healthIsSecret and not deadIsSecret then
-        if health == 0 and dead then
-            self.PetBar:Hide()
-            return
-        end
-    end
-
-    if maxHealth == 0 then maxHealth = 100 end
-    if health == 0 and not dead then health = maxHealth end
-
     local petSettings = layoutSettings.petBar
 
-    local posOk, posErr = pcall(function()
+    -- Health check: all UnitHealth/UnitIsDeadOrGhost can return secret values on Midnight
+    local skipShow = false
+    pcall(function()
+        local health = UnitHealth(petUnit)
+        local maxHealth = UnitHealthMax(petUnit)
+        local dead = UnitIsDeadOrGhost(petUnit)
+
+        local hSec = issecretvalue and issecretvalue(health)
+        local mSec = issecretvalue and issecretvalue(maxHealth)
+        local dSec = issecretvalue and issecretvalue(dead)
+
+        if not hSec and not dSec and health == 0 and dead then
+            self.PetBar:Hide()
+            skipShow = true
+            return
+        end
+
+        local safeMax = (not mSec and maxHealth > 0) and maxHealth or 100
+        local safeHP = (not hSec) and health or safeMax
+        if safeHP == 0 and not (dSec or dead) then safeHP = safeMax end
+
+        self.PetBar.HealthBar:SetMinMaxValues(0, safeMax)
+        self.PetBar.HealthBar:SetValue(safeHP)
+    end)
+
+    if skipShow then return end
+
+    -- Position
+    pcall(function()
         self.PetBar:SetSize(petSettings.width or 100, petSettings.height or 20)
         self.PetBar:SetScale(petSettings.scale or 1)
         self.PetBar:ClearAllPoints()
         self.PetBar:SetPoint("CENTER", self, "CENTER", petSettings.posX or 0, petSettings.posY or -30)
     end)
 
-    if not posOk then
-        print("|cffff0000[PetBar POS-ERR]|r " .. tostring(posErr))
-        -- Fallback: use arena frame's screen position
-        pcall(function()
-            local cx, cy = self:GetCenter()
-            local es = self:GetEffectiveScale()
-            local ps = UIParent:GetEffectiveScale()
-            if cx and cy and es and ps then
-                self.PetBar:SetSize(petSettings.width or 100, petSettings.height or 20)
-                self.PetBar:SetScale(petSettings.scale or 1)
-                self.PetBar:ClearAllPoints()
-                self.PetBar:SetPoint("CENTER", UIParent, "BOTTOMLEFT",
-                    cx * es / ps + (petSettings.posX or 0),
-                    cy * es / ps + (petSettings.posY or -30))
-            end
-        end)
-    end
-
-    pcall(function()
-        self.PetBar.HealthBar:SetMinMaxValues(0, maxHealth)
-        self.PetBar.HealthBar:SetValue(health)
-    end)
-
+    -- Name
     pcall(function()
         local name = UnitName(petUnit)
         if name and petSettings.showName and not (issecretvalue and issecretvalue(name)) then
@@ -193,6 +171,7 @@ function sArenaFrameMixin:RefreshPetBar()
         end
     end)
 
+    -- Color
     pcall(function()
         local c = petSettings.color or {0, 1, 0, 1}
         if petSettings.classColor then
@@ -208,19 +187,13 @@ function sArenaFrameMixin:RefreshPetBar()
 
     self.PetBar:Show()
 
-    -- [DEBUG] Diagnostic: check final state after all pcalls
-    local pts = self.PetBar:GetNumPoints()
-    local shown = self.PetBar:IsShown()
-    local w, h = self.PetBar:GetSize()
-    local alpha = self.PetBar:GetAlpha()
-    local pAlpha = (self.PetBar:GetParent() and self.PetBar:GetParent():GetAlpha()) or -1
-    print("|cff00ffff[PetBar DIAG]|r " .. self.unit
-        .. " posOk=" .. tostring(posOk)
-        .. " pts=" .. pts
-        .. " shown=" .. tostring(shown)
-        .. " size=" .. tostring(w) .. "x" .. tostring(h)
-        .. " alpha=" .. tostring(alpha)
-        .. " parentAlpha=" .. tostring(pAlpha))
+    -- [DEBUG] Remove after confirming fix
+    pcall(function()
+        print("|cff00ffff[PetBar OK]|r " .. self.unit
+            .. " pts=" .. self.PetBar:GetNumPoints()
+            .. " shown=" .. tostring(self.PetBar:IsShown())
+            .. " alpha=" .. tostring(self.PetBar:GetAlpha()))
+    end)
 end
 
 function sArenaFrameMixin:UpdatePetBarHealthText()
