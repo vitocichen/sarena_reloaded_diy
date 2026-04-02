@@ -176,15 +176,22 @@ function sArenaFrameMixin:RefreshPetBar()
 
     self:UpdatePetBarHealthText()
 
-    if self.PetBar:GetNumPoints() == 0 then
-        local w = petSettings.width or 100
-        local h = petSettings.height or 20
-        self.PetBar:SetSize(w, h)
-        self.PetBar:SetScale(petSettings.scale or 1)
-        self.PetBar:SetPoint("CENTER", self, "CENTER", petSettings.posX or 0, petSettings.posY or -30)
-    end
+    local w = petSettings.width or 100
+    local h = petSettings.height or 20
+    self.PetBar:SetSize(w, h)
+    self.PetBar:SetScale(petSettings.scale or 1)
+    self.PetBar:ClearAllPoints()
+    self.PetBar:SetPoint("CENTER", self, "CENTER", petSettings.posX or 0, petSettings.posY or -30)
 
     self.PetBar:Show()
+
+    -- [DEBUG] Confirm show
+    print("|cff00ff00[PetBar OK]|r " .. self.unit
+        .. " points=" .. self.PetBar:GetNumPoints()
+        .. " shown=" .. tostring(self.PetBar:IsShown())
+        .. " parentShown=" .. tostring(self:IsShown())
+        .. " parentAlpha=" .. tostring(self:GetAlpha())
+        .. " w=" .. w .. " h=" .. h)
 end
 
 function sArenaFrameMixin:UpdatePetBarHealthText()
