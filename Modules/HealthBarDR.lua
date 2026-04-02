@@ -244,7 +244,22 @@ function sArenaFrameMixin:CreateNameplateDRFrames()
         cd:SetDrawBling(false)
         cd:SetReverse(true)
         cd:SetSwipeColor(0, 0, 0, 0.6)
+        cd:SetHideCountdownNumbers(false)
         f.Cooldown = cd
+
+        local cdText = nil
+        if cd.GetRegions then
+            for _, region in next, { cd:GetRegions() } do
+                if region:GetObjectType() == "FontString" then
+                    cdText = region
+                    break
+                end
+            end
+        end
+        if not cdText and cd.GetCountdownFontString then
+            cdText = cd:GetCountdownFontString()
+        end
+        f.CDText = cdText
 
         local borderFrame = CreateFrame("Frame", nil, f)
         borderFrame:SetPoint("TOPLEFT", -1, 1)
@@ -259,14 +274,6 @@ function sArenaFrameMixin:CreateNameplateDRFrames()
         local bRight = borderFrame:CreateTexture(nil, "OVERLAY")
         bRight:SetWidth(1); bRight:SetPoint("TOPRIGHT"); bRight:SetPoint("BOTTOMRIGHT"); bRight:SetColorTexture(0, 1, 0, 1)
         f.BorderTextures = { bTop, bBot, bLeft, bRight }
-
-        local textHolder = CreateFrame("Frame", nil, f)
-        textHolder:SetAllPoints()
-        textHolder:SetFrameLevel(cd:GetFrameLevel() + 3)
-        f.CDText = textHolder:CreateFontString(nil, "OVERLAY")
-        f.CDText:SetFont("Fonts\\FRIZQT__.TTF", 12, "OUTLINE")
-        f.CDText:SetPoint("CENTER", 0, 0)
-        f.CDText:SetTextColor(1, 1, 1, 1)
 
         f.GlowTexture = f:CreateTexture(nil, "OVERLAY", nil, 7)
         f.GlowTexture:SetPoint("TOPLEFT", -3, 3)
@@ -362,12 +369,12 @@ function sArenaFrameMixin:UpdateNameplateDRPositions()
     for _, f in ipairs(self.drFramesNP) do
         f:SetSize(size, size)
         f:SetScale(sc)
-        if f.CDText then
-            if hideText then
-                f.CDText:Hide()
-            else
-                f.CDText:SetFont("Fonts\\FRIZQT__.TTF", fontSize, "OUTLINE")
-                f.CDText:Show()
+        f.Cooldown:SetHideCountdownNumbers(hideText and true or false)
+        if f.CDText and not hideText then
+            local fontFile = f.CDText.fontFile or select(1, f.CDText:GetFont())
+            local flags = f.CDText.fontFlags or select(3, f.CDText:GetFont())
+            if fontFile then
+                pcall(function() f.CDText:SetFont(fontFile, fontSize, flags or "OUTLINE") end)
             end
         end
         if f:IsShown() then
@@ -521,15 +528,15 @@ function sArenaMixin:ShowTestNameplateDR()
 
             f.Icon:SetTexture(testTextures[n])
             f.Cooldown:SetCooldown(now, math.random(12, 30))
-            frame:SetNameplateDRBorderColor(n, testColors[n][1], testColors[n][2], testColors[n][3])
-            if f.CDText then
-                if db.hideText then
-                    f.CDText:Hide()
-                else
-                    f.CDText:SetFont("Fonts\\FRIZQT__.TTF", db.fontSize or 12, "OUTLINE")
-                    f.CDText:Show()
+            f.Cooldown:SetHideCountdownNumbers(db.hideText and true or false)
+            if f.CDText and not db.hideText then
+                local fontFile = f.CDText.fontFile or select(1, f.CDText:GetFont())
+                local flags = f.CDText.fontFlags or select(3, f.CDText:GetFont())
+                if fontFile then
+                    pcall(function() f.CDText:SetFont(fontFile, db.fontSize or 12, flags or "OUTLINE") end)
                 end
             end
+            frame:SetNameplateDRBorderColor(n, testColors[n][1], testColors[n][2], testColors[n][3])
             f:Show()
             prevFrame = f
         end
