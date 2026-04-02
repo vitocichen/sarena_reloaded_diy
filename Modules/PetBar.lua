@@ -375,6 +375,12 @@ function sArenaFrameMixin:ShowTestPetBar()
     local petSettings = layoutSettings.petBar
     local id = self:GetID()
 
+    -- Ensure position is set (critical for first-time test mode)
+    self.PetBar:SetSize(petSettings.width or 100, petSettings.height or 20)
+    self.PetBar:SetScale(petSettings.scale or 1)
+    self.PetBar:ClearAllPoints()
+    self.PetBar:SetPoint("CENTER", self, "CENTER", petSettings.posX or 0, petSettings.posY or -30)
+
     self.PetBar.HealthBar:SetMinMaxValues(0, 100)
     self.PetBar.HealthBar:SetValue(id == 1 and 100 or (id == 2 and 65 or 30))
 
