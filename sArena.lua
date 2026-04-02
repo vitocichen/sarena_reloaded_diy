@@ -1535,8 +1535,11 @@ function sArenaMixin:SetupDrag(frameToClick, frameToMove, settingsTable, updateM
                 local parentX, parentY = frameToMove:GetParent():GetCenter()
                 local scale = frameToMove:GetScale()
 
-                frameX = floor(((frameX - parentX) / scale) * 10 + 0.5) / 10
-                frameY = floor(((frameY - parentY) / scale) * 10 + 0.5) / 10
+                frameX = ((frameX * scale) - parentX) / scale
+                frameY = ((frameY * scale) - parentY) / scale
+
+                frameX = floor(frameX * 10 + 0.5) / 10
+                frameY = floor(frameY * 10 + 0.5) / 10
 
                 settings.posX, settings.posY = frameX, frameY
                 self[updateMethod](self, settings)

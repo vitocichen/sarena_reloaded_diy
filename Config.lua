@@ -3545,6 +3545,23 @@ function sArenaMixin:GetLayoutOptionsTable(layoutName)
                 desc = L["PetBar_Enable_Desc"],
                 type = "toggle",
                 width = "full",
+                get = function(info)
+                    local pb = info.handler.db.profile.layoutSettings[layoutName].petBar
+                    return pb and pb.enabled
+                end,
+                set = function(info, val)
+                    local pb = info.handler.db.profile.layoutSettings[layoutName].petBar
+                    if not pb then
+                        info.handler.db.profile.layoutSettings[layoutName].petBar = {}
+                        pb = info.handler.db.profile.layoutSettings[layoutName].petBar
+                    end
+                    pb.enabled = val
+                    self:UpdatePetBarSettings(pb)
+                    local _, instanceType = IsInInstance()
+                    if instanceType ~= "arena" and info.handler.arena1:IsShown() then
+                        info.handler:Test()
+                    end
+                end,
             },
             positioning = {
                 order = 1,
