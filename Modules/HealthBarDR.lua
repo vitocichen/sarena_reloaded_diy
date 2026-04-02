@@ -386,6 +386,14 @@ function sArenaFrameMixin:UpdateNameplateDRPositions()
                 pcall(function() f.CDText:SetFont(fontFile, fontSize, flags or "OUTLINE") end)
             end
         end
+
+        -- Re-show frames that were hidden by anchor loss but still have an active DR
+        if not f:IsShown() then
+            local hasTex = false
+            pcall(function() hasTex = f.Icon:GetTexture() ~= nil end)
+            if hasTex then f:Show() end
+        end
+
         if f:IsShown() then
             f:ClearAllPoints()
             if numActive == 0 then
