@@ -375,6 +375,9 @@ L["Racial_ShowInTrinketSlot_Desc"] = "If the enemy doesn't have a Trinket equipp
 L["Human_AlwaysShowTrinket"] = "Always Show Alliance Trinket for Humans"
 L["Human_AlwaysShowTrinket_Desc"] = "Always show the Alliance trinket texture on Human players, even if they don't have a trinket equipped."
 
+L["Option_RightClickFocus"] = "Right-Click to Set Focus"
+L["Option_RightClickFocus_Desc"] = "Right-clicking an arena frame sets it as your focus target.\n\nDisable this if you use click-casting addons (e.g. Clique) that bind right-click to spells."
+
 L["Drag_Hint"] = "Ctrl+Shift+Click to drag"
 L["Drag_Hint_Unlocked"] = "Frames unlocked - Left-click to drag"
 L["Option_UnlockFrames"] = "Unlock Frames"

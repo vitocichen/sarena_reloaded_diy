@@ -378,6 +378,9 @@ L["Racial_ShowInTrinketSlot_Desc"] = "如果敌人没有装备饰品，移除间
 L["Human_AlwaysShowTrinket"] = "人类始终显示联盟饰品"
 L["Human_AlwaysShowTrinket_Desc"] = "即使人类玩家未装备饰品，也始终显示联盟饰品材质。"
 
+L["Option_RightClickFocus"] = "右键点击设为焦点"
+L["Option_RightClickFocus_Desc"] = "右键点击竞技场框体将其设为焦点目标。\n\n如果你使用点击施法插件（如Clique）并绑定了右键施法，请禁用此选项。"
+
 L["Drag_Hint"] = "Ctrl+Shift+点击拖动"
 L["Drag_Hint_Unlocked"] = "框体已解锁 - 左键点击拖动"
 L["Option_UnlockFrames"] = "解锁框体"

@@ -44,5 +44,6 @@ sArenaMixin.defaultSettings = {
         },
         layoutSettings = {},
         invertClassIconCooldown = true,
+        rightClickFocus = true,
     }
 }

@@ -5110,6 +5110,22 @@ else
                                             info.handler:Test()
                                         end,
                                     },
+                                    rightClickFocus = {
+                                        order = 7.2,
+                                        name = L["Option_RightClickFocus"],
+                                        desc = L["Option_RightClickFocus_Desc"],
+                                        type = "toggle",
+                                        width = "full",
+                                        get = function(info) return info.handler.db.profile.rightClickFocus end,
+                                        set = function(info, val)
+                                            info.handler.db.profile.rightClickFocus = val
+                                            if not InCombatLockdown() then
+                                                for i = 1, info.handler.maxArenaOpponents do
+                                                    info.handler["arena" .. i]:UpdateRightClickFocus()
+                                                end
+                                            end
+                                        end,
+                                    },
                                     shadowSightTimer = {
                                         order = 7.5,
                                         name = L["Option_ShadowsightTimer"],

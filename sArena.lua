@@ -1432,6 +1432,7 @@ function sArenaMixin:SetLayout(_, layout)
         frame:UpdateFrameColors()
         frame:UpdateNameColor()
         frame:UpdateSpecNameColor()
+        frame:UpdateRightClickFocus()
     end
 
     self:ModernOrClassicCastbar()
@@ -2643,6 +2644,23 @@ function sArenaFrameMixin:SetLifeState()
     elseif isFeigningDeath then
         self.HealthBar:SetAlpha(0.55)
         self.isFeigningDeath = true
+    end
+end
+
+function sArenaFrameMixin:UpdateRightClickFocus()
+    if InCombatLockdown() then return end
+    local enabled = db and db.profile.rightClickFocus
+    if enabled then
+        self:SetAttribute("*type2", "focus")
+    else
+        self:SetAttribute("*type2", nil)
+    end
+    if self.PetBar and self.PetBar.Secure then
+        if enabled then
+            self.PetBar.Secure:SetAttribute("*type2", "focus")
+        else
+            self.PetBar.Secure:SetAttribute("*type2", nil)
+        end
     end
 end
 
