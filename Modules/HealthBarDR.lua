@@ -363,13 +363,24 @@ function sArenaFrameMixin:UpdateNameplateDRPositions()
 
     local fontSize = db.fontSize or 12
     local hideText = db.hideText
+    local borderSz = db.borderSize or 1
+    local drAlpha = db.alpha or 1.0
 
     local numActive = 0
     local prevFrame
     for _, f in ipairs(self.drFramesNP) do
         f:SetSize(size, size)
         f:SetScale(sc)
+        f:SetAlpha(drAlpha)
         f.Cooldown:SetHideCountdownNumbers(hideText and true or false)
+        if f.BorderTextures then
+            for _, tex in ipairs(f.BorderTextures) do
+                local r, g, b = tex:GetVertexColor()
+                tex:SetColorTexture(r or 0, g or 1, b or 0, 1)
+                if tex:GetHeight() <= 2 then tex:SetHeight(borderSz) end
+                if tex:GetWidth() <= 2 then tex:SetWidth(borderSz) end
+            end
+        end
         if f.CDText and not hideText then
             local fontFile = f.CDText.fontFile or select(1, f.CDText:GetFont())
             local flags = f.CDText.fontFlags or select(3, f.CDText:GetFont())
