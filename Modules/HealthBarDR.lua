@@ -522,6 +522,14 @@ function sArenaMixin:ShowTestNameplateDR()
             f.Icon:SetTexture(testTextures[n])
             f.Cooldown:SetCooldown(now, math.random(12, 30))
             frame:SetNameplateDRBorderColor(n, testColors[n][1], testColors[n][2], testColors[n][3])
+            if f.CDText then
+                if db.hideText then
+                    f.CDText:Hide()
+                else
+                    f.CDText:SetFont("Fonts\\FRIZQT__.TTF", db.fontSize or 12, "OUTLINE")
+                    f.CDText:Show()
+                end
+            end
             f:Show()
             prevFrame = f
         end
