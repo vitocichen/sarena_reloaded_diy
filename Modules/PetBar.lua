@@ -126,7 +126,6 @@ function sArenaFrameMixin:RefreshPetBar()
     local health = UnitHealth(petUnit)
     local maxHealth = UnitHealthMax(petUnit)
     local dead = UnitIsDeadOrGhost(petUnit)
-    local hasPoints = self.PetBar:GetNumPoints() > 0
 
     local healthIsSecret = issecretvalue and issecretvalue(health)
     local deadIsSecret = issecretvalue and issecretvalue(dead)
@@ -143,39 +142,40 @@ function sArenaFrameMixin:RefreshPetBar()
 
     local petSettings = layoutSettings.petBar
 
-    local ok, err = pcall(function()
-        self.PetBar.HealthBar:SetMinMaxValues(0, maxHealth)
-        self.PetBar.HealthBar:SetValue(health)
-
-        pcall(function()
-            local name = UnitName(petUnit)
-            if name and petSettings.showName and not (issecretvalue and issecretvalue(name)) then
-                self.PetBar.NameText:SetText(name)
-                self.PetBar.NameText:Show()
-            else
-                self.PetBar.NameText:Hide()
-            end
-        end)
-
-        local c = petSettings.color or {0, 1, 0, 1}
-        pcall(function()
-            if petSettings.classColor then
-                local _, cls = UnitClass(petUnit)
-                if cls and not (issecretvalue and issecretvalue(cls)) and RAID_CLASS_COLORS[cls] then
-                    local cc = RAID_CLASS_COLORS[cls]
-                    self.PetBar.HealthBar:SetStatusBarColor(cc.r, cc.g, cc.b, 1)
-                    return
-                end
-            end
-            self.PetBar.HealthBar:SetStatusBarColor(c[1], c[2], c[3], c[4] or 1)
-        end)
-
-        local w = petSettings.width or 100
-        local h = petSettings.height or 20
-        self.PetBar:SetSize(w, h)
+    -- Position must be set independently to avoid being blocked by health bar errors
+    pcall(function()
+        self.PetBar:SetSize(petSettings.width or 100, petSettings.height or 20)
         self.PetBar:SetScale(petSettings.scale or 1)
         self.PetBar:ClearAllPoints()
         self.PetBar:SetPoint("CENTER", self, "CENTER", petSettings.posX or 0, petSettings.posY or -30)
+    end)
+
+    pcall(function()
+        self.PetBar.HealthBar:SetMinMaxValues(0, maxHealth)
+        self.PetBar.HealthBar:SetValue(health)
+    end)
+
+    pcall(function()
+        local name = UnitName(petUnit)
+        if name and petSettings.showName and not (issecretvalue and issecretvalue(name)) then
+            self.PetBar.NameText:SetText(name)
+            self.PetBar.NameText:Show()
+        else
+            self.PetBar.NameText:Hide()
+        end
+    end)
+
+    pcall(function()
+        local c = petSettings.color or {0, 1, 0, 1}
+        if petSettings.classColor then
+            local _, cls = UnitClass(petUnit)
+            if cls and not (issecretvalue and issecretvalue(cls)) and RAID_CLASS_COLORS[cls] then
+                local cc = RAID_CLASS_COLORS[cls]
+                self.PetBar.HealthBar:SetStatusBarColor(cc.r, cc.g, cc.b, 1)
+                return
+            end
+        end
+        self.PetBar.HealthBar:SetStatusBarColor(c[1], c[2], c[3], c[4] or 1)
     end)
 
     self.PetBar:Show()
