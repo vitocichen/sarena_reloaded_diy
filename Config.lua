@@ -3383,6 +3383,225 @@ function sArenaMixin:GetLayoutOptionsTable(layoutName)
         },
     }
 
+    optionsTable.petBar = {
+        order = 8,
+        name = L["Category_PetBar"],
+        type = "group",
+        get = function(info)
+            local petBar = info.handler.db.profile.layoutSettings[layoutName].petBar
+            if petBar then
+                return petBar[info[#info]]
+            end
+        end,
+        set = function(info, val)
+            local petBar = info.handler.db.profile.layoutSettings[layoutName].petBar
+            if not petBar then
+                info.handler.db.profile.layoutSettings[layoutName].petBar = {}
+                petBar = info.handler.db.profile.layoutSettings[layoutName].petBar
+            end
+            self:UpdatePetBarSettings(petBar, info, val)
+        end,
+        args = {
+            enabled = {
+                order = 0,
+                name = L["PetBar_Enable"],
+                desc = L["PetBar_Enable_Desc"],
+                type = "toggle",
+                width = "full",
+            },
+            positioning = {
+                order = 1,
+                name = L["Positioning"],
+                type = "group",
+                inline = true,
+                args = {
+                    posX = {
+                        order = 1,
+                        name = L["Horizontal"],
+                        type = "range",
+                        min = -500,
+                        max = 500,
+                        softMin = -250,
+                        softMax = 250,
+                        step = 0.1,
+                        bigStep = 1,
+                    },
+                    posY = {
+                        order = 2,
+                        name = L["Vertical"],
+                        type = "range",
+                        min = -500,
+                        max = 500,
+                        softMin = -250,
+                        softMax = 250,
+                        step = 0.1,
+                        bigStep = 1,
+                    },
+                },
+            },
+            sizing = {
+                order = 2,
+                name = L["Sizing"],
+                type = "group",
+                inline = true,
+                args = {
+                    scale = {
+                        order = 1,
+                        name = L["Scale"],
+                        type = "range",
+                        min = 0.1,
+                        max = 5.0,
+                        softMin = 0.3,
+                        softMax = 3.0,
+                        step = 0.01,
+                        bigStep = 0.01,
+                        isPercent = true,
+                    },
+                    width = {
+                        order = 2,
+                        name = L["Width"],
+                        type = "range",
+                        min = 10,
+                        max = 400,
+                        step = 1,
+                    },
+                    height = {
+                        order = 3,
+                        name = L["Height"],
+                        type = "range",
+                        min = 4,
+                        max = 100,
+                        step = 1,
+                    },
+                },
+            },
+            appearance = {
+                order = 3,
+                name = L["PetBar_Appearance"],
+                type = "group",
+                inline = true,
+                args = {
+                    classColor = {
+                        order = 1,
+                        name = L["PetBar_ClassColor"],
+                        desc = L["PetBar_ClassColor_Desc"],
+                        type = "toggle",
+                    },
+                    color = {
+                        order = 2,
+                        name = L["PetBar_Color"],
+                        desc = L["PetBar_Color_Desc"],
+                        type = "color",
+                        hasAlpha = true,
+                        get = function(info)
+                            local petBar = info.handler.db.profile.layoutSettings[layoutName].petBar
+                            local c = petBar and petBar.color or {0, 1, 0, 1}
+                            return c[1], c[2], c[3], c[4]
+                        end,
+                        set = function(info, r, g, b, a)
+                            local petBar = info.handler.db.profile.layoutSettings[layoutName].petBar
+                            if not petBar then
+                                info.handler.db.profile.layoutSettings[layoutName].petBar = {}
+                                petBar = info.handler.db.profile.layoutSettings[layoutName].petBar
+                            end
+                            petBar.color = {r, g, b, a}
+                            self:UpdatePetBarSettings(petBar)
+                        end,
+                    },
+                    bgColor = {
+                        order = 3,
+                        name = L["PetBar_BgColor"],
+                        desc = L["PetBar_BgColor_Desc"],
+                        type = "color",
+                        hasAlpha = true,
+                        get = function(info)
+                            local petBar = info.handler.db.profile.layoutSettings[layoutName].petBar
+                            local c = petBar and petBar.bgColor or {0, 0, 0, 0.6}
+                            return c[1], c[2], c[3], c[4]
+                        end,
+                        set = function(info, r, g, b, a)
+                            local petBar = info.handler.db.profile.layoutSettings[layoutName].petBar
+                            if not petBar then
+                                info.handler.db.profile.layoutSettings[layoutName].petBar = {}
+                                petBar = info.handler.db.profile.layoutSettings[layoutName].petBar
+                            end
+                            petBar.bgColor = {r, g, b, a}
+                            self:UpdatePetBarSettings(petBar)
+                        end,
+                    },
+                    texture = {
+                        order = 4,
+                        name = L["PetBar_Texture"],
+                        type = "select",
+                        style = "dropdown",
+                        dialogControl = "LSM30_Statusbar",
+                        values = StatusbarValues,
+                        get = function(info)
+                            local petBar = info.handler.db.profile.layoutSettings[layoutName].petBar
+                            return petBar and petBar.texture or "sArena Default"
+                        end,
+                        set = function(info, key)
+                            local petBar = info.handler.db.profile.layoutSettings[layoutName].petBar
+                            if not petBar then
+                                info.handler.db.profile.layoutSettings[layoutName].petBar = {}
+                                petBar = info.handler.db.profile.layoutSettings[layoutName].petBar
+                            end
+                            petBar.texture = key
+                            self:UpdatePetBarSettings(petBar)
+                        end,
+                    },
+                    bgBarTexture = {
+                        order = 5,
+                        name = L["PetBar_BgTexture"],
+                        type = "select",
+                        style = "dropdown",
+                        dialogControl = "LSM30_Statusbar",
+                        values = StatusbarValues,
+                        get = function(info)
+                            local petBar = info.handler.db.profile.layoutSettings[layoutName].petBar
+                            return petBar and petBar.bgBarTexture or "Solid"
+                        end,
+                        set = function(info, key)
+                            local petBar = info.handler.db.profile.layoutSettings[layoutName].petBar
+                            if not petBar then
+                                info.handler.db.profile.layoutSettings[layoutName].petBar = {}
+                                petBar = info.handler.db.profile.layoutSettings[layoutName].petBar
+                            end
+                            petBar.bgBarTexture = key
+                            self:UpdatePetBarSettings(petBar)
+                        end,
+                    },
+                },
+            },
+            textOptions = {
+                order = 4,
+                name = L["PetBar_TextOptions"],
+                type = "group",
+                inline = true,
+                args = {
+                    showName = {
+                        order = 1,
+                        name = L["PetBar_ShowName"],
+                        desc = L["PetBar_ShowName_Desc"],
+                        type = "toggle",
+                    },
+                    showHealthText = {
+                        order = 2,
+                        name = L["PetBar_ShowHealthText"],
+                        desc = L["PetBar_ShowHealthText_Desc"],
+                        type = "toggle",
+                    },
+                    healthTextPercent = {
+                        order = 3,
+                        name = L["PetBar_HealthPercent"],
+                        desc = L["PetBar_HealthPercent_Desc"],
+                        type = "toggle",
+                    },
+                },
+            },
+        },
+    }
+
     return optionsTable
 end
 

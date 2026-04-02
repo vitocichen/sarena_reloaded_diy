@@ -90,6 +90,22 @@ layout.defaultSettings = {
             },
         },
     },
+    petBar = {
+        enabled = false,
+        posX = 0,
+        posY = -30,
+        scale = 1,
+        width = 100,
+        height = 16,
+        color = {0, 1, 0, 1},
+        bgColor = {0, 0, 0, 0.6},
+        classColor = false,
+        showName = true,
+        showHealthText = true,
+        healthTextPercent = true,
+        texture = "sArena Default",
+        bgBarTexture = "Solid",
+    },
 
     textures          = {
         generalStatusBarTexture       = "sArena Default",

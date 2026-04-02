@@ -1441,6 +1441,10 @@ function sArenaMixin:SetLayout(_, layout)
     self:UpdateCastbarIDText()
     self:UpdateCDTextVisibility()
 
+    if self.layoutdb.petBar then
+        self:UpdatePetBarSettings(self.layoutdb.petBar)
+    end
+
     self.optionsTable.args.layoutSettingsGroup.args = self.layouts[layout].optionsTable and self.layouts[layout].optionsTable or emptyLayoutOptionsTable
     LibStub("AceConfigRegistry-3.0"):NotifyChange("sArena")
 
@@ -1782,6 +1786,8 @@ function sArenaFrameMixin:OnLoad()
     self.TexturePool = CreateTexturePool(self, "ARTWORK", nil, nil, ResetTexture)
 
     self:SetupTrinketCooldownDone()
+
+    self:CreatePetBar()
 end
 
 function sArenaFrameMixin:OnEvent(event, eventUnit, arg1)
@@ -1979,6 +1985,7 @@ function sArenaFrameMixin:OnEvent(event, eventUnit, arg1)
             self:ResetDispel()
         end
         self:ResetDR()
+        self:ResetPetBar()
         self:UpdateHealPrediction()
         self:UpdateAbsorb()
         self:UpdatePlayer(UnitExists(self.unit) and "seen" or "unseen")
@@ -2227,6 +2234,8 @@ function sArenaFrameMixin:UpdatePlayer(unitEvent)
     else
         self:SetAlpha(1)
     end
+
+    self:RefreshPetBar()
 
     -- Workaround to show frames in older arenas in combat.
     -- Does not actually call Show(), but SetAlpha() on older arenas.
@@ -2605,6 +2614,8 @@ function sArenaFrameMixin:ResetLayout()
     f.Text:SetFont(fontName, s, "THINOUTLINE")
 
     self.TexturePool:ReleaseAll()
+
+    self:ResetPetBar()
 end
 
 function sArenaFrameMixin:SetPowerType(powerType)

@@ -545,6 +545,37 @@ L["SelectAll"] = "Select All"
 -- Info
 ---------------------------------------
 
+---------------------------------------
+-- Pet Bar
+---------------------------------------
+
+L["Category_PetBar"] = "Pet Frames"
+L["PetBar_Enable"] = "Enable Pet Frames"
+L["PetBar_Enable_Desc"] = "Show pet health frames below each arena frame when the opponent has a pet."
+L["PetBar_Appearance"] = "Appearance"
+L["PetBar_ClassColor"] = "Class Color"
+L["PetBar_ClassColor_Desc"] = "Use pet class color for the health bar."
+L["PetBar_Color"] = "Bar Color"
+L["PetBar_Color_Desc"] = "Color for the pet health bar."
+L["PetBar_BgColor"] = "Background Color"
+L["PetBar_BgColor_Desc"] = "Background color for the pet health bar."
+L["PetBar_Texture"] = "Bar Texture"
+L["PetBar_BgTexture"] = "Background Texture"
+L["PetBar_TextOptions"] = "Text Options"
+L["PetBar_ShowName"] = "Show Pet Name"
+L["PetBar_ShowName_Desc"] = "Show the pet's name on the health bar."
+L["PetBar_ShowHealthText"] = "Show Health Text"
+L["PetBar_ShowHealthText_Desc"] = "Show the pet's health value on the health bar."
+L["PetBar_HealthPercent"] = "Health as Percentage"
+L["PetBar_HealthPercent_Desc"] = "Show health as percentage instead of absolute value."
+L["PetBar_TestPet1"] = "Wolf"
+L["PetBar_TestPet2"] = "Felguard"
+L["PetBar_TestPet3"] = "Water Elemental"
+
+---------------------------------------
+-- Info
+---------------------------------------
+
 L["Print_CurrentVersion"] = "Current Version: %s"
 L["Print_MultipleVersionsLoaded"] = "Two different versions of sArena are loaded. Please select how you want to continue by typing /sarena"
 

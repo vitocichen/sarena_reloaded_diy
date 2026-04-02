@@ -1108,6 +1108,8 @@ function sArenaMixin:Test()
             frame.DispelMsq:Hide()
             frame.masqueHidden = true
         end
+
+        frame:ShowTestPetBar()
     end
 
     local arenaTargetsOnPartyOn = widgetSettings.partyTargetIndicators
@@ -1196,6 +1198,12 @@ function sArenaMixin:Test()
                         indicator:Hide()
                         indicator:SetAlpha(0)
                     end
+                end
+            end
+            for i = 1, self.maxArenaOpponents do
+                local arenaFrame = self["arena" .. i]
+                if arenaFrame and arenaFrame.PetBar then
+                    arenaFrame.PetBar:Hide()
                 end
             end
         end)

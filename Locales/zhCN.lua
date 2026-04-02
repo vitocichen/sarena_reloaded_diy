@@ -548,6 +548,37 @@ L["SelectAll"] = "全选"
 -- Info
 ---------------------------------------
 
+---------------------------------------
+-- 宠物框体
+---------------------------------------
+
+L["Category_PetBar"] = "宠物框体"
+L["PetBar_Enable"] = "启用宠物框体"
+L["PetBar_Enable_Desc"] = "当对手有宠物时，在竞技场框体下方显示宠物生命值框体。"
+L["PetBar_Appearance"] = "外观"
+L["PetBar_ClassColor"] = "职业颜色"
+L["PetBar_ClassColor_Desc"] = "使用宠物的职业颜色作为生命条颜色。"
+L["PetBar_Color"] = "血条颜色"
+L["PetBar_Color_Desc"] = "宠物生命条颜色。"
+L["PetBar_BgColor"] = "背景颜色"
+L["PetBar_BgColor_Desc"] = "宠物生命条背景颜色。"
+L["PetBar_Texture"] = "血条材质"
+L["PetBar_BgTexture"] = "背景材质"
+L["PetBar_TextOptions"] = "文字选项"
+L["PetBar_ShowName"] = "显示宠物名称"
+L["PetBar_ShowName_Desc"] = "在生命条上显示宠物名称。"
+L["PetBar_ShowHealthText"] = "显示生命值文字"
+L["PetBar_ShowHealthText_Desc"] = "在生命条上显示宠物生命值。"
+L["PetBar_HealthPercent"] = "以百分比显示生命值"
+L["PetBar_HealthPercent_Desc"] = "以百分比形式显示生命值，而非绝对数值。"
+L["PetBar_TestPet1"] = "狼"
+L["PetBar_TestPet2"] = "恶魔卫士"
+L["PetBar_TestPet3"] = "水元素"
+
+---------------------------------------
+-- 信息
+---------------------------------------
+
 L["Print_CurrentVersion"] = "当前版本：%s"
 L["Print_MultipleVersionsLoaded"] = "加载了两个不同版本的sArena。请输入 /sarena 选择如何继续"
 
