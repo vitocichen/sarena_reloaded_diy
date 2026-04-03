@@ -1,0 +1,36 @@
+name: Package and Release
+
+on:
+  push:
+    tags:
+      - "v*"
+      - "[0-9]*"
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    env:
+      CF_API_KEY: ${{ secrets.CF_API_KEY }}
+    steps:
+      - name: Clone project
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Generate changelog from commits
+        run: |
+          TAG_NAME=${GITHUB_REF#refs/tags/}
+          VERSION=${TAG_NAME#v}
+          echo "# ${VERSION}" > CHANGELOG.md
+          echo "" >> CHANGELOG.md
+          PREV_TAG=$(git tag --sort=-creatordate | sed -n '2p')
+          if [ -n "$PREV_TAG" ]; then
+            git log --pretty=format:"- %s" ${PREV_TAG}..${TAG_NAME} >> CHANGELOG.md
+          else
+            git log --pretty=format:"- %s" >> CHANGELOG.md
+          fi
+
+      - name: Package and release
+        uses: BigWigsMods/packager@v2
+        with:
+          args: -g retail -n "{project-version}"
