@@ -53,8 +53,11 @@ sArenaMixin.defaultSettings = {
         },
         selfDR = {
             enabled = false,
+            trackMode = 2,
             posX = 0,
             posY = 0,
+            selfPosX = 0,
+            selfPosY = 200,
             size = 24,
             spacing = 2,
             growthDirection = 3,

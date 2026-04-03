@@ -3864,12 +3864,40 @@ function sArenaMixin:GetLayoutOptionsTable(layoutName)
                     end
                 end,
             },
+            trackMode = {
+                order = 1.5,
+                name = L["SelfDR_TrackMode"] or "Track Mode",
+                desc = L["SelfDR_TrackMode_Desc"] or "Choose tracking scope",
+                type = "select",
+                width = 1.5,
+                values = {
+                    [1] = L["SelfDR_TrackMode_SelfOnly"] or "Self Only (free position)",
+                    [2] = L["SelfDR_TrackMode_SelfParty"] or "Self + Party (on party frames)",
+                },
+                get = function(info) return info.handler.db.profile.selfDR.trackMode or 2 end,
+                set = function(info, val)
+                    info.handler.db.profile.selfDR.trackMode = val
+                    if info.handler.testMode then
+                        info.handler:HideTestSelfDR()
+                        info.handler:ShowTestSelfDR()
+                    end
+                    LibStub("AceConfigRegistry-3.0"):NotifyChange("sArena")
+                end,
+                disabled = function(info) return not info.handler.db.profile.selfDR.enabled end,
+            },
+            selfOnlyHint = {
+                order = 1.8,
+                type = "description",
+                name = "|cff00ff00" .. (L["SelfDR_SelfOnlyHint"] or "Self Only mode: drag the DR icons freely on screen during test mode or arena.") .. "|r",
+                hidden = function(info) return (info.handler.db.profile.selfDR.trackMode or 2) ~= 1 end,
+            },
             positioning = {
                 order = 2,
                 name = L["Positioning"],
                 type = "group",
                 inline = true,
                 disabled = function(info) return not info.handler.db.profile.selfDR.enabled end,
+                hidden = function(info) return (info.handler.db.profile.selfDR.trackMode or 2) == 1 end,
                 args = {
                     posX = {
                         order = 1, name = L["Horizontal"], type = "range",

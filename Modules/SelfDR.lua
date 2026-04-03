@@ -253,21 +253,65 @@ local function GetSelfDRSettings()
     return parent.profile.selfDR
 end
 
+local function IsSelfOnlyMode()
+    local db = GetSelfDRSettings()
+    return db and db.trackMode == 1
+end
+
+local function SetupSelfOnlyDrag(w)
+    if w.dragSetup then return end
+    w:EnableMouse(true)
+    w:SetMovable(true)
+    w:RegisterForDrag("LeftButton")
+    w:SetScript("OnDragStart", function(self) self:StartMoving() end)
+    w:SetScript("OnDragStop", function(self)
+        self:StopMovingOrSizing()
+        local db = GetSelfDRSettings()
+        if db then
+            local cx, cy = self:GetCenter()
+            local ux, uy = UIParent:GetCenter()
+            db.selfPosX = cx - ux
+            db.selfPosY = cy - uy
+        end
+    end)
+    w.dragSetup = true
+end
+
+local function DisableSelfOnlyDrag(w)
+    if not w.dragSetup then return end
+    w:EnableMouse(false)
+    w:SetMovable(false)
+    w:SetScript("OnDragStart", nil)
+    w:SetScript("OnDragStop", nil)
+    w.dragSetup = nil
+end
+
 local function RenderUnit(unit, now)
     local db = GetSelfDRSettings()
     if not db or not db.enabled then return end
 
+    local selfOnly = IsSelfOnlyMode()
+    if selfOnly and unit ~= "player" then return end
+
     local w = GetOrCreateWidget(unit)
-    local anchor = anchors[unit]
-    if not anchor then w:Hide(); return end
 
     local state = drStates[unit]
     if not state then w:Hide(); return end
 
     w:ClearAllPoints()
-    w:SetPoint("CENTER", anchor, "CENTER", db.posX or 0, db.posY or 0)
-    if anchor.GetFrameLevel then
-        w:SetFrameLevel((anchor:GetFrameLevel() or 0) + 5)
+    if selfOnly and unit == "player" then
+        w:SetPoint("CENTER", UIParent, "CENTER", db.selfPosX or 0, db.selfPosY or 200)
+        w:SetFrameStrata("HIGH")
+        w:SetFrameLevel(200)
+        SetupSelfOnlyDrag(w)
+    else
+        local anchor = anchors[unit]
+        if not anchor then w:Hide(); return end
+        w:SetPoint("CENTER", anchor, "CENTER", db.posX or 0, db.posY or 0)
+        if anchor.GetFrameLevel then
+            w:SetFrameLevel((anchor:GetFrameLevel() or 0) + 5)
+        end
+        DisableSelfOnlyDrag(w)
     end
 
     local size = db.size or 24
@@ -336,11 +380,15 @@ local function OnTick()
     end
 
     local now = GetTime()
+    local selfOnly = IsSelfOnlyMode()
 
-    RebuildAnchors()
+    if not selfOnly then
+        RebuildAnchors()
+    end
     ExpireStates(now)
 
-    for _, unit in ipairs(TRACKED_UNITS) do
+    local unitsToScan = selfOnly and { "player" } or TRACKED_UNITS
+    for _, unit in ipairs(unitsToScan) do
         if unit == "player" or UnitExists(unit) then
             ScanLoC(unit, now)
             RenderUnit(unit, now)
@@ -355,6 +403,7 @@ end
 
 local function OnUnitAura(unit, updateInfo)
     if not unit then return end
+    if IsSelfOnlyMode() and unit ~= "player" then return end
     local isTracked = false
     for _, u in ipairs(TRACKED_UNITS) do
         if u == unit then isTracked = true; break end
@@ -496,16 +545,19 @@ function sArenaMixin:ShowTestSelfDR()
 
     CreateMockTestFrames()
 
-    -- Use real party frames if visible, otherwise mock frames
-    local hasRealFrames = false
-    for _, unit in ipairs(TEST_UNITS) do
-        local a = FindPartyAnchor(unit)
-        if a then hasRealFrames = true; break end
-    end
+    local selfOnly = (selfDRdb.trackMode == 1)
+    local testUnits = selfOnly and { "player" } or TEST_UNITS
 
-    if not hasRealFrames then
-        testMockContainer:Show()
-        for _, f in ipairs(testMockFrames) do f:Show() end
+    if not selfOnly then
+        local hasRealFrames = false
+        for _, unit in ipairs(testUnits) do
+            local a = FindPartyAnchor(unit)
+            if a then hasRealFrames = true; break end
+        end
+        if not hasRealFrames then
+            testMockContainer:Show()
+            for _, f in ipairs(testMockFrames) do f:Show() end
+        end
     end
 
     local testData = {
@@ -523,13 +575,7 @@ function sArenaMixin:ShowTestSelfDR()
         local grow = selfDRdb.growthDirection or 3
         local fontSize = selfDRdb.fontSize or 14
 
-        for idx, unit in ipairs(TEST_UNITS) do
-            local anchor = FindPartyAnchor(unit)
-            if not anchor and testMockFrames[idx] then
-                anchor = testMockFrames[idx]
-            end
-            if not anchor then return end
-
+        for idx, unit in ipairs(testUnits) do
             if not testStates[unit] then testStates[unit] = {} end
             local state = testStates[unit]
 
@@ -549,9 +595,19 @@ function sArenaMixin:ShowTestSelfDR()
 
             local w = GetOrCreateWidget(unit)
             w:ClearAllPoints()
-            w:SetPoint("CENTER", anchor, "CENTER", selfDRdb.posX or 0, selfDRdb.posY or 0)
             w:SetFrameStrata("HIGH")
             w:SetFrameLevel(200)
+
+            if selfOnly then
+                w:SetPoint("CENTER", UIParent, "CENTER", selfDRdb.selfPosX or 0, selfDRdb.selfPosY or 200)
+                SetupSelfOnlyDrag(w)
+            else
+                local anchor = FindPartyAnchor(unit)
+                if not anchor and testMockFrames[idx] then anchor = testMockFrames[idx] end
+                if not anchor then return end
+                w:SetPoint("CENTER", anchor, "CENTER", selfDRdb.posX or 0, selfDRdb.posY or 0)
+                DisableSelfOnlyDrag(w)
+            end
 
             local shown = 0
             for _, cat in ipairs(CAT_ORDER) do
