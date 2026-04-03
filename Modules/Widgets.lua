@@ -28,7 +28,8 @@ end
 
 function sArenaMixin:GetPartyTargetIconStyleIndex()
     local db = self.db and self.db.profile
-    local widgets = db and db.layoutSettings and db.layoutSettings[db.profile.currentLayout] and db.layoutSettings[db.profile.currentLayout].widgets
+    local layout = db and db.currentLayout
+    local widgets = db and layout and db.layoutSettings and db.layoutSettings[layout] and db.layoutSettings[layout].widgets
     local pti = widgets and widgets.partyTargetIndicators
     local key = pti and pti.iconStyle or "person"
     for i, style in ipairs(self.partyTargetIconStyles) do
@@ -39,7 +40,8 @@ end
 
 function sArenaMixin:ApplyPartyTargetIconStyle(iconFrame)
     local db = self.db and self.db.profile
-    local widgets = db and db.layoutSettings and db.layoutSettings[db.profile.currentLayout] and db.layoutSettings[db.profile.currentLayout].widgets
+    local layout = db and db.currentLayout
+    local widgets = db and layout and db.layoutSettings and db.layoutSettings[layout] and db.layoutSettings[layout].widgets
     local pti = widgets and widgets.partyTargetIndicators
     local key = pti and pti.iconStyle or "person"
 
