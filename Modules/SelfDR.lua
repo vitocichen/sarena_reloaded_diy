@@ -309,13 +309,15 @@ local function RenderUnit(unit, now)
     local state = drStates[unit]
     if not state then w:Hide(); return end
 
-    w:ClearAllPoints()
     if selfOnly and unit == "player" then
-        w:SetPoint("CENTER", UIParent, "CENTER", db.selfPosX or 0, db.selfPosY or 200)
+        if w:GetNumPoints() == 0 then
+            w:SetPoint("CENTER", UIParent, "CENTER", db.selfPosX or 0, db.selfPosY or 200)
+        end
         w:SetFrameStrata("HIGH")
         w:SetFrameLevel(200)
         SetupSelfOnlyDrag(w)
     else
+        w:ClearAllPoints()
         local anchor = anchors[unit]
         if not anchor then w:Hide(); return end
         w:SetPoint("CENTER", anchor, "CENTER", db.posX or 0, db.posY or 0)
@@ -606,14 +608,16 @@ function sArenaMixin:ShowTestSelfDR()
             end
 
             local w = GetOrCreateWidget(unit)
-            w:ClearAllPoints()
             w:SetFrameStrata("HIGH")
             w:SetFrameLevel(200)
 
             if selfOnly then
-                w:SetPoint("CENTER", UIParent, "CENTER", selfDRdb.selfPosX or 0, selfDRdb.selfPosY or 200)
+                if w:GetNumPoints() == 0 then
+                    w:SetPoint("CENTER", UIParent, "CENTER", selfDRdb.selfPosX or 0, selfDRdb.selfPosY or 200)
+                end
                 SetupSelfOnlyDrag(w)
             else
+                w:ClearAllPoints()
                 local anchor = FindPartyAnchor(unit)
                 if not anchor and testMockFrames[idx] then anchor = testMockFrames[idx] end
                 if not anchor then return end
