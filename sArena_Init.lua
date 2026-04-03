@@ -8,7 +8,7 @@ sArenaMixin.isMoP = gameVersion:match("^5%.")
 sArenaMixin.isWrath = gameVersion:match("^3%.")
 sArenaMixin.isTBC = gameVersion:match("^2%.")
 
-sArenaMixin.addonTitle = "|T135884:13:13|t sArena |cffff8000Reloaded|r v1.0.0 |cffff8800DIY:|r |cff00ff96DK-\229\167\156\228\184\150\231\166\187(\231\135\131\231\131\167\228\185\139\229\136\131)|r"
+sArenaMixin.addonTitle = "|T135884:13:13|t sArena |cffff8000Reloaded|r v1.0.1 |cffff8800DIY:|r |cff00ff96DK-\229\167\156\228\184\150\231\166\187(\231\135\131\231\131\167\228\185\139\229\136\131)|r"
 sArenaMixin.layouts = {}
 sArenaMixin.defaultSettings = {
     profile = {
