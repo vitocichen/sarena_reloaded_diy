@@ -260,6 +260,7 @@ end
 
 local function SetupSelfOnlyDrag(w)
     if w.dragSetup then return end
+    w:SetClampedToScreen(true)
     w:EnableMouse(true)
     w:SetMovable(true)
     w:RegisterForDrag("LeftButton")
@@ -275,6 +276,16 @@ local function SetupSelfOnlyDrag(w)
         end
     end)
     w.dragSetup = true
+end
+
+local function ResizeWidgetToFitIcons(w, shown, size, spacing, grow)
+    if shown <= 0 then return end
+    local total = shown * size + (shown - 1) * spacing
+    if grow == 3 or grow == 4 then
+        w:SetSize(total, size)
+    else
+        w:SetSize(size, total)
+    end
 end
 
 local function DisableSelfOnlyDrag(w)
@@ -362,6 +373,7 @@ local function RenderUnit(unit, now)
         w.icons[i]:Hide()
     end
 
+    ResizeWidgetToFitIcons(w, shown, size, spacing, grow)
     if shown > 0 then w:Show() else w:Hide() end
 end
 
@@ -638,6 +650,7 @@ function sArenaMixin:ShowTestSelfDR()
                 end
             end
             for i = shown + 1, #w.icons do w.icons[i]:Hide() end
+            ResizeWidgetToFitIcons(w, shown, size, spacing, grow)
             if shown > 0 then w:Show() else w:Hide() end
         end
     end
