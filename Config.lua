@@ -2181,6 +2181,28 @@ function sArenaMixin:GetLayoutOptionsTable(layoutName)
                             info.handler:Test()
                         end,
                     },
+                    iconStyle = {
+                        order = 0.5,
+                        name = L["Widget_IconStyle"] or "Icon Style",
+                        type = "select",
+                        width = 1.2,
+                        values = function() return self:GetPartyTargetIconStyleValues() end,
+                        get = function(info) return self:GetPartyTargetIconStyleIndex() end,
+                        set = function(info, val)
+                            local widgets = info.handler.db.profile.layoutSettings[layoutName].widgets
+                            widgets = widgets or {}
+                            widgets.partyTargetIndicators = widgets.partyTargetIndicators or {}
+                            widgets.partyTargetIndicators.iconStyle = self.partyTargetIconStyles[val].key
+                            info.handler.db.profile.layoutSettings[layoutName].widgets = widgets
+                            self:UpdateWidgetSettings(widgets, info, val)
+                            info.handler:Test()
+                        end,
+                        disabled = function(info)
+                            local widgets = info.handler.db.profile.layoutSettings[layoutName].widgets
+                            local pti = widgets and widgets.partyTargetIndicators
+                            return not (pti and pti.enabled)
+                        end,
+                    },
                     partyOnArena = {
                         order = 1,
                         name = L["Widget_PartyOnArena"],

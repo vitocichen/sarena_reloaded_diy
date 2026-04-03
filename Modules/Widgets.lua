@@ -5,6 +5,58 @@
 
 local isMidnight = sArenaMixin.isMidnight
 
+sArenaMixin.partyTargetIconStyles = {
+    { key = "person",    name = "Person",     method = "texture", value = "Interface\\AddOns\\sArena_Reloaded\\Textures\\GM-icon-headCount.tga", desaturate = true },
+    { key = "crosshair", name = "Crosshair",  method = "atlas",   value = "TargetCrosshairs", desaturate = false },
+    { key = "skull",     name = "Skull",       method = "atlas",   value = "Target-Skull", desaturate = true },
+    { key = "star",      name = "Star",        method = "atlas",   value = "VignetteKill", desaturate = true },
+    { key = "sword",     name = "Swords",      method = "atlas",   value = "Swords", desaturate = true },
+    { key = "dot",       name = "Dot",         method = "atlas",   value = "Waypoint-MapPin-ChatIcon", desaturate = false },
+    { key = "arrow",     name = "Arrow",       method = "atlas",   value = "Navigation-Tracked-Arrow", desaturate = true },
+    { key = "shield",    name = "Shield",      method = "atlas",   value = "UI-HUD-UnitFrame-Target-PortraitOn-Boss-Rare-Star", desaturate = true },
+    { key = "eye",       name = "Eye",         method = "texture", value = 136155, desaturate = true },
+    { key = "lightning", name = "Lightning",   method = "texture", value = 136048, desaturate = true },
+}
+
+function sArenaMixin:GetPartyTargetIconStyleValues()
+    local vals = {}
+    for i, style in ipairs(self.partyTargetIconStyles) do
+        vals[i] = style.name
+    end
+    return vals
+end
+
+function sArenaMixin:GetPartyTargetIconStyleIndex()
+    local db = self.db and self.db.profile
+    local widgets = db and db.layoutSettings and db.layoutSettings[db.profile.currentLayout] and db.layoutSettings[db.profile.currentLayout].widgets
+    local pti = widgets and widgets.partyTargetIndicators
+    local key = pti and pti.iconStyle or "person"
+    for i, style in ipairs(self.partyTargetIconStyles) do
+        if style.key == key then return i end
+    end
+    return 1
+end
+
+function sArenaMixin:ApplyPartyTargetIconStyle(iconFrame)
+    local db = self.db and self.db.profile
+    local widgets = db and db.layoutSettings and db.layoutSettings[db.profile.currentLayout] and db.layoutSettings[db.profile.currentLayout].widgets
+    local pti = widgets and widgets.partyTargetIndicators
+    local key = pti and pti.iconStyle or "person"
+
+    local style
+    for _, s in ipairs(self.partyTargetIconStyles) do
+        if s.key == key then style = s; break end
+    end
+    if not style then style = self.partyTargetIconStyles[1] end
+
+    if style.method == "atlas" then
+        iconFrame.Texture:SetAtlas(style.value)
+    else
+        iconFrame.Texture:SetTexture(style.value)
+    end
+    iconFrame.Texture:SetDesaturated(style.desaturate)
+end
+
 function sArenaMixin:ChainIndicator(indicator, previous, direction, spacing)
     indicator:ClearAllPoints()
     spacing = spacing or 3
@@ -76,7 +128,9 @@ function sArenaMixin:UpdateWidgetSettings(db, info, val)
         if db.partyTargetIndicators then
             local poaScale = db.partyTargetIndicators.partyOnArena and db.partyTargetIndicators.partyOnArena.scale or 1
             for j = 1, 4 do
-                frame.WidgetOverlay["partyTarget" .. j]:SetScale(poaScale)
+                local pt = frame.WidgetOverlay["partyTarget" .. j]
+                pt:SetScale(poaScale)
+                self:ApplyPartyTargetIconStyle(pt)
             end
         end
 

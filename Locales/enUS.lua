@@ -260,6 +260,7 @@ L["Widget_TargetIndicator_Desc"] = "Shows an icon and/or colored border on your 
 L["Widget_FocusIndicator"] = "Focus Indicator"
 L["Widget_FocusIndicator_Enable"] = "Enable Focus Indicator"
 L["Widget_FocusIndicator_Desc"] = "Shows an icon and/or colored border on your current focus"
+L["Widget_IconStyle"] = "Icon Style"
 L["Widget_ArenaTargetIndicators"] = "Arena/Party Target Indicators"
 L["Widget_PartyTargetsOnArena_Enable"] = "Show PartyTargets on ArenaFrames"
 L["Widget_PartyTargetsOnArena_Desc"] = "Shows class colored icons on arena frames indicating which party members are targeting each opponent"

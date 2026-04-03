@@ -1805,8 +1805,7 @@ function sArenaFrameMixin:OnLoad()
     self.WidgetOverlay.combatIndicator.Texture:SetAtlas("Food")
     for i = 1, 4 do
         local pt = self.WidgetOverlay["partyTarget" .. i]
-        pt.Texture:SetTexture("Interface\\AddOns\\sArena_Reloaded\\Textures\\GM-icon-headCount.tga")
-        pt.Texture:SetDesaturated(true)
+        self.parent:ApplyPartyTargetIconStyle(pt)
     end
     self.WidgetOverlay.targetIndicator:SetFrameLevel(15)
     self.Trinket:SetFrameLevel(7)
