@@ -1,3 +1,10 @@
+DIY v1.0.1
+- 重写自身递减模块，改为纯自身追踪（参考 MyDRs），支持 7 种递减分类独立开关
+- 可拖拽、可配置图标大小/间距/增长方向/倒计时/递减文字
+- 新增测试模式，循环演示各递减状态
+- 修复竞技场宠物框体不显示名字的问题，无信息时回退显示"宠物"
+- 自身递减配置全面汉化
+
 2.4.3
 - Fix some problems with the frames not being fully visible in spawn room all the time.
 - Fix some misconfiguration issues behind the scenes. This is a lot of small changes everywhere in the addon so launching as beta for a while before release.

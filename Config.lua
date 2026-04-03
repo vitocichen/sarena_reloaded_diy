@@ -3856,116 +3856,93 @@ function sArenaMixin:GetLayoutOptionsTable(layoutName)
                     info.handler.db.profile.selfDR.enabled = val
                     info.handler:EnableSelfDR()
                     if info.handler.testMode then
-                        if val then
-                            info.handler:ShowTestSelfDR()
-                        else
-                            info.handler:HideTestSelfDR()
-                        end
+                        if val then info.handler:ShowTestSelfDR() else info.handler:HideTestSelfDR() end
                     end
                 end,
             },
-            trackMode = {
+            dragHint = {
                 order = 1.5,
-                name = L["SelfDR_TrackMode"] or "Track Mode",
-                desc = L["SelfDR_TrackMode_Desc"] or "Choose tracking scope",
-                type = "select",
-                width = 1.5,
-                values = {
-                    [1] = L["SelfDR_TrackMode_SelfOnly"] or "Self Only (free position)",
-                    [2] = L["SelfDR_TrackMode_SelfParty"] or "Self + Party (on party frames)",
-                },
-                get = function(info) return info.handler.db.profile.selfDR.trackMode or 2 end,
-                set = function(info, val)
-                    info.handler.db.profile.selfDR.trackMode = val
-                    if info.handler.testMode then
-                        info.handler:HideTestSelfDR()
-                        info.handler:ShowTestSelfDR()
-                    end
-                    LibStub("AceConfigRegistry-3.0"):NotifyChange("sArena")
-                end,
-                disabled = function(info) return not info.handler.db.profile.selfDR.enabled end,
-            },
-            selfOnlyHint = {
-                order = 1.8,
                 type = "description",
-                name = "|cff00ff00" .. (L["SelfDR_SelfOnlyHint"] or "Self Only mode: drag the DR icons freely on screen during test mode or arena.") .. "|r",
-                hidden = function(info) return (info.handler.db.profile.selfDR.trackMode or 2) ~= 1 end,
-            },
-            positioning = {
-                order = 2,
-                name = L["Positioning"],
-                type = "group",
-                inline = true,
-                disabled = function(info) return not info.handler.db.profile.selfDR.enabled end,
-                hidden = function(info) return (info.handler.db.profile.selfDR.trackMode or 2) == 1 end,
-                args = {
-                    posX = {
-                        order = 1, name = L["Horizontal"], type = "range",
-                        min = -500, max = 500, step = 1,
-                        get = function(info) return info.handler.db.profile.selfDR.posX end,
-                        set = function(info, val)
-                            info.handler.db.profile.selfDR.posX = val
-                            if info.handler.testMode then info.handler:ShowTestSelfDR() end
-                        end,
-                    },
-                    posY = {
-                        order = 2, name = L["Vertical"], type = "range",
-                        min = -500, max = 500, step = 1,
-                        get = function(info) return info.handler.db.profile.selfDR.posY end,
-                        set = function(info, val)
-                            info.handler.db.profile.selfDR.posY = val
-                            if info.handler.testMode then info.handler:ShowTestSelfDR() end
-                        end,
-                    },
-                    growthDirection = {
-                        order = 3, name = L["Option_GrowthDirection"], type = "select",
-                        style = "dropdown", values = growthValues,
-                        get = function(info) return info.handler.db.profile.selfDR.growthDirection end,
-                        set = function(info, val)
-                            info.handler.db.profile.selfDR.growthDirection = val
-                            if info.handler.testMode then info.handler:ShowTestSelfDR() end
-                        end,
-                    },
-                },
+                name = "|cff00ff00" .. (L["SelfDR_DragHint"] or "Use Test Mode or /selfdr test to drag DR icons to your preferred position.") .. "|r",
             },
             sizing = {
-                order = 3,
+                order = 2,
                 name = L["Sizing"],
                 type = "group",
                 inline = true,
                 disabled = function(info) return not info.handler.db.profile.selfDR.enabled end,
                 args = {
-                    size = {
+                    iconSize = {
                         order = 1, name = L["Size"], type = "range",
-                        min = 12, max = 80, step = 1,
-                        get = function(info) return info.handler.db.profile.selfDR.size end,
+                        min = 20, max = 80, step = 1,
+                        get = function(info) return info.handler.db.profile.selfDR.iconSize or 36 end,
                         set = function(info, val)
-                            info.handler.db.profile.selfDR.size = val
+                            info.handler.db.profile.selfDR.iconSize = val
+                            info.handler:EnableSelfDR()
                             if info.handler.testMode then info.handler:ShowTestSelfDR() end
                         end,
                     },
-                    spacing = {
+                    iconPadding = {
                         order = 2, name = L["Spacing"], type = "range",
                         min = 0, max = 20, step = 1,
-                        get = function(info) return info.handler.db.profile.selfDR.spacing end,
+                        get = function(info) return info.handler.db.profile.selfDR.iconPadding or 4 end,
                         set = function(info, val)
-                            info.handler.db.profile.selfDR.spacing = val
+                            info.handler.db.profile.selfDR.iconPadding = val
+                            info.handler:EnableSelfDR()
                             if info.handler.testMode then info.handler:ShowTestSelfDR() end
                         end,
                     },
                     fontSize = {
                         order = 3, name = L["Option_FontSize"], type = "range",
                         min = 8, max = 32, step = 1,
-                        get = function(info) return info.handler.db.profile.selfDR.fontSize end,
+                        get = function(info) return info.handler.db.profile.selfDR.fontSize or 14 end,
                         set = function(info, val)
                             info.handler.db.profile.selfDR.fontSize = val
+                            info.handler:EnableSelfDR()
+                            if info.handler.testMode then info.handler:ShowTestSelfDR() end
+                        end,
+                    },
+                    growthDirection = {
+                        order = 4, name = L["Option_GrowthDirection"], type = "select",
+                        style = "dropdown",
+                        values = { RIGHT = L["Right"] or "Right", LEFT = L["Left"] or "Left", UP = L["Up"] or "Up", DOWN = L["Down"] or "Down" },
+                        get = function(info) return info.handler.db.profile.selfDR.growthDirection or "RIGHT" end,
+                        set = function(info, val)
+                            info.handler.db.profile.selfDR.growthDirection = val
+                            info.handler:EnableSelfDR()
+                            if info.handler.testMode then info.handler:ShowTestSelfDR() end
+                        end,
+                    },
+                    showDRText = {
+                        order = 5, name = L["SelfDR_ShowDRText"] or "Show DR Text (50%/IMM)", type = "toggle",
+                        get = function(info) return info.handler.db.profile.selfDR.showDRText ~= false end,
+                        set = function(info, val)
+                            info.handler.db.profile.selfDR.showDRText = val
+                            info.handler:EnableSelfDR()
+                            if info.handler.testMode then info.handler:ShowTestSelfDR() end
+                        end,
+                    },
+                    showCountdown = {
+                        order = 6, name = L["SelfDR_ShowCountdown"] or "Show Countdown", type = "toggle",
+                        get = function(info) return info.handler.db.profile.selfDR.showCountdown ~= false end,
+                        set = function(info, val)
+                            info.handler.db.profile.selfDR.showCountdown = val
+                            info.handler:EnableSelfDR()
+                            if info.handler.testMode then info.handler:ShowTestSelfDR() end
+                        end,
+                    },
+                    resetPos = {
+                        order = 7, name = L["SelfDR_ResetPos"] or "Reset Position", type = "execute",
+                        func = function(info)
+                            info.handler.db.profile.selfDR.containerPos = { point = "CENTER", relPoint = "CENTER", x = 0, y = 200 }
+                            info.handler:EnableSelfDR()
                             if info.handler.testMode then info.handler:ShowTestSelfDR() end
                         end,
                     },
                 },
             },
             categories = {
-                order = 4,
+                order = 3,
                 name = L["Option_Categories"],
                 type = "group",
                 inline = true,
@@ -3974,22 +3951,37 @@ function sArenaMixin:GetLayoutOptionsTable(layoutName)
                     stun = {
                         order = 1, name = L["SelfDR_Cat_Stun"], type = "toggle",
                         get = function(info) local c = info.handler.db.profile.selfDR.categories; return c and c.stun ~= false end,
-                        set = function(info, val) info.handler.db.profile.selfDR.categories = info.handler.db.profile.selfDR.categories or {}; info.handler.db.profile.selfDR.categories.stun = val end,
+                        set = function(info, val) info.handler.db.profile.selfDR.categories = info.handler.db.profile.selfDR.categories or {}; info.handler.db.profile.selfDR.categories.stun = val; if info.handler.testMode then info.handler:ShowTestSelfDR() end end,
                     },
-                    incap = {
-                        order = 2, name = L["SelfDR_Cat_Incap"], type = "toggle",
-                        get = function(info) local c = info.handler.db.profile.selfDR.categories; return c and c.incap ~= false end,
-                        set = function(info, val) info.handler.db.profile.selfDR.categories = info.handler.db.profile.selfDR.categories or {}; info.handler.db.profile.selfDR.categories.incap = val end,
+                    disorient = {
+                        order = 2, name = L["SelfDR_Cat_Confuse"] or "Disorient", type = "toggle",
+                        get = function(info) local c = info.handler.db.profile.selfDR.categories; return c and c.disorient ~= false end,
+                        set = function(info, val) info.handler.db.profile.selfDR.categories = info.handler.db.profile.selfDR.categories or {}; info.handler.db.profile.selfDR.categories.disorient = val; if info.handler.testMode then info.handler:ShowTestSelfDR() end end,
                     },
-                    confuse = {
-                        order = 3, name = L["SelfDR_Cat_Confuse"], type = "toggle",
-                        get = function(info) local c = info.handler.db.profile.selfDR.categories; return c and c.confuse ~= false end,
-                        set = function(info, val) info.handler.db.profile.selfDR.categories = info.handler.db.profile.selfDR.categories or {}; info.handler.db.profile.selfDR.categories.confuse = val end,
+                    incapacitate = {
+                        order = 3, name = L["SelfDR_Cat_Incap"] or "Incapacitate", type = "toggle",
+                        get = function(info) local c = info.handler.db.profile.selfDR.categories; return c and c.incapacitate ~= false end,
+                        set = function(info, val) info.handler.db.profile.selfDR.categories = info.handler.db.profile.selfDR.categories or {}; info.handler.db.profile.selfDR.categories.incapacitate = val; if info.handler.testMode then info.handler:ShowTestSelfDR() end end,
                     },
                     root = {
                         order = 4, name = L["SelfDR_Cat_Root"], type = "toggle",
                         get = function(info) local c = info.handler.db.profile.selfDR.categories; return c and c.root ~= false end,
-                        set = function(info, val) info.handler.db.profile.selfDR.categories = info.handler.db.profile.selfDR.categories or {}; info.handler.db.profile.selfDR.categories.root = val end,
+                        set = function(info, val) info.handler.db.profile.selfDR.categories = info.handler.db.profile.selfDR.categories or {}; info.handler.db.profile.selfDR.categories.root = val; if info.handler.testMode then info.handler:ShowTestSelfDR() end end,
+                    },
+                    silence = {
+                        order = 5, name = L["SelfDR_Cat_Silence"] or "Silence", type = "toggle",
+                        get = function(info) local c = info.handler.db.profile.selfDR.categories; return c and c.silence end,
+                        set = function(info, val) info.handler.db.profile.selfDR.categories = info.handler.db.profile.selfDR.categories or {}; info.handler.db.profile.selfDR.categories.silence = val; if info.handler.testMode then info.handler:ShowTestSelfDR() end end,
+                    },
+                    knockback = {
+                        order = 6, name = L["SelfDR_Cat_Knock"] or "Knockback", type = "toggle",
+                        get = function(info) local c = info.handler.db.profile.selfDR.categories; return c and c.knockback end,
+                        set = function(info, val) info.handler.db.profile.selfDR.categories = info.handler.db.profile.selfDR.categories or {}; info.handler.db.profile.selfDR.categories.knockback = val; if info.handler.testMode then info.handler:ShowTestSelfDR() end end,
+                    },
+                    disarm = {
+                        order = 7, name = L["SelfDR_Cat_Disarm"] or "Disarm", type = "toggle",
+                        get = function(info) local c = info.handler.db.profile.selfDR.categories; return c and c.disarm end,
+                        set = function(info, val) info.handler.db.profile.selfDR.categories = info.handler.db.profile.selfDR.categories or {}; info.handler.db.profile.selfDR.categories.disarm = val; if info.handler.testMode then info.handler:ShowTestSelfDR() end end,
                     },
                 },
             },
@@ -6698,19 +6690,33 @@ else
                         order = 0.8,
                         type = "description",
                         fontSize = "large",
-                        name = "|cffffd700\230\155\180\230\150\176\232\174\176\229\189\149|r",
+                        name = "|cffffd700v1.0.1 \230\155\180\230\150\176\232\174\176\229\189\149|r",
                     },
                     info = {
                         order = 1,
                         type = "description",
                         fontSize = "medium",
-                        name = "\n|cffffd700\226\151\143 \229\174\160\231\137\169\230\161\134\228\189\147|r \226\128\148 \230\150\176\229\162\158\229\174\160\231\137\169\231\148\159\229\145\189\230\157\161\239\188\140\230\148\175\230\140\129\229\183\166\230\156\175\229\156\186\229\175\185\230\137\139\229\174\160\231\137\169\231\155\174\230\160\135/\232\129\154\231\130\185\n"
-                            .. "|cffffd700\226\151\143 \229\143\179\233\148\174\231\132\166\231\130\185\229\143\175\233\133\141\231\189\174|r \226\128\148 \229\143\175\229\133\179\233\151\173\229\143\179\233\148\174\232\174\190\228\184\186\231\132\166\231\130\185\239\188\140\232\167\163\229\134\179Clique\231\173\137\231\130\185\229\135\187\230\150\189\230\179\149\230\143\146\228\187\182\229\134\178\231\170\129\n"
-                            .. "|cffffd700\226\151\143 DR\233\148\154\229\174\154\232\161\128\230\157\161|r \226\128\148 \233\128\146\229\135\143\229\155\190\230\160\135\229\143\175\233\128\137\230\139\169\233\128\146\229\135\143\230\160\134\228\189\147/\232\161\128\230\157\161/\229\143\140\230\152\190\n"
-                            .. "|cffffd700\226\151\143 DR\229\133\141\231\150\171\229\143\145\229\133\137|r \226\128\148 \233\128\146\229\135\143\229\133\141\231\150\171\230\151\182\229\155\190\230\160\135\232\132\137\229\134\178\229\143\145\229\133\137\230\149\136\230\158\156\n"
-                            .. "|cffffd700\226\151\143 \232\135\170\232\186\171/\233\152\159\229\143\139DR|r \226\128\148 \229\159\186\228\186\142C_LossOfControl\232\191\189\232\184\170\232\135\170\229\183\177\229\146\140\233\152\159\229\143\139\231\154\132\233\128\146\229\135\143\231\138\182\230\128\129\n"
-                            .. "|cffffd700\226\151\143 \229\155\186\229\174\154\233\128\146\229\135\143\228\189\141\231\189\174|r \226\128\148 DR\229\155\190\230\160\135\229\143\175\233\128\137\230\139\169\229\155\186\229\174\154\230\167\189\228\189\141\230\136\150\229\138\168\230\128\129\233\135\141\230\142\146\n"
-                            .. "|cffffd700\226\151\143 \230\139\150\230\139\189\228\189\141\231\189\174\228\191\174\229\164\141|r \226\128\148 \228\191\174\229\164\141\231\188\169\230\148\190\229\184\167\228\184\141\228\184\1721\231\154\132\229\133\131\231\180\160\230\139\150\230\139\189\228\189\141\231\189\174\232\174\161\231\174\151\233\148\153\232\175\175\n",
+                        name = "\n|cffffd700\226\151\143 \232\135\170\232\186\171\233\128\146\229\135\143\233\135\141\229\134\153|r \226\128\148 \229\174\140\229\133\168\233\135\141\229\134\153\239\188\140\231\186\175\232\135\170\232\186\171\232\191\189\232\184\170\239\188\1407\231\167\141\229\136\134\231\177\187\229\143\175\229\141\149\231\139\172\229\188\128\229\133\179\239\188\137\n"
+                            .. "|cffffd700\226\151\143 \230\139\150\230\139\189\229\174\185\229\153\168|r \226\128\148 \228\189\141\231\189\174\232\135\170\229\138\168\228\191\157\229\173\152\239\188\140\229\155\190\230\160\135\229\164\167\229\176\143/\233\151\180\232\183\157/\230\150\185\229\144\145\229\157\135\229\143\175\233\133\141\231\189\174\n"
+                            .. "|cffffd700\226\151\143 \230\181\139\232\175\149\230\168\161\229\188\143|r \226\128\148 \229\190\170\231\142\175\230\188\148\231\164\186\229\144\132\233\128\146\229\135\143\231\138\182\230\128\129\239\188\140\230\148\175\230\140\129\230\139\150\230\139\189\232\176\131\228\189\141\n"
+                            .. "|cffffd700\226\151\143 \229\174\160\231\137\169\230\161\134\228\189\147\228\191\174\229\164\141|r \226\128\148 \228\191\174\229\164\141\229\174\160\231\137\169\228\184\141\230\152\190\231\164\186\229\144\141\229\173\151\239\188\140\230\151\160\228\191\161\230\129\175\229\155\158\233\128\128\230\152\190\231\164\186\226\128\156\229\174\160\231\137\169\226\128\157\n"
+                            .. "|cffffd700\226\151\143 \229\133\168\233\157\162\230\177\137\229\140\150|r \226\128\148 \233\133\141\231\189\174\231\149\140\233\157\162\229\133\168\233\131\168\228\184\173\230\150\135\229\140\150\n",
+                    },
+                    sep3 = { order = 1.5, type = "header", name = "" },
+                    prevTitle = {
+                        order = 1.6,
+                        type = "description",
+                        fontSize = "large",
+                        name = "|cffffd700v1.0.0|r",
+                    },
+                    prevInfo = {
+                        order = 1.7,
+                        type = "description",
+                        fontSize = "medium",
+                        name = "\n|cffffd700\226\151\143 \229\174\160\231\137\169\230\161\134\228\189\147|r \226\128\148 \230\150\176\229\162\158\229\174\160\231\137\169\231\148\159\229\145\189\230\157\161\n"
+                            .. "|cffffd700\226\151\143 \229\143\179\233\148\174\231\132\166\231\130\185\229\143\175\233\133\141\231\189\174|r \226\128\148 \229\133\188\229\174\185Clique\231\173\137\231\130\185\229\135\187\230\150\189\230\179\149\230\143\146\228\187\182\n"
+                            .. "|cffffd700\226\151\143 DR\233\148\154\229\174\154/\229\133\141\231\150\171/\229\155\186\229\174\154\228\189\141\231\189\174|r \226\128\148 \233\128\146\229\135\143\229\155\190\230\160\135\229\164\154\231\167\141\230\152\190\231\164\186\228\184\142\230\147\141\228\189\156\230\168\161\229\188\143\n"
+                            .. "|cffffd700\226\151\143 \230\139\150\230\139\189\228\189\141\231\189\174\228\191\174\229\164\141|r \226\128\148 \228\191\174\229\164\141\231\188\169\230\148\190\229\184\167\228\184\215\230\139\150\230\139\189\228\189\141\231\189\174\232\174\161\231\174\151\233\148\153\232\175\175\n",
                     },
                     sep2 = { order = 2, type = "header", name = "" },
                     credits = {

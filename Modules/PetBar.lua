@@ -272,14 +272,15 @@ function sArenaFrameMixin:RefreshPetBar()
     end
 
     -- Name
+    local petLabel = L["PetBar_Fallback"] or "Pet"
     pcall(function()
         local name = UnitName(petUnit)
-        if name and petSettings.showName and not IsSec(name) then
-            self.PetBar.NameText:SetText(name)
-            self.PetBar.NameText:Show()
+        if name and not IsSec(name) then
+            self.PetBar.NameText:SetText(petSettings.showName and name or petLabel)
         else
-            self.PetBar.NameText:Hide()
+            self.PetBar.NameText:SetText(petLabel)
         end
+        self.PetBar.NameText:Show()
     end)
 
     -- Color
@@ -324,7 +325,10 @@ function sArenaFrameMixin:UpdatePetBarHealthText()
         local health = UnitHealth(petUnit)
         local maxHealth = UnitHealthMax(petUnit)
 
-        if IsSec(health) or IsSec(maxHealth) then return end
+        if IsSec(health) or IsSec(maxHealth) then
+            self.PetBar.HealthText:SetText("")
+            return
+        end
 
         if petSettings.healthTextPercent then
             if isMidnight and UnitHealthPercent and CurveConstants then
@@ -392,10 +396,10 @@ function sArenaFrameMixin:ShowTestPetBar()
 
     if petSettings.showName then
         self.PetBar.NameText:SetText(testNames[id] or "Pet")
-        self.PetBar.NameText:Show()
     else
-        self.PetBar.NameText:Hide()
+        self.PetBar.NameText:SetText(L["PetBar_Fallback"] or "Pet")
     end
+    self.PetBar.NameText:Show()
 
     if petSettings.showHealthText then
         local val = id == 1 and 100 or (id == 2 and 65 or 30)
@@ -464,11 +468,10 @@ function sArenaMixin:UpdatePetBarSettings(db, info, val)
                 petBar.HealthBar:SetStatusBarColor(color[1], color[2], color[3], color[4] or 1)
             end
 
-            if db.showName then
-                petBar.NameText:Show()
-            else
-                petBar.NameText:Hide()
+            if not db.showName then
+                petBar.NameText:SetText(L["PetBar_Fallback"] or "Pet")
             end
+            petBar.NameText:Show()
 
             -- Border
             if petBar.FrameBorder then

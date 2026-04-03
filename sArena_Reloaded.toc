@@ -8,6 +8,7 @@
 ## X-Category: PvP/Arena
 ## X-Credits: Tekkub, Starship, Kouri, Kollektiv, Lyn, haste, evl, Zork, jturel, wardz, A3st (delayy), sammers21, Aeded, Xaryu, Mageiden, Probably more...
 ## X-DIY: DK-姜世离(燃烧之刃)
+## X-DIY-Version: v1.0.1
 ## SavedVariables: sArena_ReloadedDB
 ## X-Curse-Project-ID: 1503023
 
