@@ -206,6 +206,11 @@ end
 function sArenaFrameMixin:RefreshPetBar()
     if not self.PetBar then return end
 
+    if not self:IsShown() then
+        self.PetBar:SetAlpha(0)
+        return
+    end
+
     local db = self.parent.db
     if not db then
         self.PetBar:SetAlpha(0)
@@ -221,7 +226,7 @@ function sArenaFrameMixin:RefreshPetBar()
 
     local petUnit = self.PetBar.petUnit
     local exists = UnitExists(petUnit)
-    if IsSec(exists) then exists = true end
+    if IsSec(exists) then exists = false end
 
     if not exists then
         self.PetBar:SetAlpha(0)
