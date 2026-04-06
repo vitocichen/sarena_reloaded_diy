@@ -3,6 +3,61 @@ local isRetail = sArenaMixin.isRetail
 local isMidnight = sArenaMixin.isMidnight
 local L = sArenaMixin.L
 
+local donateURL = "https://vitocichen.github.io/DK-jiangshili/"
+local donatePopup
+
+local function GetOrCreateDonatePopup()
+    if donatePopup then return donatePopup end
+
+    donatePopup = CreateFrame("Frame", "sArenaDonatePopup", UIParent, "BasicFrameTemplateWithInset")
+    donatePopup:SetSize(440, 140)
+    donatePopup:SetPoint("CENTER")
+    donatePopup:SetFrameStrata("DIALOG")
+    donatePopup:EnableMouse(true)
+    donatePopup:SetMovable(true)
+    donatePopup:RegisterForDrag("LeftButton")
+    donatePopup:SetScript("OnDragStart", donatePopup.StartMoving)
+    donatePopup:SetScript("OnDragStop", donatePopup.StopMovingOrSizing)
+    donatePopup:Hide()
+    donatePopup.TitleText:SetText(L["Donate_PopupTitle"] or "Donate")
+
+    local hint = donatePopup:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
+    hint:SetText(L["Donate_PopupHint"] or "Copy the link and open in your browser to donate:")
+    hint:SetPoint("TOP", donatePopup, "TOP", 0, -32)
+
+    local editBox = CreateFrame("EditBox", nil, donatePopup, "InputBoxTemplate")
+    editBox:SetSize(300, 20)
+    editBox:SetPoint("TOP", hint, "BOTTOM", -20, -12)
+    editBox:SetAutoFocus(false)
+    editBox:SetText(donateURL)
+    editBox:SetCursorPosition(0)
+    editBox:SetScript("OnEditFocusGained", function(self) self:HighlightText() end)
+    editBox:SetScript("OnEscapePressed", function(self) self:ClearFocus() end)
+    editBox:SetScript("OnTextChanged", function(self)
+        self:SetText(donateURL)
+        self:HighlightText()
+    end)
+    donatePopup.editBox = editBox
+
+    local copyBtn = CreateFrame("Button", nil, donatePopup, "UIPanelButtonTemplate")
+    copyBtn:SetSize(60, 22)
+    copyBtn:SetPoint("LEFT", editBox, "RIGHT", 8, 0)
+    copyBtn:SetText(L["Donate_Copy"] or "Copy")
+    copyBtn:SetScript("OnClick", function(self)
+        editBox:SetText(donateURL)
+        editBox:HighlightText()
+        editBox:SetFocus()
+        self:SetText(L["Donate_Copied"] or "Copied")
+        C_Timer.After(1.5, function() self:SetText(L["Donate_Copy"] or "Copy") end)
+    end)
+
+    local openHint = donatePopup:CreateFontString(nil, "ARTWORK", "GameFontNormalSmall")
+    openHint:SetText(L["Donate_OpenHint"] or "|cFF888888Can't open? Try visiting the URL above in your browser|r")
+    openHint:SetPoint("TOP", editBox, "BOTTOM", -20, -8)
+
+    return donatePopup
+end
+
 local function GetSpellInfoCompat(spellID)
     if not spellID then
         return nil
@@ -82,6 +137,14 @@ end
 local function StatusbarValues()
     local t, keys = {}, {}
     for k in pairs(LSM:HashTable(LSM.MediaType.STATUSBAR)) do keys[#keys+1] = k end
+    table.sort(keys)
+    for _, k in ipairs(keys) do t[k] = k end
+    return t
+end
+
+local function SoundValues()
+    local t, keys = {}, {}
+    for k in pairs(LSM:HashTable(LSM.MediaType.SOUND)) do keys[#keys+1] = k end
     table.sort(keys)
     for _, k in ipairs(keys) do t[k] = k end
     return t
@@ -764,6 +827,36 @@ function sArenaMixin:GetLayoutOptionsTable(layoutName)
                                 info.handler.db.profile.showCastbarID = val
                                 info.handler:CreateCastbarIDText()
                                 info.handler:UpdateCastbarIDText()
+                            end,
+                        },
+
+                        showCastbarTarget = {
+                            order = 2.81,
+                            name = L["Castbar_ShowTarget"],
+                            desc = sArenaMixin.isMidnight and L["Castbar_ShowTarget_Desc_Midnight"] or L["Castbar_ShowTarget_Desc"],
+                            type = "toggle",
+                            get = function(info)
+                                return info.handler.db.profile.showCastbarTarget
+                            end,
+                            set = function(info, val)
+                                info.handler.db.profile.showCastbarTarget = val
+                                info.handler:CreateCastbarTargetText()
+                                info.handler:UpdateCastbarTargetText()
+                            end,
+                        },
+
+                        highlightCastsOnMe = {
+                            order = 2.82,
+                            name = L["Castbar_HighlightCastsOnMe"],
+                            desc = L["Castbar_HighlightCastsOnMe_Desc"],
+                            type = "toggle",
+                            hidden = not sArenaMixin.isMidnight,
+                            get = function(info)
+                                return info.handler.db.profile.highlightCastsOnMe
+                            end,
+                            set = function(info, val)
+                                info.handler.db.profile.highlightCastsOnMe = val
+                                info.handler.highlightCastsOnMe = val
                             end,
                         },
 
@@ -3865,6 +3958,46 @@ function sArenaMixin:GetLayoutOptionsTable(layoutName)
                 type = "description",
                 name = "|cff00ff00" .. (L["SelfDR_DragHint"] or "Use Test Mode or /selfdr test to drag DR icons to your preferred position.") .. "|r",
             },
+            zoneHeader = {
+                order = 1.6,
+                type = "description",
+                fontSize = "large",
+                name = L["SelfDR_EnableTrackingIn"] or "Enable Tracking In:",
+                disabled = function(info) return not info.handler.db.profile.selfDR.enabled end,
+            },
+            enableInArena = {
+                order = 1.7,
+                type = "toggle",
+                name = L["SelfDR_Arenas"] or "Arenas",
+                disabled = function(info) return not info.handler.db.profile.selfDR.enabled end,
+                get = function(info) return info.handler.db.profile.selfDR.enableInArena ~= false end,
+                set = function(info, val)
+                    info.handler.db.profile.selfDR.enableInArena = val
+                    info.handler:EnableSelfDR()
+                end,
+            },
+            enableInBattleground = {
+                order = 1.8,
+                type = "toggle",
+                name = L["SelfDR_Battlegrounds"] or "Battlegrounds",
+                disabled = function(info) return not info.handler.db.profile.selfDR.enabled end,
+                get = function(info) return info.handler.db.profile.selfDR.enableInBattleground == true end,
+                set = function(info, val)
+                    info.handler.db.profile.selfDR.enableInBattleground = val
+                    info.handler:EnableSelfDR()
+                end,
+            },
+            enableInWorld = {
+                order = 1.9,
+                type = "toggle",
+                name = L["SelfDR_World"] or "World",
+                disabled = function(info) return not info.handler.db.profile.selfDR.enabled end,
+                get = function(info) return info.handler.db.profile.selfDR.enableInWorld == true end,
+                set = function(info, val)
+                    info.handler.db.profile.selfDR.enableInWorld = val
+                    info.handler:EnableSelfDR()
+                end,
+            },
             sizing = {
                 order = 2,
                 name = L["Sizing"],
@@ -4904,6 +5037,36 @@ else
         childGroups = "tab",
         validate = validateCombat,
         args = {
+            topAuthor = {
+                order = 0.3,
+                type = "description",
+                name = "|cffff8800DIY:|r |cff00ff96DK-\229\167\156\228\184\150\231\166\187(\231\135\131\231\131\167\228\185\139\229\136\131)|r  ",
+                fontSize = "medium",
+                width = 1.2,
+            },
+            topDonate = {
+                order = 0.4,
+                type = "execute",
+                name = "|cffff8800" .. (L["Donate_Button"] or "Donate") .. "|r",
+                desc = L["Donate_ButtonDesc"] or "Support the DIY author",
+                width = 0.5,
+                func = function()
+                    local popup = GetOrCreateDonatePopup()
+                    if popup:IsShown() then
+                        popup:Hide()
+                    else
+                        popup:Show()
+                        popup.editBox:SetText(donateURL)
+                        popup.editBox:SetCursorPosition(0)
+                    end
+                end,
+            },
+            topSpacer = {
+                order = 0.6,
+                type = "description",
+                name = " ",
+                width = "full",
+            },
             setLayout = {
                 order = 1,
                 name = L["Option_Layout"],
@@ -5523,6 +5686,126 @@ else
                                             info.handler.db.profile.shadowSightTimer = val
                                         end,
                                     },
+                                    playTrinketSound = {
+                                        order = 7.6,
+                                        name = L["Option_PlayTrinketSound"],
+                                        desc = L["Option_PlayTrinketSound_Desc"],
+                                        type = "toggle",
+                                        width = 0.9,
+                                        get = function(info) return info.handler.db.profile.playTrinketSound end,
+                                        set = function(info, val)
+                                            info.handler.db.profile.playTrinketSound = val
+                                            if val then
+                                                local channel = info.handler.db.profile.trinketSoundChannel or "Master"
+                                                local fileID = info.handler.db.profile.trinketSoundFileID
+                                                if fileID and fileID ~= 0 then
+                                                    PlaySound(fileID, channel)
+                                                else
+                                                    local path = LSM:Fetch(LSM.MediaType.SOUND, info.handler.db.profile.trinketSoundName)
+                                                    if path then PlaySoundFile(path, channel) end
+                                                end
+                                            end
+                                        end,
+                                    },
+                                    trinketSoundChannel = {
+                                        order = 7.61,
+                                        name = L["Option_TrinketSoundChannel"],
+                                        desc = L["Option_TrinketSoundChannel_Desc"],
+                                        type = "select",
+                                        width = 0.5,
+                                        values = {
+                                            ["Master"] = "Master",
+                                            ["SFX"] = "SFX",
+                                            ["Music"] = "Music",
+                                            ["Ambience"] = "Ambience",
+                                            ["Dialog"] = "Dialog",
+                                        },
+                                        disabled = function(info) return not info.handler.db.profile.playTrinketSound end,
+                                        get = function(info) return info.handler.db.profile.trinketSoundChannel or "Master" end,
+                                        set = function(info, val)
+                                            info.handler.db.profile.trinketSoundChannel = val
+                                        end,
+                                    },
+                                    trinketSoundSpacer = {
+                                        order = 7.62,
+                                        name = "",
+                                        type = "description",
+                                        width = "full",
+                                    },
+                                    trinketSoundName = {
+                                        order = 7.63,
+                                        width = 1.3,
+                                        name = L["Option_TrinketSoundName"],
+                                        desc = L["Option_TrinketSoundName_Desc"],
+                                        type = "select",
+                                        dialogControl = "LSM30_Sound",
+                                        values = SoundValues,
+                                        disabled = function(info) return not info.handler.db.profile.playTrinketSound end,
+                                        get = function(info) return info.handler.db.profile.trinketSoundName end,
+                                        set = function(info, val)
+                                            info.handler.db.profile.trinketSoundName = val
+                                            local channel = info.handler.db.profile.trinketSoundChannel or "Master"
+                                            local path = LSM:Fetch(LSM.MediaType.SOUND, val)
+                                            if path then PlaySoundFile(path, channel) end
+                                        end,
+                                    },
+                                    trinketSoundFileID = {
+                                        order = 7.64,
+                                        name = L["Option_TrinketSoundFileID"],
+                                        desc = L["Option_TrinketSoundFileID_Desc"],
+                                        type = "input",
+                                        width = 1.3,
+                                        disabled = function(info) return not info.handler.db.profile.playTrinketSound end,
+                                        get = function(info)
+                                            local val = info.handler.db.profile.trinketSoundFileID
+                                            return (val and val ~= 0) and tostring(val) or ""
+                                        end,
+                                        set = function(info, val)
+                                            local id = tonumber(val) or 0
+                                            info.handler.db.profile.trinketSoundFileID = id
+                                            if id ~= 0 then PlaySound(id, info.handler.db.profile.trinketSoundChannel or "Master") end
+                                        end,
+                                    },
+                                    trinketSoundFileIDSpacer = {
+                                        order = 7.65,
+                                        name = "",
+                                        type = "description",
+                                        width = "full",
+                                    },
+                                    healerTrinketSoundName = {
+                                        order = 7.66,
+                                        width = 1.3,
+                                        name = L["Option_HealerTrinketSoundName"],
+                                        desc = L["Option_HealerTrinketSoundName_Desc"],
+                                        type = "select",
+                                        dialogControl = "LSM30_Sound",
+                                        values = SoundValues,
+                                        disabled = function(info) return not info.handler.db.profile.playTrinketSound end,
+                                        get = function(info) return info.handler.db.profile.healerTrinketSoundName end,
+                                        set = function(info, val)
+                                            info.handler.db.profile.healerTrinketSoundName = val
+                                            local channel = info.handler.db.profile.trinketSoundChannel or "Master"
+                                            local path = LSM:Fetch(LSM.MediaType.SOUND, val)
+                                            if path then PlaySoundFile(path, channel) end
+                                        end,
+                                    },
+                                    healerTrinketSoundFileID = {
+                                        order = 7.67,
+                                        name = L["Option_HealerTrinketSoundFileID"],
+                                        desc = L["Option_HealerTrinketSoundFileID_Desc"],
+                                        type = "input",
+                                        width = 1.3,
+                                        disabled = function(info) return not info.handler.db.profile.playTrinketSound end,
+                                        get = function(info)
+                                            local val = info.handler.db.profile.healerTrinketSoundFileID
+                                            return (val and val ~= 0) and tostring(val) or ""
+                                        end,
+                                        set = function(info, val)
+                                            local id = tonumber(val) or 0
+                                            info.handler.db.profile.healerTrinketSoundFileID = id
+                                            if id ~= 0 then PlaySound(id, info.handler.db.profile.trinketSoundChannel or "Master") end
+                                        end,
+                                    },
                                     colorTrinket = {
                                         order = 8,
                                         name = L["Option_ColorTrinket"],
@@ -5546,6 +5829,19 @@ else
                                                     frame.Trinket.Texture:SetTexture(info.handler.trinketTexture)
                                                 end
                                             end
+                                        end,
+                                    },
+                                    colorTrinketKeepTexture = {
+                                        order = 8.05,
+                                        name = L["Option_ColorTrinketKeepTexture"],
+                                        desc = L["Option_ColorTrinketKeepTexture_Desc"],
+                                        type = "toggle",
+                                        width = 0.8,
+                                        disabled = function(info) return not info.handler.db.profile.colorTrinket end,
+                                        get = function(info) return info.handler.db.profile.colorTrinketKeepTexture end,
+                                        set = function(info, val)
+                                            info.handler.db.profile.colorTrinketKeepTexture = val
+                                            info.handler:Test()
                                         end,
                                     },
                                     trinketColorAvailable = {
@@ -6683,46 +6979,39 @@ else
                         order = 0.6,
                         type = "description",
                         fontSize = "medium",
-                        name = "\n|cff888888DIY: DK-\229\167\156\228\184\150\231\166\187(\231\135\131\231\131\167\228\185\139\229\136\131)\n\229\159\186\228\186\142 sArena Reloaded v2.4.3 \228\186\140\230\172\161\229\188\128\229\143\145|r\n",
+                        name = "\n|cff888888" .. L["Changelog_About"] .. "|r",
                     },
                     sep1 = { order = 0.7, type = "header", name = "" },
                     changelogTitle = {
                         order = 0.8,
                         type = "description",
                         fontSize = "large",
-                        name = "|cffffd700v1.0.1 \230\155\180\230\150\176\232\174\176\229\189\149|r",
+                        name = "|cffffd700v1.0.2|r",
                     },
                     info = {
                         order = 1,
                         type = "description",
                         fontSize = "medium",
-                        name = "\n|cffffd700\226\151\143 \232\135\170\232\186\171\233\128\146\229\135\143\233\135\141\229\134\153|r \226\128\148 \229\174\140\229\133\168\233\135\141\229\134\153\239\188\140\231\186\175\232\135\170\232\186\171\232\191\189\232\184\170\239\188\1407\231\167\141\229\136\134\231\177\187\229\143\175\229\141\149\231\139\172\229\188\128\229\133\179\239\188\137\n"
-                            .. "|cffffd700\226\151\143 \230\139\150\230\139\189\229\174\185\229\153\168|r \226\128\148 \228\189\141\231\189\174\232\135\170\229\138\168\228\191\157\229\173\152\239\188\140\229\155\190\230\160\135\229\164\167\229\176\143/\233\151\180\232\183\157/\230\150\185\229\144\145\229\157\135\229\143\175\233\133\141\231\189\174\n"
-                            .. "|cffffd700\226\151\143 \230\181\139\232\175\149\230\168\161\229\188\143|r \226\128\148 \229\190\170\231\142\175\230\188\148\231\164\186\229\144\132\233\128\146\229\135\143\231\138\182\230\128\129\239\188\140\230\148\175\230\140\129\230\139\150\230\139\189\232\176\131\228\189\141\n"
-                            .. "|cffffd700\226\151\143 \229\174\160\231\137\169\230\161\134\228\189\147\228\191\174\229\164\141|r \226\128\148 \228\191\174\229\164\141\229\174\160\231\137\169\228\184\141\230\152\190\231\164\186\229\144\141\229\173\151\239\188\140\230\151\160\228\191\161\230\129\175\229\155\158\233\128\128\230\152\190\231\164\186\226\128\156\229\174\160\231\137\169\226\128\157\n"
-                            .. "|cffffd700\226\151\143 \229\133\168\233\157\162\230\177\137\229\140\150|r \226\128\148 \233\133\141\231\189\174\231\149\140\233\157\162\229\133\168\233\131\168\228\184\173\230\150\135\229\140\150\n",
+                        name = "\n" .. L["Changelog_v102"] .. "\n",
                     },
                     sep3 = { order = 1.5, type = "header", name = "" },
                     prevTitle = {
                         order = 1.6,
                         type = "description",
                         fontSize = "large",
-                        name = "|cffffd700v1.0.0|r",
+                        name = "|cffffd700v1.0.1|r",
                     },
                     prevInfo = {
                         order = 1.7,
                         type = "description",
                         fontSize = "medium",
-                        name = "\n|cffffd700\226\151\143 \229\174\160\231\137\169\230\161\134\228\189\147|r \226\128\148 \230\150\176\229\162\158\229\174\160\231\137\169\231\148\159\229\145\189\230\157\161\n"
-                            .. "|cffffd700\226\151\143 \229\143\179\233\148\174\231\132\166\231\130\185\229\143\175\233\133\141\231\189\174|r \226\128\148 \229\133\188\229\174\185Clique\231\173\137\231\130\185\229\135\187\230\150\189\230\179\149\230\143\146\228\187\182\n"
-                            .. "|cffffd700\226\151\143 DR\233\148\154\229\174\154/\229\133\141\231\150\171/\229\155\186\229\174\154\228\189\141\231\189\174|r \226\128\148 \233\128\146\229\135\143\229\155\190\230\160\135\229\164\154\231\167\141\230\152\190\231\164\186\228\184\142\230\147\141\228\189\156\230\168\161\229\188\143\n"
-                            .. "|cffffd700\226\151\143 \230\139\150\230\139\189\228\189\141\231\189\174\228\191\174\229\164\141|r \226\128\148 \228\191\174\229\164\141\231\188\169\230\148\190\229\184\167\228\184\215\230\139\150\230\139\189\228\189\141\231\189\174\232\174\161\231\174\151\233\148\153\232\175\175\n",
+                        name = "\n" .. L["Changelog_v101"] .. "\n",
                     },
                     sep2 = { order = 2, type = "header", name = "" },
                     credits = {
                         order = 3,
                         type = "description",
-                        name = "\n|cffaaaaaa\226\151\134 \229\216\159\228\189\156\232\128\133:|r |cffffff00Stako|r, |cffffff00Bodify|r |cffaaaaaa(sArena Reloaded)|r\n|cffaaaaaa\226\151\134 \229\143\130\232\128\131\230\143\146\228\187\182:|r |cff88ccffGladiusEx|r, |cff88ccffMidnightDR|r, |cff88ccffMyDRS|r, |cff88ccffMiniCC|r",
+                        name = "\n" .. L["Changelog_Author"] .. "\n" .. L["Changelog_References"],
                     },
                 },
             },

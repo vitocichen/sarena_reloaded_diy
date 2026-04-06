@@ -54,13 +54,17 @@ local function GetDB()
     return _parentDb.profile and _parentDb.profile.selfDR
 end
 
-local function InArena()
-    if IsActiveBattlefieldArena then
-        local ok, res = pcall(IsActiveBattlefieldArena)
-        if ok and res then return true end
+local function IsEnabledForCurrentZone()
+    local db = GetDB()
+    if not db then return false end
+    local _, instanceType = IsInInstance()
+    if instanceType == "arena" then
+        return db.enableInArena ~= false
+    elseif instanceType == "pvp" then
+        return db.enableInBattleground == true
+    else
+        return db.enableInWorld == true
     end
-    local ok, _, instanceType = pcall(IsInInstance)
-    return ok and instanceType == "arena"
 end
 
 local function GetLocCategory(locData)
@@ -457,7 +461,7 @@ local function ApplyZoneState()
     if not db or not db.enabled then return end
 
     ResetAll()
-    if InArena() then
+    if IsEnabledForCurrentZone() then
         sArenaMixin._selfDREventFrame:RegisterEvent("UNIT_AURA")
     else
         sArenaMixin._selfDREventFrame:UnregisterEvent("UNIT_AURA")
@@ -580,6 +584,6 @@ SlashCmdList["SELFDR"] = function(msg)
         end
     else
         local db = GetDB()
-        print("[SelfDR] enabled=" .. tostring(db and db.enabled) .. " arena=" .. tostring(InArena()))
+        print("[SelfDR] enabled=" .. tostring(db and db.enabled) .. " zone=" .. tostring(IsEnabledForCurrentZone()))
     end
 end

@@ -18,6 +18,8 @@ LSM:Register("statusbar", "Blizzard RetailBar", [[Interface\AddOns\sArena_Reload
 LSM:Register("statusbar", "sArena Default", [[Interface\AddOns\sArena_Reloaded\Textures\sArenaDefault]])
 LSM:Register("statusbar", "sArena Stripes", [[Interface\AddOns\sArena_Reloaded\Textures\sArenaHealer]])
 LSM:Register("statusbar", "sArena Stripes 2", [[Interface\AddOns\sArena_Reloaded\Textures\sArenaRetailHealer]])
+LSM:Register("sound", "Lossa Trinket", [[Interface\AddOns\sArena_Reloaded\Textures\LossaTrinket.ogg]])
+LSM:Register("sound", "Lossa Healer Trinket", [[Interface\AddOns\sArena_Reloaded\Textures\LossaHealerTrinket.ogg]])
 -- Prototype font only supports western languages and Russian, so LSM will automatically reject registration on unsupported locales
 LSM:Register("font", "Prototype", "Interface\\Addons\\sArena_Reloaded\\Textures\\Prototype.ttf", LSM.LOCALE_BIT_western + LSM.LOCALE_BIT_ruRU)
 LSM:Register("font", "PT Sans Narrow Bold", "Interface\\Addons\\sArena_Reloaded\\Textures\\PTSansNarrow-Bold.ttf", LSM.LOCALE_BIT_western + LSM.LOCALE_BIT_ruRU)
@@ -1461,6 +1463,9 @@ function sArenaMixin:SetLayout(_, layout)
     self:ModernOrClassicCastbar()
     self:UpdateFonts()
     self:UpdateCastBarSettings(self.layoutdb.castBar)
+    self:CreateCastbarHighlight()
+    self:CreateCastbarTargetText()
+    self:UpdateCastbarTargetText()
     self:CreateCastbarIDText()
     self:UpdateCastbarIDText()
     self:UpdateCDTextVisibility()
@@ -1764,6 +1769,7 @@ function sArenaFrameMixin:OnLoad()
             end
         end
         self.parent:CastbarOnEvent(self.CastBar, event)
+        self.parent:UpdateCastbarTargetOnEvent(self.CastBar, event)
     end)
 
     self.healthbar = self.HealthBar
@@ -2770,28 +2776,33 @@ function sArenaMixin:CastbarOnEvent(castBar, event)
     local unitToken = castBar.unit
     local castBarTexture = castBar:GetStatusBarTexture()
     local notInterruptible
+    local stoppedCast = castBar.stoppedCast
 
     if unitToken then
         if castBar.casting then
-            _, _, _, _, _, _, _, notInterruptible = UnitCastingInfo(unitToken)
+            notInterruptible = select(8, UnitCastingInfo(unitToken))
         elseif castBar.channeling then
-            _, _, _, _, _, _, notInterruptible = UnitChannelInfo(unitToken)
+            notInterruptible = select(7, UnitChannelInfo(unitToken))
         end
     end
 
     if isMidnight then
         if self.modernCastbars then
-            if event == "UNIT_SPELLCAST_INTERRUPTED" then
-                castBar.lastEvent = event
+            if stoppedCast then
                 castBarTexture:SetDesaturated(false)
                 castBar:SetStatusBarColor(1, 1, 1, 1)
-                return
-            elseif (event == "UNIT_SPELLCAST_STOP" or event == "UNIT_SPELLCAST_CHANNEL_STOP" or event == "UNIT_SPELLCAST_EMPOWER_STOP") and castBar.lastEvent == "UNIT_SPELLCAST_INTERRUPTED" then
-                castBarTexture:SetDesaturated(false)
-                castBar:SetStatusBarColor(1, 1, 1, 1)
+                if castBar.ArenaTargetHighlight then
+                    castBar.ArenaTargetHighlight:SetAlpha(0)
+                end
                 return
             end
-            castBar.lastEvent = event
+            if self.highlightCastsOnMe and castBar.ArenaTargetHighlight and PlayerIsSpellTarget and unitToken then
+                if (castBar.casting or castBar.channeling) and castBar.spellID ~= nil then
+                    castBar.ArenaTargetHighlight:SetAlphaFromBoolean(PlayerIsSpellTarget(unitToken))
+                else
+                    castBar.ArenaTargetHighlight:SetAlpha(0)
+                end
+            end
             if not self.keepDefaultModernTextures then
                 local textureToUse = self.castTexture
                 -- if castBar.barType == "uninterruptable" and self.castUninterruptibleTexture then
@@ -2937,17 +2948,21 @@ function sArenaMixin:CastbarOnEvent(castBar, event)
             --     textureToUse = self.castUninterruptibleTexture
             -- end
             castBar:SetStatusBarTexture(textureToUse or "Interface\\RaidFrame\\Raid-Bar-Hp-Fill")
-            if event == "UNIT_SPELLCAST_INTERRUPTED" then
-                castBar.lastEvent = event
+            if stoppedCast then
                 castBarTexture:SetDesaturated(false)
                 castBar:SetStatusBarColor(1, 0, 0, 1)
-                return
-            elseif (event == "UNIT_SPELLCAST_STOP" or event == "UNIT_SPELLCAST_CHANNEL_STOP" or event == "UNIT_SPELLCAST_EMPOWER_STOP") and castBar.lastEvent == "UNIT_SPELLCAST_INTERRUPTED" then
-                castBarTexture:SetDesaturated(false)
-                castBar:SetStatusBarColor(1, 0, 0, 1)
+                if castBar.ArenaTargetHighlight then
+                    castBar.ArenaTargetHighlight:SetAlpha(0)
+                end
                 return
             end
-            castBar.lastEvent = event
+            if self.highlightCastsOnMe and castBar.ArenaTargetHighlight and PlayerIsSpellTarget and unitToken then
+                if (castBar.casting or castBar.channeling) and castBar.spellID ~= nil then
+                    castBar.ArenaTargetHighlight:SetAlphaFromBoolean(PlayerIsSpellTarget(unitToken))
+                else
+                    castBar.ArenaTargetHighlight:SetAlpha(0)
+                end
+            end
             if colors.enabled then
                 if self.interruptStatusColorOn and self.interruptReady == false then
                     if notInterruptible ~= nil then

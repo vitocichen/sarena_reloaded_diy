@@ -5,6 +5,7 @@
 
 local isRetail = sArenaMixin.isRetail
 local isMidnight = sArenaMixin.isMidnight
+local LSM = LibStub("LibSharedMedia-3.0")
 
 function sArenaFrameMixin:FindTrinket()
     local trinket = self.Trinket
@@ -27,9 +28,15 @@ end
 
 function sArenaFrameMixin:UpdateTrinketIcon(available)
     local colors = self.parent.db.profile.trinketColors
+    local keepTexture = self.parent.db.profile.colorTrinketKeepTexture
     if available then
         if self.parent.db.profile.colorTrinket then
-            self.Trinket.Texture:SetColorTexture(unpack(colors.available))
+            if keepTexture then
+                self.Trinket.Texture:SetDesaturated(true)
+            else
+                self.Trinket.Texture:SetTexture("Interface\\Buttons\\WHITE8X8")
+            end
+            self.Trinket.Texture:SetVertexColor(unpack(colors.available))
         else
             self.Trinket.Texture:SetDesaturated(false)
         end
@@ -38,7 +45,12 @@ function sArenaFrameMixin:UpdateTrinketIcon(available)
             if not self.Trinket.spellID then
                 self.Trinket.Texture:SetTexture(nil)
             else
-                self.Trinket.Texture:SetColorTexture(unpack(colors.used))
+                if keepTexture then
+                    self.Trinket.Texture:SetDesaturated(true)
+                else
+                    self.Trinket.Texture:SetTexture("Interface\\Buttons\\WHITE8X8")
+                end
+                self.Trinket.Texture:SetVertexColor(unpack(colors.used))
             end
         else
             local desaturate
@@ -84,7 +96,24 @@ function sArenaFrameMixin:UpdateTrinket()
             -- end
         else
             if (startTime ~= 0 and duration ~= 0 and self.Trinket.spellID) then
-                if self.Trinket.spellID and (self.Trinket.Texture:GetTexture() ~= self.parent.noTrinketTexture)then
+                if self.Trinket.spellID and (self.Trinket.Texture:GetTexture() ~= self.parent.noTrinketTexture) then
+                    if not self.Trinket.Cooldown:IsShown() then
+                        local db = self.parent and self.parent.db
+                        if db and db.profile.playTrinketSound then
+                            local isHealer = self.isHealer
+                            local fileID = isHealer and db.profile.healerTrinketSoundFileID or db.profile.trinketSoundFileID
+                            local soundName = isHealer and (db.profile.healerTrinketSoundName or "Lossa Trinket") or (db.profile.trinketSoundName or "Lossa Trinket")
+                            local channel = db.profile.trinketSoundChannel or "Master"
+                            if fileID and fileID ~= 0 then
+                                PlaySound(fileID, channel)
+                            else
+                                local soundPath = LSM:Fetch(LSM.MediaType.SOUND, soundName)
+                                if soundPath then
+                                    PlaySoundFile(soundPath, channel)
+                                end
+                            end
+                        end
+                    end
                     if self.updateRacialOnTrinketSlot then
                         local racialDuration = self:GetRacialDuration()
                         self.Trinket.Cooldown:SetCooldown(startTime / 1000.0, racialDuration)
@@ -93,7 +122,12 @@ function sArenaFrameMixin:UpdateTrinket()
                     end
                 end
                 if self.parent.db.profile.colorTrinket then
-                    self.Trinket.Texture:SetColorTexture(unpack(colors.used))
+                    if self.parent.db.profile.colorTrinketKeepTexture then
+                        self.Trinket.Texture:SetDesaturated(true)
+                    else
+                        self.Trinket.Texture:SetTexture("Interface\\Buttons\\WHITE8X8")
+                    end
+                    self.Trinket.Texture:SetVertexColor(unpack(colors.used))
                 else
                     if not self.updateRacialOnTrinketSlot then
                         self.Trinket.Texture:SetDesaturated(self.parent.db.profile.desaturateTrinketCD)
@@ -102,7 +136,12 @@ function sArenaFrameMixin:UpdateTrinket()
             else
                 self.Trinket.Cooldown:Clear()
                 if self.parent.db.profile.colorTrinket then
-                    self.Trinket.Texture:SetColorTexture(unpack(colors.available))
+                    if self.parent.db.profile.colorTrinketKeepTexture then
+                        self.Trinket.Texture:SetDesaturated(true)
+                    else
+                        self.Trinket.Texture:SetTexture("Interface\\Buttons\\WHITE8X8")
+                    end
+                    self.Trinket.Texture:SetVertexColor(unpack(colors.available))
                 else
                     self.Trinket.Texture:SetDesaturated(false)
                 end

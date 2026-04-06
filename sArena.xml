@@ -141,6 +141,12 @@
                         <Anchor point="CENTER"/>
                     </Anchors>
                 </Texture>
+                <Texture parentKey="ArenaTargetHighlight" atlas="ui-hud-nameplates-targetedbyenemy" alpha="0">
+                    <Anchors>
+                        <Anchor point="TOPLEFT" x="-2.5" y="2"/>
+                        <Anchor point="BOTTOMRIGHT" x="2.5" y="-2"/>
+                    </Anchors>
+                </Texture>
                 <Texture parentKey="Flash" alphaMode="ADD"> 
                     <!-- this needs to be here so the generic unit frame code will work right --> 
                     <Size x="256" y="64"/>

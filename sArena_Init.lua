@@ -8,7 +8,9 @@ sArenaMixin.isMoP = gameVersion:match("^5%.")
 sArenaMixin.isWrath = gameVersion:match("^3%.")
 sArenaMixin.isTBC = gameVersion:match("^2%.")
 
-sArenaMixin.addonTitle = "|T135884:13:13|t sArena |cffff8000Reloaded|r v1.0.1 |cffff8800DIY:|r |cff00ff96DK-\229\167\156\228\184\150\231\166\187(\231\135\131\231\131\167\228\185\139\229\136\131)|r"
+sArenaMixin.addonName = "|T135884:13:13|t sArena |cffff8000Reloaded|r"
+sArenaMixin.addonTitle = sArenaMixin.addonName .. " v1.0.2"
+sArenaMixin.popupHeader = "\n" .. sArenaMixin.addonName .. "\n\n"
 sArenaMixin.layouts = {}
 sArenaMixin.defaultSettings = {
     profile = {
@@ -24,6 +26,11 @@ sArenaMixin.defaultSettings = {
         --darkMode = (BetterBlizzFramesDB and BetterBlizzFramesDB.darkModeUi) or C_AddOns.IsAddOnLoaded("FrameColor") or nil,
         forceShowTrinketOnHuman = not sArenaMixin.isRetail and true or nil,
         shadowSightTimer = (sArenaMixin.isTBC or sArenaMixin.isWrath) and true or nil,
+        trinketSoundName = "Lossa Trinket",
+        trinketSoundFileID = 0,
+        healerTrinketSoundName = "Lossa Trinket",
+        healerTrinketSoundFileID = 0,
+        trinketSoundChannel = "Master",
         darkModeValue = 0.2,
         desaturateTrinketCD = true,
         desaturateDispelCD = true,
@@ -45,6 +52,10 @@ sArenaMixin.defaultSettings = {
         layoutSettings = {},
         invertClassIconCooldown = true,
         rightClickFocus = true,
+        clickAttributes = {
+            ["Left"] = { button = "1", action = "target" },
+            ["Right"] = { button = "2", action = "focus" },
+        },
         trinketOnHealthBar = {
             enabled = false,
             size = 20,
@@ -53,6 +64,9 @@ sArenaMixin.defaultSettings = {
         },
         selfDR = {
             enabled = false,
+            enableInArena = true,
+            enableInBattleground = true,
+            enableInWorld = true,
             iconSize = 36,
             iconPadding = 4,
             fontSize = 14,
