@@ -623,9 +623,15 @@ function sArenaMixin:OnEvent(event, ...)
         local token = ...
         if token then self:ClearNameplateAnchorCache(token) end
         self:RefreshAllNameplateDR()
-    elseif event == "NAME_PLATE_UNIT_ADDED"
-        or event == "PLAYER_TARGET_CHANGED" or event == "PLAYER_FOCUS_CHANGED" then
+        self:WorldDR_OnNamePlateRemoved(token)
+    elseif event == "NAME_PLATE_UNIT_ADDED" then
+        local token = ...
         self:RefreshAllNameplateDR()
+        self:WorldDR_OnNamePlateAdded(token)
+    elseif event == "PLAYER_TARGET_CHANGED" or event == "PLAYER_FOCUS_CHANGED" then
+        self:RefreshAllNameplateDR()
+    elseif event == "UNIT_SPELLCAST_SUCCEEDED" then
+        self:WorldDR_OnSpellcastSucceeded(...)
     elseif (event == "UNIT_TARGET") then
         for i = 1, self.maxArenaOpponents do
             local frame = self["arena" .. i]
@@ -651,6 +657,7 @@ function sArenaMixin:OnEvent(event, ...)
         end
 
 
+        self:RegisterEvent("ZONE_CHANGED_NEW_AREA")
         self:UnregisterEvent("PLAYER_LOGIN")
     elseif (event == "PLAYER_ENTERING_WORLD") then
         local _, instanceType = IsInInstance()
@@ -694,6 +701,7 @@ function sArenaMixin:OnEvent(event, ...)
             self:RegisterEvent("PLAYER_TARGET_CHANGED")
             self:RegisterEvent("PLAYER_FOCUS_CHANGED")
             self:UpdatePlayerSpec()
+            self:WorldDR_Stop()
             if self.TestTitle then
                 self.TestTitle:Hide()
                 for i = 1, self.maxArenaOpponents do
@@ -721,8 +729,6 @@ function sArenaMixin:OnEvent(event, ...)
             end
             self:UnregisterWidgetEvents()
             self:UnregisterInterruptEvents()
-            self:UnregisterEvent("NAME_PLATE_UNIT_ADDED")
-            self:UnregisterEvent("NAME_PLATE_UNIT_REMOVED")
             self:UnregisterEvent("PLAYER_TARGET_CHANGED")
             self:UnregisterEvent("PLAYER_FOCUS_CHANGED")
             self:ClearAllNameplateAnchors()
@@ -733,6 +739,10 @@ function sArenaMixin:OnEvent(event, ...)
                 end
             end
             self:ResetShadowsightTimer()
+            self:RegisterEvent("NAME_PLATE_UNIT_ADDED")
+            self:RegisterEvent("NAME_PLATE_UNIT_REMOVED")
+            self:RegisterEvent("UNIT_SPELLCAST_SUCCEEDED")
+            self:WorldDR_Evaluate()
         end
     elseif event == "CHAT_MSG_BG_SYSTEM_NEUTRAL" then
         local msg = ...
@@ -753,6 +763,8 @@ function sArenaMixin:OnEvent(event, ...)
         end
     elseif event == "PVP_MATCH_STATE_CHANGED" or event == "PVP_MATCH_ACTIVE" then
         self:CheckMatchStatus(event)
+    elseif event == "ZONE_CHANGED_NEW_AREA" then
+        self:WorldDR_Evaluate()
     end
 end
 

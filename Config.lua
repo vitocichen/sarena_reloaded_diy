@@ -3574,6 +3574,73 @@ function sArenaMixin:GetLayoutOptionsTable(layoutName)
                     info.handler:Test()
                 end,
             },
+            zones = {
+                order = 0.5,
+                name = L["DR_NP_Zones"] or "Zone Selection",
+                type = "group",
+                inline = true,
+                disabled = function(info)
+                    return not info.handler.db.profile.layoutSettings[layoutName].drNameplateEnabled
+                end,
+                args = {
+                    enableInArena = {
+                        order = 1,
+                        name = L["DR_NP_Zone_Arena"] or "Arena",
+                        type = "toggle",
+                        get = function(info)
+                            local z = info.handler.db.profile.nameplateDRZones
+                            return z and z.enableInArena ~= false
+                        end,
+                        set = function(info, val)
+                            info.handler.db.profile.nameplateDRZones = info.handler.db.profile.nameplateDRZones or {}
+                            info.handler.db.profile.nameplateDRZones.enableInArena = val and true or false
+                            self:WorldDR_Evaluate()
+                        end,
+                    },
+                    enableInBattleground = {
+                        order = 2,
+                        name = L["DR_NP_Zone_BG"] or "Battleground",
+                        type = "toggle",
+                        get = function(info)
+                            local z = info.handler.db.profile.nameplateDRZones
+                            return z and z.enableInBattleground == true
+                        end,
+                        set = function(info, val)
+                            info.handler.db.profile.nameplateDRZones = info.handler.db.profile.nameplateDRZones or {}
+                            info.handler.db.profile.nameplateDRZones.enableInBattleground = val and true or false
+                            self:WorldDR_Evaluate()
+                        end,
+                    },
+                    enableInWorld = {
+                        order = 3,
+                        name = L["DR_NP_Zone_World"] or "World PvP",
+                        type = "toggle",
+                        get = function(info)
+                            local z = info.handler.db.profile.nameplateDRZones
+                            return z and z.enableInWorld == true
+                        end,
+                        set = function(info, val)
+                            info.handler.db.profile.nameplateDRZones = info.handler.db.profile.nameplateDRZones or {}
+                            info.handler.db.profile.nameplateDRZones.enableInWorld = val and true or false
+                            self:WorldDR_Evaluate()
+                        end,
+                    },
+                    enableInDungeon = {
+                        order = 4,
+                        name = L["DR_NP_Zone_Dungeon"] or "Dungeon / Raid",
+                        type = "toggle",
+                        get = function(info)
+                            local z = info.handler.db.profile.nameplateDRZones
+                            return z and z.enableInDungeon == true
+                        end,
+                        set = function(info, val)
+                            info.handler.db.profile.nameplateDRZones = info.handler.db.profile.nameplateDRZones or {}
+                            info.handler.db.profile.nameplateDRZones.enableInDungeon = val and true or false
+                            self:WorldDR_Evaluate()
+                        end,
+                    },
+                },
+            },
             positioning = {
                 order = 1,
                 name = L["Positioning"],
@@ -3691,6 +3758,94 @@ function sArenaMixin:GetLayoutOptionsTable(layoutName)
                         desc = L["DR_ImmuneGlow_Desc"],
                         type = "toggle",
                         width = "full",
+                    },
+                },
+            },
+            categories = {
+                order = 4,
+                name = L["DR_NP_Categories"] or "Categories",
+                type = "group",
+                inline = true,
+                disabled = function(info)
+                    return not info.handler.db.profile.layoutSettings[layoutName].drNameplateEnabled
+                end,
+                args = {
+                    stun = {
+                        order = 1, type = "toggle",
+                        name = L["DR_NP_Cat_Stun"] or "Stun",
+                        get = function(info) local c = info.handler.db.profile.nameplateDRCategories; return c and c.stun ~= false end,
+                        set = function(info, v) info.handler.db.profile.nameplateDRCategories = info.handler.db.profile.nameplateDRCategories or {}; info.handler.db.profile.nameplateDRCategories.stun = v and true or false end,
+                    },
+                    incap = {
+                        order = 2, type = "toggle",
+                        name = L["DR_NP_Cat_Incap"] or "Incap",
+                        get = function(info) local c = info.handler.db.profile.nameplateDRCategories; return c and c.incap ~= false end,
+                        set = function(info, v) info.handler.db.profile.nameplateDRCategories = info.handler.db.profile.nameplateDRCategories or {}; info.handler.db.profile.nameplateDRCategories.incap = v and true or false end,
+                    },
+                    fear = {
+                        order = 3, type = "toggle",
+                        name = L["DR_NP_Cat_Fear"] or "Fear",
+                        get = function(info) local c = info.handler.db.profile.nameplateDRCategories; return c and c.fear ~= false end,
+                        set = function(info, v) info.handler.db.profile.nameplateDRCategories = info.handler.db.profile.nameplateDRCategories or {}; info.handler.db.profile.nameplateDRCategories.fear = v and true or false end,
+                    },
+                    root = {
+                        order = 4, type = "toggle",
+                        name = L["DR_NP_Cat_Root"] or "Root",
+                        get = function(info) local c = info.handler.db.profile.nameplateDRCategories; return c and c.root ~= false end,
+                        set = function(info, v) info.handler.db.profile.nameplateDRCategories = info.handler.db.profile.nameplateDRCategories or {}; info.handler.db.profile.nameplateDRCategories.root = v and true or false end,
+                    },
+                    disarm = {
+                        order = 5, type = "toggle",
+                        name = L["DR_NP_Cat_Disarm"] or "Disarm",
+                        get = function(info) local c = info.handler.db.profile.nameplateDRCategories; return c and c.disarm ~= false end,
+                        set = function(info, v) info.handler.db.profile.nameplateDRCategories = info.handler.db.profile.nameplateDRCategories or {}; info.handler.db.profile.nameplateDRCategories.disarm = v and true or false end,
+                    },
+                    silence = {
+                        order = 6, type = "toggle",
+                        name = L["DR_NP_Cat_Silence"] or "Silence",
+                        get = function(info) local c = info.handler.db.profile.nameplateDRCategories; return c and c.silence ~= false end,
+                        set = function(info, v) info.handler.db.profile.nameplateDRCategories = info.handler.db.profile.nameplateDRCategories or {}; info.handler.db.profile.nameplateDRCategories.silence = v and true or false end,
+                    },
+                },
+            },
+            worldDRSettings = {
+                order = 5,
+                name = L["DR_NP_WorldSettings"] or "World DR Settings",
+                type = "group",
+                inline = true,
+                disabled = function(info)
+                    return not info.handler.db.profile.layoutSettings[layoutName].drNameplateEnabled
+                end,
+                args = {
+                    maxIcons = {
+                        order = 1,
+                        name = L["DR_NP_MaxIcons"] or "Max Icons",
+                        desc = L["DR_NP_MaxIcons_Desc"] or "Maximum number of DR icons per nameplate.",
+                        type = "range",
+                        min = 1, max = 6, step = 1,
+                        get = function(info)
+                            return info.handler.db.profile.nameplateDRMaxIcons or 5
+                        end,
+                        set = function(info, v)
+                            info.handler.db.profile.nameplateDRMaxIcons = v
+                        end,
+                    },
+                    testWorldDR = {
+                        order = 2,
+                        name = L["DR_NP_Test"] or "Test World DR",
+                        desc = L["DR_NP_Test_Desc"] or "Show test DR icons on nearest enemy nameplate.",
+                        type = "execute",
+                        func = function()
+                            self:WorldDR_ShowTest()
+                        end,
+                    },
+                    hideTestWorldDR = {
+                        order = 3,
+                        name = L["DR_NP_HideTest"] or "Hide Test",
+                        type = "execute",
+                        func = function()
+                            self:WorldDR_HideTest()
+                        end,
                     },
                 },
             },
@@ -6986,23 +7141,36 @@ else
                         order = 0.8,
                         type = "description",
                         fontSize = "large",
-                        name = "|cffffd700v1.0.2|r",
+                        name = "|cffffd700v1.0.3|r",
                     },
                     info = {
                         order = 1,
                         type = "description",
                         fontSize = "medium",
-                        name = "\n" .. L["Changelog_v102"] .. "\n",
+                        name = "\n" .. L["Changelog_v103"] .. "\n",
                     },
                     sep3 = { order = 1.5, type = "header", name = "" },
-                    prevTitle = {
+                    prevTitle103 = {
+                        order = 1.55,
+                        type = "description",
+                        fontSize = "large",
+                        name = "|cffffd700v1.0.2|r",
+                    },
+                    prevInfo103 = {
                         order = 1.6,
+                        type = "description",
+                        fontSize = "medium",
+                        name = "\n" .. L["Changelog_v102"] .. "\n",
+                    },
+                    sep4 = { order = 1.65, type = "header", name = "" },
+                    prevTitle = {
+                        order = 1.7,
                         type = "description",
                         fontSize = "large",
                         name = "|cffffd700v1.0.1|r",
                     },
                     prevInfo = {
-                        order = 1.7,
+                        order = 1.8,
                         type = "description",
                         fontSize = "medium",
                         name = "\n" .. L["Changelog_v101"] .. "\n",

@@ -9,7 +9,7 @@ sArenaMixin.isWrath = gameVersion:match("^3%.")
 sArenaMixin.isTBC = gameVersion:match("^2%.")
 
 sArenaMixin.addonName = "|T135884:13:13|t sArena |cffff8000Reloaded|r"
-sArenaMixin.addonTitle = sArenaMixin.addonName .. " v1.0.2"
+sArenaMixin.addonTitle = sArenaMixin.addonName .. " v1.0.3"
 sArenaMixin.popupHeader = "\n" .. sArenaMixin.addonName .. "\n\n"
 sArenaMixin.layouts = {}
 sArenaMixin.defaultSettings = {
@@ -62,6 +62,21 @@ sArenaMixin.defaultSettings = {
             posX = 0,
             posY = 0,
         },
+        nameplateDRZones = {
+            enableInArena = true,
+            enableInWorld = true,
+            enableInBattleground = true,
+            enableInDungeon = true,
+        },
+        nameplateDRCategories = {
+            stun = true,
+            incap = true,
+            fear = true,
+            root = true,
+            disarm = true,
+            silence = true,
+        },
+        nameplateDRMaxIcons = 5,
         selfDR = {
             enabled = false,
             enableInArena = true,
