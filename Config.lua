@@ -3571,6 +3571,7 @@ function sArenaMixin:GetLayoutOptionsTable(layoutName)
                     if info.handler.db.profile.layoutSettings[layoutName].drNameplate then
                         self:UpdateNameplateDRSettings(info.handler.db.profile.layoutSettings[layoutName].drNameplate)
                     end
+                    self:WorldDR_Evaluate()
                     info.handler:Test()
                 end,
             },

@@ -1,6 +1,10 @@
 local isMidnight = sArenaMixin.isMidnight
 local MAX_NP_DR_SLOTS = 7
 
+local function GetSArenaFrame()
+    return _G["sArena"]
+end
+
 -- Nameplate DR mirror system: shows DR icons anchored to enemy nameplates
 
 -- =============================================
@@ -46,27 +50,64 @@ local function SafeUnitIsUnit(a, b)
     return r
 end
 
+local function SafeSecureCall(fn, ...)
+    if type(_G.securecallfunction) == "function" then
+        local ok, a, b, c, d, e = pcall(_G.securecallfunction, fn, ...)
+        if ok then return true, a, b, c, d, e end
+        return false
+    end
+    local ok, a, b, c, d, e = pcall(fn, ...)
+    if ok then return true, a, b, c, d, e end
+    return false
+end
+
+local function SafeCloneString(s)
+    if type(s) ~= "string" then return nil end
+    if IsSecret(s) then return nil end
+    local ok, out = pcall(string.format, "%s", s)
+    if not ok or type(out) ~= "string" then return nil end
+    return out
+end
+
 local function SafeUnitClassToken(unit)
-    local ok, _, classToken = pcall(UnitClass, unit)
-    if not ok or type(classToken) ~= "string" or IsSecret(classToken) then return nil end
-    return classToken
+    if type(_G.UnitClass) ~= "function" then return nil end
+    local ok, _, classToken = SafeSecureCall(_G.UnitClass, unit)
+    if not ok then return nil end
+    return SafeCloneString(classToken)
 end
 
 local function SafeUnitRaceName(unit)
-    local ok, raceName = pcall(UnitRace, unit)
-    if not ok or type(raceName) ~= "string" or IsSecret(raceName) then return nil end
-    return raceName
+    if type(_G.UnitRace) ~= "function" then return nil end
+    local ok, raceName = SafeSecureCall(_G.UnitRace, unit)
+    if not ok then return nil end
+    return SafeCloneString(raceName)
 end
 
 local function SafeUnitHonorLevel(unit)
-    if not UnitHonorLevel then return 0 end
-    local ok, h = pcall(UnitHonorLevel, unit)
-    if not ok or type(h) ~= "number" or IsSecret(h) then return 0 end
-    return h
+    if type(_G.UnitHonorLevel) ~= "function" then return nil end
+    local ok, honorLevel = SafeSecureCall(_G.UnitHonorLevel, unit)
+    if not ok or type(honorLevel) ~= "number" or IsSecret(honorLevel) then return nil end
+    local okMath, n = pcall(function() return honorLevel + 0 end)
+    if not okMath or type(n) ~= "number" then return nil end
+    return n
+end
+
+local function SafeUnitIsEnemy(a, b)
+    if type(_G.UnitIsEnemy) ~= "function" then return nil end
+    local ok, r = pcall(_G.UnitIsEnemy, a, b)
+    if not ok or type(r) ~= "boolean" or IsSecret(r) then return nil end
+    return r
+end
+
+local function SafeUnitIsPlayer(unit)
+    if type(_G.UnitIsPlayer) ~= "function" then return nil end
+    local ok, r = pcall(_G.UnitIsPlayer, unit)
+    if not ok or type(r) ~= "boolean" or IsSecret(r) then return nil end
+    return r
 end
 
 -- =============================================
--- Nameplate matching (adapted from MidnightDR)
+-- Nameplate matching (copied from MidnightDR Arena.lua)
 -- =============================================
 
 local npAnchorCache = {}
@@ -76,37 +117,94 @@ local function PlateToken(np)
     local tok = SafeIndex(np, "namePlateUnitToken")
     if tok then return tok end
     local uf = SafeIndex(np, "UnitFrame")
-    return uf and SafeIndex(uf, "unit") or nil
+    tok = uf and SafeIndex(uf, "unit") or nil
+    return tok
 end
 
 local function BuildCompositeKey(unit)
+    if type(unit) ~= "string" then return nil end
+    local honor = SafeUnitHonorLevel(unit)
     local classToken = SafeUnitClassToken(unit)
     local raceName = SafeUnitRaceName(unit)
-    if not classToken or not raceName then return nil end
-    local honor = SafeUnitHonorLevel(unit)
+    if type(classToken) ~= "string" or type(raceName) ~= "string" then return nil end
+    if type(honor) ~= "number" then honor = 0 end
     local ok, key = pcall(string.format, "%d:%s:%s", honor, classToken, raceName)
-    return ok and key or nil
+    if not ok or type(key) ~= "string" then return nil end
+    return key
+end
+
+local function IsEnemyPlayerPlateToken(tok)
+    if type(tok) ~= "string" or not SafeUnitExists(tok) then return false end
+    local isEnemyPlayer = SafeUnitIsEnemy("player", tok)
+    local isPlayer = SafeUnitIsPlayer(tok)
+    return ((isEnemyPlayer == true and isPlayer == true) or (isEnemyPlayer == nil and isPlayer == true)) and true or false
+end
+
+local function ResolveArenaByCompositeKey(unit, plates)
+    if type(unit) ~= "string" or not unit:find("^arena%d$") then return nil end
+    if type(plates) ~= "table" then return nil end
+
+    local arenaKey = BuildCompositeKey(unit)
+    if not arenaKey then return nil end
+
+    local foundTok, foundAnchor = nil, nil
+    for _, np in ipairs(plates) do
+        if np and (not IsForbidden(np)) then
+            local tok = PlateToken(np)
+            if IsEnemyPlayerPlateToken(tok) then
+                local plateKey = BuildCompositeKey(tok)
+                if plateKey and plateKey == arenaKey then
+                    local anchor = SafeIndex(np, "UnitFrame") or np
+                    if foundTok and foundTok ~= tok then
+                        return nil
+                    end
+                    foundTok, foundAnchor = tok, anchor
+                end
+            end
+        end
+    end
+
+    return foundTok, foundAnchor
+end
+
+local function ClearArenaCache(arenaUnit)
+    local c = npAnchorCache[arenaUnit]
+    if c and c.token then
+        npTokenToArena[c.token] = nil
+    end
+    npAnchorCache[arenaUnit] = nil
 end
 
 local function CacheValid(arenaUnit, plates)
     local c = npAnchorCache[arenaUnit]
-    if not c or not c.token or not c.anchor or IsForbidden(c.anchor) then return nil end
-    if not SafeUnitExists(c.token) then
-        npTokenToArena[c.token] = nil
-        npAnchorCache[arenaUnit] = nil
+    if not c or type(c.token) ~= "string" or not c.anchor or IsForbidden(c.anchor) then
         return nil
     end
+
+    if not SafeUnitExists(c.token) then
+        ClearArenaCache(arenaUnit)
+        return nil
+    end
+
+    local arenaKey = BuildCompositeKey(arenaUnit)
+    local tokenKey = BuildCompositeKey(c.token)
+    if not arenaKey or not tokenKey or arenaKey ~= tokenKey then
+        ClearArenaCache(arenaUnit)
+        return nil
+    end
+
     for _, np in ipairs(plates) do
-        if np and not IsForbidden(np) then
-            if PlateToken(np) == c.token then
+        if np and (not IsForbidden(np)) then
+            local tok = PlateToken(np)
+            if tok == c.token then
                 local a = SafeIndex(np, "UnitFrame") or np
                 c.anchor = a
                 return a
             end
         end
     end
-    npTokenToArena[c.token] = nil
-    npAnchorCache[arenaUnit] = nil
+
+    ClearArenaCache(arenaUnit)
     return nil
 end
 
@@ -120,37 +218,18 @@ local function CacheBind(arenaUnit, token, anchor)
     npTokenToArena[token] = arenaUnit
 end
 
-local function TryMatchArenaToPlate(unit, plates)
-    local arenaGUID = SafeUnitGUID(unit)
-    if arenaGUID then
-        for _, np in ipairs(plates) do
-            if np and not IsForbidden(np) then
-                local tok = PlateToken(np)
-                if tok and SafeUnitExists(tok) then
-                    local g = SafeUnitGUID(tok)
-                    if g and g == arenaGUID then
-                        return tok, SafeIndex(np, "UnitFrame") or np
-                    end
-                end
-            end
+local function GetDirectNameplateAnchor(unit, plates)
+    if type(C_NamePlate) == "table" and type(C_NamePlate.GetNamePlateForUnit) == "function" then
+        local ok, np = pcall(C_NamePlate.GetNamePlateForUnit, unit)
+        if ok and np and (not IsForbidden(np)) then
+            return SafeIndex(np, "UnitFrame") or np
         end
     end
 
-    local arenaKey = BuildCompositeKey(unit)
-    if arenaKey then
-        local used = {}
-        for _, c in pairs(npAnchorCache) do
-            if c.token then used[c.token] = true end
-        end
+    if type(unit) == "string" and unit:match("^nameplate%d+$") and type(plates) == "table" then
         for _, np in ipairs(plates) do
-            if np and not IsForbidden(np) then
-                local tok = PlateToken(np)
-                if tok and not used[tok] and SafeUnitExists(tok) then
-                    local k = BuildCompositeKey(tok)
-                    if k and k == arenaKey then
-                        return tok, SafeIndex(np, "UnitFrame") or np
-                    end
-                end
+            if np and (not IsForbidden(np)) and PlateToken(np) == unit then
+                return SafeIndex(np, "UnitFrame") or np
             end
         end
     end
@@ -162,49 +241,27 @@ function sArenaMixin:GetNameplateAnchorForArena(unit)
     local ok, plates = pcall(C_NamePlate.GetNamePlates)
     if not ok or not plates then return nil end
 
-    local cached = CacheValid(unit, plates)
-    if cached then return cached end
+    if type(unit) == "string" and unit:find("^arena%d$") then
+        local cached = CacheValid(unit, plates)
+        if cached then return cached end
 
-    local tok, anchor = TryMatchArenaToPlate(unit, plates)
-    if tok and anchor then
-        CacheBind(unit, tok, anchor)
-        return anchor
-    end
-
-    local function BridgeMatch(bridge)
-        if not SafeUnitExists(bridge) then return false end
-        return SafeUnitIsUnit(bridge, unit) == true or SafeUnitIsUnit(unit, bridge) == true
-    end
-
-    local bridgeUnit
-    if BridgeMatch("target") then bridgeUnit = "target"
-    elseif BridgeMatch("focus") then bridgeUnit = "focus"
-    elseif BridgeMatch("mouseover") then bridgeUnit = "mouseover" end
-
-    if bridgeUnit then
-        for _, np in ipairs(plates) do
-            if np and not IsForbidden(np) then
-                local tok2 = PlateToken(np)
-                if tok2 then
-                    local r = SafeUnitIsUnit(tok2, bridgeUnit)
-                    if r == true then
-                        local a = SafeIndex(np, "UnitFrame") or np
-                        CacheBind(unit, tok2, a)
-                        return a
-                    end
-                end
-            end
+        local tok, anchor = ResolveArenaByCompositeKey(unit, plates)
+        if tok and anchor then
+            CacheBind(unit, tok, anchor)
+            return anchor
         end
+
+        ClearArenaCache(unit)
+        return nil
     end
 
-    return nil
+    return GetDirectNameplateAnchor(unit, plates)
 end
 
 function sArenaMixin:ClearNameplateAnchorCache(token)
     if token then
         local au = npTokenToArena[token]
-        if au then npAnchorCache[au] = nil end
-        npTokenToArena[token] = nil
+        if au then ClearArenaCache(au) end
     end
 end
 
@@ -454,29 +511,15 @@ function sArenaMixin:RefreshAllNameplateDR()
 end
 
 function sArenaMixin:GetBestTestNameplate()
+    local a = self:GetNameplateAnchorForArena("target")
+    if a then return a end
+    a = self:GetNameplateAnchorForArena("mouseover")
+    if a then return a end
     local ok, plates = pcall(C_NamePlate.GetNamePlates)
-    if not ok or not plates then return nil end
-
-    for _, unit in ipairs({"target", "mouseover"}) do
-        if SafeUnitExists(unit) then
-            for _, np in ipairs(plates) do
-                if np and not IsForbidden(np) then
-                    local tok = PlateToken(np)
-                    if tok then
-                        local r = SafeUnitIsUnit(tok, unit)
-                        if r == true then
-                            return SafeIndex(np, "UnitFrame") or np
-                        end
-                    end
-                end
-            end
-        end
-    end
-
-    for _, np in ipairs(plates) do
-        if np and not IsForbidden(np) then
-            local uf = SafeIndex(np, "UnitFrame") or np
-            if uf and not IsForbidden(uf) then
+    if ok and plates then
+        for _, p in ipairs(plates) do
+            local uf = p and (SafeIndex(p, "UnitFrame") or p)
+            if uf and (not IsForbidden(uf)) then
                 local shownOk, shown = pcall(function() return uf:IsShown() end)
                 if shownOk and shown then return uf end
             end
@@ -729,7 +772,8 @@ local CATEGORY_FALLBACK_ICON = {
 }
 
 local function WorldDR_IsCategoryEnabled(cat)
-    local db = sArenaMixin.db
+    local f = GetSArenaFrame()
+    local db = f and f.db
     if not db or not db.profile then return true end
     local cats = db.profile.nameplateDRCategories
     if not cats then return true end
@@ -739,7 +783,8 @@ local function WorldDR_IsCategoryEnabled(cat)
 end
 
 local function WorldDR_GetMaxIcons()
-    local db = sArenaMixin.db
+    local f = GetSArenaFrame()
+    local db = f and f.db
     if not db or not db.profile then return 5 end
     local m = db.profile.nameplateDRMaxIcons
     if type(m) ~= "number" then return 5 end
@@ -846,13 +891,61 @@ local function WorldDR_ScanNameplates()
     end
 end
 
+local function WorldDR_MakeThinPixelBorder(parent, r, g, b, a)
+    a = (a == nil) and 1 or a
+    local fr = CreateFrame("Frame", nil, parent)
+    fr:SetAllPoints(parent)
+    local function line()
+        local t = fr:CreateTexture(nil, "OVERLAY")
+        t:SetColorTexture(r, g, b, a)
+        return t
+    end
+    fr.top    = line(); fr.top:SetPoint("TOPLEFT", fr, 0, 0); fr.top:SetPoint("TOPRIGHT", fr, 0, 0); fr.top:SetHeight(1)
+    fr.bottom = line(); fr.bottom:SetPoint("BOTTOMLEFT", fr, 0, 0); fr.bottom:SetPoint("BOTTOMRIGHT", fr, 0, 0); fr.bottom:SetHeight(1)
+    fr.left   = line(); fr.left:SetPoint("TOPLEFT", fr, 0, 0); fr.left:SetPoint("BOTTOMLEFT", fr, 0, 0); fr.left:SetWidth(1)
+    fr.right  = line(); fr.right:SetPoint("TOPRIGHT", fr, 0, 0); fr.right:SetPoint("BOTTOMRIGHT", fr, 0, 0); fr.right:SetWidth(1)
+    return fr
+end
+
+local function WorldDR_SetBorderThickness(b, px)
+    if not b then return end
+    px = tonumber(px) or 1
+    if px < 1 then px = 1 end
+    if b.top    and b.top.SetHeight    then b.top:SetHeight(px) end
+    if b.bottom and b.bottom.SetHeight then b.bottom:SetHeight(px) end
+    if b.left   and b.left.SetWidth    then b.left:SetWidth(px) end
+    if b.right  and b.right.SetWidth   then b.right:SetWidth(px) end
+end
+
+local function WorldDR_FormatDRRemainingText(rem)
+    if type(rem) ~= "number" or rem <= 0 then return nil end
+    if rem < 3 then
+        if rem < 0.1 then rem = 0.1 end
+        rem = math.floor(rem * 10) / 10
+        return string.format("%.1f", rem)
+    end
+    return tostring(math.floor(rem))
+end
+
+local function WorldDR_IsEnabled()
+    local f = GetSArenaFrame()
+    local ldb = f and f.layoutdb
+    return ldb and ldb.drNameplateEnabled
+end
+
 local function WorldDR_EnsureWidget(unit)
-    local plate = C_NamePlate and C_NamePlate.GetNamePlateForUnit and C_NamePlate.GetNamePlateForUnit(unit)
-    if not plate or IsForbidden(plate) then return nil end
+    local plate = C_NamePlate and C_NamePlate.GetNamePlateForUnit and C_NamePlate.GetNamePlateForUnit(unit) or nil
+    if not plate then return nil end
+    if IsForbidden(plate) then return nil end
+
     local uf = SafeIndex(plate, "UnitFrame") or SafeIndex(plate, "unitFrame") or plate
+    if (not uf) or IsForbidden(uf) then return nil end
 
     local w = worldDRState.widgets[unit]
-    if w and IsForbidden(w) then worldDRState.widgets[unit] = nil; w = nil end
+    if w and IsForbidden(w) then
+        worldDRState.widgets[unit] = nil
+        w = nil
+    end
 
     if not w then
         w = CreateFrame("Frame", nil, UIParent)
@@ -860,17 +953,20 @@ local function WorldDR_EnsureWidget(unit)
         w:SetFrameLevel(1000)
         w:SetSize(1, 1)
         w:Hide()
+
+        w.unit = unit
+        w.plate = plate
         w.uf = uf
+
         w.icons = {}
-        for idx = 1, 6 do
+        for i = 1, 5 do
             local f = CreateFrame("Frame", nil, w)
             f:SetFrameStrata("HIGH")
             f:SetFrameLevel(w:GetFrameLevel() + 1)
+
             f.texture = f:CreateTexture(nil, "ARTWORK")
             f.texture:SetAllPoints()
-            local bg = f:CreateTexture(nil, "BACKGROUND")
-            bg:SetAllPoints()
-            bg:SetColorTexture(0, 0, 0, 0.7)
+
             f.cooldown = CreateFrame("Cooldown", nil, f, "CooldownFrameTemplate")
             f.cooldown:SetAllPoints()
             f.cooldown:SetDrawEdge(false)
@@ -879,64 +975,85 @@ local function WorldDR_EnsureWidget(unit)
             f.cooldown:SetSwipeColor(0, 0, 0, 0.8)
             f.cooldown:SetHideCountdownNumbers(true)
             f.cooldown:SetFrameLevel(f:GetFrameLevel() + 1)
+
             f.textHolder = CreateFrame("Frame", nil, f)
             f.textHolder:SetAllPoints()
+            f.textHolder:SetFrameStrata(f:GetFrameStrata())
             f.textHolder:SetFrameLevel(f:GetFrameLevel() + 10)
+
             f.text = f.textHolder:CreateFontString(nil, "OVERLAY")
             f.text:SetDrawLayer("OVERLAY", 7)
-            f.text:SetPoint("CENTER")
+            f.text:SetPoint("CENTER", f.textHolder, "CENTER", 0, 0)
             f.text:SetJustifyH("CENTER")
+            f.text:SetJustifyV("MIDDLE")
 
-            local bFrame = CreateFrame("Frame", nil, f)
-            bFrame:SetPoint("TOPLEFT", -1, 1)
-            bFrame:SetPoint("BOTTOMRIGHT", 1, -1)
-            bFrame:SetFrameLevel(f:GetFrameLevel() + 5)
-            local bT = bFrame:CreateTexture(nil, "OVERLAY"); bT:SetHeight(1); bT:SetPoint("TOPLEFT"); bT:SetPoint("TOPRIGHT"); bT:SetColorTexture(0,1,0,1)
-            local bB = bFrame:CreateTexture(nil, "OVERLAY"); bB:SetHeight(1); bB:SetPoint("BOTTOMLEFT"); bB:SetPoint("BOTTOMRIGHT"); bB:SetColorTexture(0,1,0,1)
-            local bL = bFrame:CreateTexture(nil, "OVERLAY"); bL:SetWidth(1); bL:SetPoint("TOPLEFT"); bL:SetPoint("BOTTOMLEFT"); bL:SetColorTexture(0,1,0,1)
-            local bR = bFrame:CreateTexture(nil, "OVERLAY"); bR:SetWidth(1); bR:SetPoint("TOPRIGHT"); bR:SetPoint("BOTTOMRIGHT"); bR:SetColorTexture(0,1,0,1)
-            f.borderTextures = { bT, bB, bL, bR }
+            f.borderFrame = CreateFrame("Frame", nil, f)
+            f.borderFrame:SetAllPoints()
+            f.borderFrame:SetFrameStrata(f:GetFrameStrata())
+            f.borderFrame:SetFrameLevel(f:GetFrameLevel() + 5)
+            f.greenBorder = WorldDR_MakeThinPixelBorder(f.borderFrame, 0, 1, 0, 1)
+            f.redBorder   = WorldDR_MakeThinPixelBorder(f.borderFrame, 1, 0, 0, 1)
+            f.greenBorder:Hide()
+            f.redBorder:Hide()
 
             f:Hide()
-            w.icons[idx] = f
+            w.icons[i] = f
         end
+
         worldDRState.widgets[unit] = w
     else
+        w.plate = plate
         w.uf = uf
     end
+
     return w
 end
 
 local function WorldDR_ApplyLayout(w)
-    if not w or not w.uf then return end
-    local db = sArenaMixin.layoutdb
-    local npdb = db and db.drNameplate
-    local size = (npdb and npdb.size) or 22
-    local spacing = (npdb and npdb.spacing) or 2
-    local posX = (npdb and npdb.posX) or 0
-    local posY = (npdb and npdb.posY) or 0
-    local grow = (npdb and npdb.growthDirection) or 3
-    local fontSize = (npdb and npdb.fontSize) or 12
+    if not w then return end
+    local f = GetSArenaFrame()
+    local ldb = f and f.layoutdb
+    local npdb = ldb and ldb.drNameplate
+
+    local size = tonumber(npdb and npdb.size) or 26
+    local spacing = tonumber(npdb and npdb.spacing) or 2
+    local px = tonumber(npdb and npdb.posX) or 0
+    local py = tonumber(npdb and npdb.posY) or 0
+    local growNum = (npdb and npdb.growthDirection) or 3
+    local fontSize = tonumber(npdb and npdb.fontSize) or 14
+
+    local GROW_MAP = { [1] = "DOWN", [2] = "UP", [3] = "RIGHT", [4] = "LEFT" }
+    local grow = GROW_MAP[growNum] or "RIGHT"
 
     w:ClearAllPoints()
-    w:SetPoint("CENTER", w.uf, "CENTER", posX, posY)
+    if w.uf then
+        w:SetPoint("CENTER", w.uf, "CENTER", px, py)
+    elseif w.plate then
+        w:SetPoint("CENTER", w.plate, "CENTER", px, py)
+    else
+        w:SetPoint("CENTER", UIParent, "CENTER", px, py)
+    end
 
-    local us = (w.uf.GetEffectiveScale and w.uf:GetEffectiveScale()) or 1
-    local ps = (UIParent.GetEffectiveScale and UIParent:GetEffectiveScale()) or 1
+    local us = (w.uf and w.uf.GetEffectiveScale and w.uf:GetEffectiveScale()) or 1
+    local ps = (UIParent and UIParent.GetEffectiveScale and UIParent:GetEffectiveScale()) or 1
     local sc = us / ps
     if sc < 0.1 then sc = 0.1 elseif sc > 10 then sc = 10 end
     w:SetScale(sc)
+
+    w:SetAlpha(1)
 
     local fontPath = "Fonts\\FRIZQT__.TTF"
     for i, f in ipairs(w.icons) do
         f:SetSize(size, size)
         f.text:SetFont(fontPath, fontSize, "OUTLINE")
+        f.text:SetTextColor(1, 1, 1, 1)
+
         f:ClearAllPoints()
         local dx, dy = 0, 0
-        if grow == 4 then dx = -(i-1) * (size + spacing)
-        elseif grow == 3 then dx = (i-1) * (size + spacing)
-        elseif grow == 1 then dy = -(i-1) * (size + spacing)
-        elseif grow == 2 then dy = (i-1) * (size + spacing)
+        if grow == "LEFT" then dx = -(i-1) * (size + spacing)
+        elseif grow == "UP" then dy = (i-1) * (size + spacing)
+        elseif grow == "DOWN" then dy = -(i-1) * (size + spacing)
+        else dx = (i-1) * (size + spacing)
         end
         f:SetPoint("CENTER", w, "CENTER", dx, dy)
     end
@@ -947,18 +1064,29 @@ local function WorldDR_HideWidget(unit)
     if w then w:Hide() end
 end
 
+local function WorldDR_ClearWidgetIcons(w)
+    if not w then return end
+    for _, f in ipairs(w.icons) do
+        if f.greenBorder then f.greenBorder:Hide() end
+        if f.redBorder   then f.redBorder:Hide() end
+        f:Hide()
+    end
+end
+
 local function WorldDR_RenderOnUnit(unit, states)
     local w = WorldDR_EnsureWidget(unit)
     if not w then return end
+
     WorldDR_ApplyLayout(w)
+    WorldDR_ClearWidgetIcons(w)
 
     local maxIcons = WorldDR_GetMaxIcons()
-    local npdb = sArenaMixin.layoutdb and sArenaMixin.layoutdb.drNameplate
-    local borderSz = (npdb and npdb.borderSize) or 1
+    local sf = GetSArenaFrame()
+    local npdb = sf and sf.layoutdb and sf.layoutdb.drNameplate
+    local borderSize = tonumber(npdb and npdb.borderSize) or 1
+
     local now = GetTime()
     local shown = 0
-    for _, f in ipairs(w.icons) do f:Hide() end
-
     for _, cat in ipairs(CATEGORY_ORDER) do
         if shown >= maxIcons then break end
         if WorldDR_IsCategoryEnabled(cat) then
@@ -967,32 +1095,38 @@ local function WorldDR_RenderOnUnit(unit, states)
                 shown = shown + 1
                 local f = w.icons[shown]
                 if f then
-                    local tex = st.tex or CATEGORY_FALLBACK_ICON[cat]
+                    local tex = st.tex or WorldDR_GetSpellTexture(st.spellID) or CATEGORY_FALLBACK_ICON[cat]
                     if tex then f.texture:SetTexture(tex) end
+
                     local dur = st.finish - st.start
                     if dur < 0 then dur = 0 end
                     f.cooldown:SetCooldown(st.start, dur)
+
                     local rem = st.finish - now
-                    if rem < 3 then
-                        f.text:SetText(string.format("%.1f", math.max(0.1, math.floor(rem * 10) / 10)))
+                    if rem < 0 then rem = 0 end
+                    local txt = WorldDR_FormatDRRemainingText(rem)
+                    if txt then
+                        f.text:SetText(txt)
                     else
-                        f.text:SetText(tostring(math.floor(rem)))
+                        f.text:SetText("")
                     end
-                    local rc = st.resetCount or 0
-                    local br, bg, bb = 0, 1, 0
-                    if rc >= 1 then br, bg, bb = 1, 0, 0 end
-                    if f.borderTextures then
-                        for _, bt in ipairs(f.borderTextures) do
-                            bt:SetColorTexture(br, bg, bb, 1)
-                            bt:SetHeight(borderSz)
-                            bt:SetWidth(borderSz)
-                        end
+
+                    local rc = tonumber(st.resetCount) or 0
+                    if f.greenBorder then
+                        WorldDR_SetBorderThickness(f.greenBorder, borderSize)
+                        if rc == 0 then f.greenBorder:Show() else f.greenBorder:Hide() end
                     end
+                    if f.redBorder then
+                        WorldDR_SetBorderThickness(f.redBorder, borderSize)
+                        if rc >= 1 then f.redBorder:Show() else f.redBorder:Hide() end
+                    end
+
                     f:Show()
                 end
             end
         end
     end
+
     if shown > 0 then w:Show() else w:Hide() end
 end
 
@@ -1038,8 +1172,13 @@ local function WorldDR_CleanExpired(tbl)
 end
 
 local function WorldDR_Tick()
-    if not sArenaMixin.db then return end
-    if not WorldDR_IsEnabledForZone(sArenaMixin.db) then
+    local sf = GetSArenaFrame()
+    if not sf or not sf.db then return end
+    if not WorldDR_IsEnabled() then
+        for unit in pairs(worldDRState.widgets) do WorldDR_HideWidget(unit) end
+        return
+    end
+    if not WorldDR_IsEnabledForZone(sf.db) then
         for unit in pairs(worldDRState.widgets) do WorldDR_HideWidget(unit) end
         return
     end
@@ -1070,7 +1209,9 @@ end
 
 function sArenaMixin:WorldDR_OnSpellcastSucceeded(unit, _, spellID)
     if unit ~= "player" or type(spellID) ~= "number" then return end
-    if not self.db or not WorldDR_IsEnabledForZone(self.db) then return end
+    if not self.db or not WorldDR_IsEnabled() or not WorldDR_IsEnabledForZone(self.db) then
+        return
+    end
     if WorldDR_IsArena() then return end
     if not UnitExists("target") or not UnitCanAttack("player", "target") then return end
     if WorldDR_IsBattleground() then
@@ -1134,6 +1275,10 @@ end
 
 function sArenaMixin:WorldDR_Evaluate()
     if not self.db then return end
+    if not WorldDR_IsEnabled() then
+        self:WorldDR_Stop()
+        return
+    end
     if WorldDR_IsArena() then
         self:WorldDR_Stop()
         return
