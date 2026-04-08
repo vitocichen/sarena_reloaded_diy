@@ -693,7 +693,8 @@ L["Donate_Copied"] = "Copied"
 L["Donate_OpenHint"] = "|cFF888888Can't open? Try visiting the URL above in your browser|r"
 
 -- Changelog
-L["Changelog_About"] = "DIY: DK-jiangshili (Burning Blade CN)\nBased on sArena Reloaded v2.4.3"
+L["Changelog_About"] = "DIY: DK-jiangshili (Burning Blade CN)\nBased on sArena Reloaded v2.4.4"
+L["Changelog_v104"] = "|cffffd700● Nameplate DR Overhaul|r — Completely aligned arena/BG/world DR with MidnightDR: SafeSecureCall for Midnight client, CompositeKey matching, proper anchor fallback\n|cffffd700● WorldDR Fixes|r — Fixed master toggle not stopping WorldDR, fixed position/size not applying, fixed countdown numbers being static\n|cffffd700● Feral Druid DR Spells|r — Added Rake, Maim, Wild Charge to DR tracking"
 L["Changelog_v103"] = "|cffffd700● Full MidnightDR Nameplate DR Integration|r — Multi-zone support (Arena/BG/World/Dungeon), category filtering, test mode"
 L["Changelog_v102"] = "|cffffd700● Self DR Enhanced|r — Full MyDRs replacement, all-zone support (Arena/BG/World), fully replaces MidnightDR, healthbar DR support\n|cffffd700● Castbar Target Text|r — Show who the enemy is casting on\n|cffffd700● Highlight Casts on Me|r — Castbar border glow when targeting you (Midnight only)\n|cffffd700● Trinket Sound|r — Play sound on enemy trinket use, healer/DPS, custom sounds\n|cffffd700● Trinket Keep Texture|r — Tint original trinket texture instead of solid color\n|cffffd700● Bug Fixes|r — Castbar interrupt detection rewrite/Auras empty unit protection/Target indicator nil checks"
 L["Changelog_v101"] = "|cffffd700● Self DR Rewrite|r — Pure self tracking, 7 categories with individual toggles\n|cffffd700● Pet Frames|r — Added pet health bars\n|cffffd700● Full Localization|r — All config UI in Chinese"

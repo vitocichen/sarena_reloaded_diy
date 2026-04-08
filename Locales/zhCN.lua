@@ -700,7 +700,8 @@ L["Donate_Copied"] = "已复制"
 L["Donate_OpenHint"] = "|cFF888888打不开？请尝试使用浏览器直接访问上方网址|r"
 
 -- Changelog
-L["Changelog_About"] = "DIY: DK-姜世离(燃烧之刃)\n基于 sArena Reloaded v2.4.3 二次开发"
+L["Changelog_About"] = "DIY: DK-姜世离(燃烧之刃)\n基于 sArena Reloaded v2.4.4 二次开发"
+L["Changelog_v104"] = "|cffffd700● 姓名板递减全面重构|r — 竞技场/战场/野外递减完全对齐MidnightDR：SafeSecureCall安全调用、CompositeKey匹配策略、铭牌锚点自动回退\n|cffffd700● 野外递减修复|r — 修复总开关关闭后递减仍显示、修复坐标/大小设置不生效、修复倒计时数字不动\n|cffffd700● 野德递减法术|r — 新增锐利之爪(Rake)、割碎(Maim)、野性冲锋(Wild Charge)"
 L["Changelog_v103"] = "|cffffd700● 完全集成MidnightDR姓名板递减|r — 支持竞技场/战场/野外/副本区域独立开关，分类筛选，测试模式"
 L["Changelog_v102"] = "|cffffd700● 自身递减完善|r — 完美替代MyDRs，全区域支持（竞技场/战场/世界），完全替代MidnightDR，支持血条递减\n|cffffd700● 施法条目标文字|r — 施法条上显示敌人对谁施法，带职业颜色\n|cffffd700● 对我施法高亮|r — 敌人对你施法时施法条边框高亮（Midnight限定）\n|cffffd700● 饰品音效|r — 敌人使用饰品时播放音效，区分治疗/DPS，支持自定义\n|cffffd700● 饰品保留原材质|r — 呼色模式：保留原始饰品贴图并着色\n|cffffd700● Bug修复|r — 施法条打断检测完善重写/Auras空单位保护/目标指示器nil检查"
 L["Changelog_v101"] = "|cffffd700● 自身递减重写|r — 完全重写，纯自身追踪，7种分类可单独开关\n|cffffd700● 宠物框体|r — 新增宠物生命条\n|cffffd700● 全面汉化|r — 配置界面全部中文化"
