@@ -1,3 +1,18 @@
+DIY v1.0.5
+- 修复姓名版递减(DIY)区域选择中"竞技场"开关不生效的问题：取消勾选后JJC血条上仍显示递减图标
+- 竞技场区域开关现在同时控制 Arena Nameplate DR 和 WorldDR 两套子系统
+
+DIY v1.0.4
+- 姓名板递减全面重构，对齐MidnightDR：SafeSecureCall安全调用、CompositeKey匹配、锚点自动回退
+- 野外递减修复：总开关/坐标/大小/倒计时数字
+- 新增野德递减法术：锐利之爪、割碎、野性冲锋
+
+DIY v1.0.3
+- 完全集成MidnightDR姓名板递减，支持竞技场/战场/野外/副本区域独立开关
+
+DIY v1.0.2
+- 修复 Pixelated 布局缺少 UpdatePetFrameSettings 调用的问题
+
 DIY v1.0.1
 - 重写自身递减模块，改为纯自身追踪（参考 MyDRs），支持 7 种递减分类独立开关
 - 可拖拽、可配置图标大小/间距/增长方向/倒计时/递减文字

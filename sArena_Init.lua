@@ -9,7 +9,7 @@ sArenaMixin.isWrath = gameVersion:match("^3%.")
 sArenaMixin.isTBC = gameVersion:match("^2%.")
 
 sArenaMixin.addonName = "|T135884:13:13|t sArena |cffff8000Reloaded|r"
-sArenaMixin.addonTitle = sArenaMixin.addonName .. " v1.0.4"
+sArenaMixin.addonTitle = sArenaMixin.addonName .. " v1.0.5"
 sArenaMixin.popupHeader = "\n" .. sArenaMixin.addonName .. "\n\n"
 sArenaMixin.layouts = {}
 sArenaMixin.defaultSettings = {
