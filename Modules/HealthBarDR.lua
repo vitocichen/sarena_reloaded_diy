@@ -403,6 +403,18 @@ function sArenaFrameMixin:UpdateNameplateDRPositions()
         return
     end
 
+    -- 检查区域开关：如果当前在竞技场且用户关闭了竞技场区域，则隐藏姓名版递减
+    local _, instanceType = IsInInstance()
+    if instanceType == "arena" then
+        local globaldb = self.parent.db
+        if globaldb and globaldb.profile and globaldb.profile.nameplateDRZones then
+            if globaldb.profile.nameplateDRZones.enableInArena == false then
+                for _, f in ipairs(self.drFramesNP) do f:Hide() end
+                return
+            end
+        end
+    end
+
     local arenaUnit = "arena" .. self:GetID()
     local anchor = self.parent:GetNameplateAnchorForArena(arenaUnit)
 

@@ -3596,6 +3596,7 @@ function sArenaMixin:GetLayoutOptionsTable(layoutName)
                             info.handler.db.profile.nameplateDRZones = info.handler.db.profile.nameplateDRZones or {}
                             info.handler.db.profile.nameplateDRZones.enableInArena = val and true or false
                             self:WorldDR_Evaluate()
+                            self:RefreshAllNameplateDR()
                         end,
                     },
                     enableInBattleground = {
