@@ -516,6 +516,9 @@ function sArenaMixin:OnEvent(event, ...)
         -- does not bleed into the next arena. Hooks will be re-installed by the
         -- arena-only RefreshAllNameplateTrinket() call further down.
         if self.ResetAllNameplateTrinket then self:ResetAllNameplateTrinket() end
+        -- DIY: hide all PetBars on zone change so they don't linger after leaving
+        -- arena or after the test-mode "Hide" button is clicked.
+        if self.HideAllPetBars then self:HideAllPetBars() end
         self.arenaMatchStarted = nil
         if self.RefreshAllAuraHighlights then self:RefreshAllAuraHighlights() end
 

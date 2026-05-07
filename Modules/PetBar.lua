@@ -440,6 +440,18 @@ function sArenaFrameMixin:ShowTestPetBar()
     self.PetBar:SetAlpha(1)
 end
 
+-- DIY: hide every PetBar at once. Used on test mode exit / arena exit so the
+-- UIParent-parented pet bars don't linger on screen after the enemy frames
+-- are hidden (the "Hide" button, ESC out of test mode, leaving an arena, etc).
+function sArenaMixin:HideAllPetBars()
+    for i = 1, self.maxArenaOpponents do
+        local frame = self["arena" .. i]
+        if frame and frame.ResetPetBar then
+            frame:ResetPetBar()
+        end
+    end
+end
+
 function sArenaMixin:UpdatePetBarSettings(db, info, val)
     if val ~= nil and info then
         db[info[#info]] = val
