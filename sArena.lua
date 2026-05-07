@@ -445,6 +445,7 @@ function sArenaMixin:OnEvent(event, ...)
             frame:UpdateTarget(frame.unit)
         end
         if self.RefreshAllNameplateDR then self:RefreshAllNameplateDR() end
+        if self.RefreshAllNameplateTrinket then self:RefreshAllNameplateTrinket() end
 
     elseif (event == "PLAYER_FOCUS_CHANGED") then
         for i = 1, self.maxArenaOpponents do
@@ -452,15 +453,18 @@ function sArenaMixin:OnEvent(event, ...)
             frame:UpdateFocus(frame.unit)
         end
         if self.RefreshAllNameplateDR then self:RefreshAllNameplateDR() end
+        if self.RefreshAllNameplateTrinket then self:RefreshAllNameplateTrinket() end
 
     elseif event == "NAME_PLATE_UNIT_ADDED" then
         local token = ...
         if self.RefreshAllNameplateDR then self:RefreshAllNameplateDR() end
+        if self.RefreshAllNameplateTrinket then self:RefreshAllNameplateTrinket() end
         if self.WorldDR_OnNamePlateAdded then self:WorldDR_OnNamePlateAdded(token) end
     elseif event == "NAME_PLATE_UNIT_REMOVED" then
         local token = ...
         if token and self.ClearNameplateAnchorCache then self:ClearNameplateAnchorCache(token) end
         if self.RefreshAllNameplateDR then self:RefreshAllNameplateDR() end
+        if self.RefreshAllNameplateTrinket then self:RefreshAllNameplateTrinket() end
         if self.WorldDR_OnNamePlateRemoved then self:WorldDR_OnNamePlateRemoved(token) end
     elseif event == "UNIT_SPELLCAST_SUCCEEDED" then
         if self.WorldDR_OnSpellcastSucceeded then self:WorldDR_OnSpellcastSucceeded(...) end
@@ -506,6 +510,8 @@ function sArenaMixin:OnEvent(event, ...)
         self:UpdateBlizzArenaFrameVisibility(instanceType)
         self:SetMouseState(instanceType ~= "arena")
         self.testMode = nil
+        if self.HideTestNameplateDR then self:HideTestNameplateDR() end
+        if self.HideTestNameplateTrinket then self:HideTestNameplateTrinket() end
         self.arenaMatchStarted = nil
         if self.RefreshAllAuraHighlights then self:RefreshAllAuraHighlights() end
 
@@ -543,6 +549,8 @@ function sArenaMixin:OnEvent(event, ...)
             self:RegisterWidgetEvents()
             self:RegisterInterruptEvents()
             self:RegisterRangeCheckEvents()
+            -- DIY: Refresh nameplate trinket mirrors (lazy create + position)
+            if self.RefreshAllNameplateTrinket then self:RefreshAllNameplateTrinket() end
             -- DIY: Nameplate DR + WorldDR
             self:RegisterEvent("NAME_PLATE_UNIT_ADDED")
             self:RegisterEvent("NAME_PLATE_UNIT_REMOVED")
@@ -586,6 +594,8 @@ function sArenaMixin:OnEvent(event, ...)
                     frame:HideAllNameplateDR()
                 end
             end
+            -- DIY: Nameplate Trinket only valid in arena (data source is arena-only)
+            if self.HideAllNameplateTrinket then self:HideAllNameplateTrinket() end
             self:RegisterEvent("NAME_PLATE_UNIT_ADDED")
             self:RegisterEvent("NAME_PLATE_UNIT_REMOVED")
             self:RegisterEvent("UNIT_SPELLCAST_SUCCEEDED")
@@ -694,6 +704,7 @@ function sArenaMixin:Initialize()
         LibStub("AceConfigDialog-3.0"):AddToBlizOptions("sArena", "sArena |cffff8000Reloaded|r |T135884:13:13|t")
         self:SetLayout(_, db.profile.currentLayout)
         if self.EnableSelfDR then self:EnableSelfDR() end
+        if self.RefreshAllNameplateTrinket then self:RefreshAllNameplateTrinket() end
     else
         self:PrintConflictMessage(conflictType)
     end

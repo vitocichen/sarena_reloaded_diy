@@ -64,6 +64,17 @@ sArenaMixin.defaultSettings = {
             interruptNotReady = { 1.0, 0.0, 0.0, 1 },
         },
         layoutSettings = {},
+        -- DIY: Nameplate Trinket mirror (mirrors enemy PvP CC remover icon onto enemy nameplate)
+        nameplateTrinket = {
+            enabled = true,
+            shownAs = "always",
+            size = 26,
+            posX = 0,
+            posY = 4,
+            fontSize = 14,
+            borderSize = 1,
+            alpha = 1.0,
+        },
         invertClassIconCooldown = true,
         cooldownSwipeColor = { 0, 0, 0, 0.55 },
         stealthAlpha = 0.4,

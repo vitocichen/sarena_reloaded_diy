@@ -1,7 +1,14 @@
+# DIY v1.0.7（集火目标预测）
+
+- 新增「集火目标预测」：在 JJC 框架 / 小队框架上显示「队友 / 自己当前目标 = arena 几」的集火指示。
+- 原理：Midnight（12.0+）客户端在 PvP 战斗中把 `UnitIsUnit` 变成了「secret value」（直接调用会污染战斗系统、被 API 屏蔽），无法精确判断「这个目标到底是 arena1/2/3 哪一个」。这里改用 `[职业 + 种族 + 荣誉等级]` 三元组比对来近似 `UnitIsUnit`。
+- 注意：这是一个不太靠谱的启发式方法 —— 当对手三元组撞车（如 AWC 镜像队、双战士同种族 + 同荣誉等级、对手恰好打到同一档位等）时会判断错误。仅供参考，别把它当真。
+
+---
+
 # DIY v1.0.6（基线升级到上游 2.5.1）
 - 上游基线从 2.4.3 升级到 2.5.1，合并 2.4.4 ~ 2.5.1 所有 Bug 修复与新功能（Absorbs / AuraHighlight / Clicks / RangeCheck / CooldownFrame / Trinket Glow / Glad Tracker 等）
 - 完整保留 DIY 模块：HealthBarDR、PetBar、PetFrames、SelfDR
-- 补译 164 条新功能简体中文，zhCN 100% 覆盖 enUS
 - 新增 Ace3 库 LibCustomGlow-1.0
 - 旧 CompatibilityCheck 替换为上游 ConflictCheck（保留兼容接口）
 

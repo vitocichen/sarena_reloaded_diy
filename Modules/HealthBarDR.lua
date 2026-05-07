@@ -540,6 +540,69 @@ function sArenaMixin:GetBestTestNameplate()
     return nil
 end
 
+-- Test mode uses a dedicated set of frames (_testNPDRFrames) instead of arena1.drFramesNP,
+-- so it never collides with the real-DR data path and can ignore enabled / zone / instanceType
+-- guards entirely. Purpose: pure visual preview for sliders (size, position, font, border, alpha).
+
+local NP_DR_TEST_TEXTURES = { 136071, 132298, 136100, 136183 }
+local NP_DR_TEST_COLORS   = { {1,0,0}, {0,1,0}, {0,1,0}, {0,1,0} }
+local NP_DR_TEST_COUNT    = 4
+
+local function CreateTestNPDRFrame(idx)
+    local name = "sArenaTestNPDR" .. idx
+    local f = CreateFrame("Frame", name, UIParent)
+    f:SetSize(22, 22)
+    f:SetFrameStrata("HIGH")
+    f:SetFrameLevel(210)
+    f:Hide()
+
+    local bg = f:CreateTexture(nil, "BACKGROUND")
+    bg:SetAllPoints()
+    bg:SetColorTexture(0, 0, 0, 0.7)
+
+    local icon = f:CreateTexture(nil, "ARTWORK")
+    icon:SetAllPoints()
+    f.Icon = icon
+
+    local cd = CreateFrame("Cooldown", name .. "CD", f, "CooldownFrameTemplate")
+    cd:SetAllPoints()
+    cd:SetDrawBling(false)
+    cd:SetReverse(true)
+    cd:SetSwipeColor(0, 0, 0, 0.6)
+    cd:SetHideCountdownNumbers(false)
+    f.Cooldown = cd
+
+    local cdText = nil
+    if cd.GetRegions then
+        for _, region in next, { cd:GetRegions() } do
+            if region:GetObjectType() == "FontString" then
+                cdText = region; break
+            end
+        end
+    end
+    if not cdText and cd.GetCountdownFontString then
+        cdText = cd:GetCountdownFontString()
+    end
+    f.CDText = cdText
+
+    local borderFrame = CreateFrame("Frame", nil, f)
+    borderFrame:SetPoint("TOPLEFT", -1, 1)
+    borderFrame:SetPoint("BOTTOMRIGHT", 1, -1)
+    borderFrame:SetFrameLevel(f:GetFrameLevel() + 2)
+    local function makeLine()
+        local t = borderFrame:CreateTexture(nil, "OVERLAY")
+        t:SetColorTexture(0, 1, 0, 1)
+        return t
+    end
+    local bTop = makeLine(); bTop:SetHeight(1); bTop:SetPoint("TOPLEFT"); bTop:SetPoint("TOPRIGHT")
+    local bBot = makeLine(); bBot:SetHeight(1); bBot:SetPoint("BOTTOMLEFT"); bBot:SetPoint("BOTTOMRIGHT")
+    local bLeft = makeLine(); bLeft:SetWidth(1); bLeft:SetPoint("TOPLEFT"); bLeft:SetPoint("BOTTOMLEFT")
+    local bRight = makeLine(); bRight:SetWidth(1); bRight:SetPoint("TOPRIGHT"); bRight:SetPoint("BOTTOMRIGHT")
+    f.BorderTextures = { bTop, bBot, bLeft, bRight }
+
+    return f
+end
+
 function sArenaMixin:ShowTestNameplateDR()
     local layoutdb = self.layoutdb
     if not layoutdb or not layoutdb.drNameplate then return end
@@ -553,90 +616,102 @@ function sArenaMixin:ShowTestNameplateDR()
     local grow = db.growthDirection or 3
     local posX = db.posX or 0
     local posY = db.posY or 0
+    local hideText = db.hideText
+    local fontSize = db.fontSize or 12
+    local borderSz = db.borderSize or 1
+    local drAlpha = db.alpha or 1.0
 
     local us = (anchor.GetEffectiveScale and anchor:GetEffectiveScale()) or 1
     local ps = (UIParent.GetEffectiveScale and UIParent:GetEffectiveScale()) or 1
     local sc = us / ps
     if sc < 0.1 then sc = 0.1 elseif sc > 10 then sc = 10 end
 
-    local testTextures = { 136071, 132298, 136100, 136183 }
-    local testColors = { {1,0,0}, {0,1,0}, {0,1,0}, {0,1,0} }
-    local now = GetTime()
-
-    local frame = self.arena1
-    if not frame then return end
-    if not frame.drFramesNP then frame:CreateNameplateDRFrames() end
+    self._testNPDRFrames = self._testNPDRFrames or {}
+    self._testNPDRCDs = self._testNPDRCDs or {}
 
     local prevFrame
-    for n = 1, math.min(4, #frame.drFramesNP) do
-        local f = frame.drFramesNP[n]
-        if f then
-            f:SetParent(UIParent)
-            f:SetSize(size, size)
-            f:SetScale(sc)
-            f:ClearAllPoints()
-
-            if n == 1 then
-                if grow == 4 then
-                    f:SetPoint("RIGHT", anchor, "CENTER", posX, posY)
-                elseif grow == 3 then
-                    f:SetPoint("LEFT", anchor, "CENTER", posX, posY)
-                elseif grow == 1 then
-                    f:SetPoint("TOP", anchor, "CENTER", posX, posY)
-                else
-                    f:SetPoint("BOTTOM", anchor, "CENTER", posX, posY)
-                end
-            else
-                if grow == 4 then
-                    f:SetPoint("RIGHT", prevFrame, "LEFT", -spacing, 0)
-                elseif grow == 3 then
-                    f:SetPoint("LEFT", prevFrame, "RIGHT", spacing, 0)
-                elseif grow == 1 then
-                    f:SetPoint("TOP", prevFrame, "BOTTOM", 0, -spacing)
-                else
-                    f:SetPoint("BOTTOM", prevFrame, "TOP", 0, spacing)
-                end
-            end
-
-            f:SetAlpha(db.alpha or 1.0)
-            f.Icon:SetTexture(testTextures[n])
-            f.Cooldown:SetCooldown(now, math.random(12, 30))
-            f.Cooldown:SetHideCountdownNumbers(db.hideText and true or false)
-
-            if not f.CDText then
-                for _, region in next, { f.Cooldown:GetRegions() } do
-                    if region:GetObjectType() == "FontString" then
-                        f.CDText = region; break
-                    end
-                end
-            end
-            if f.CDText and not db.hideText then
-                local fontFile = f.CDText.fontFile or select(1, f.CDText:GetFont())
-                local flags = f.CDText.fontFlags or select(3, f.CDText:GetFont())
-                if fontFile then
-                    pcall(function() f.CDText:SetFont(fontFile, db.fontSize or 12, flags or "OUTLINE") end)
-                end
-            end
-
-            frame:SetNameplateDRBorderColor(n, testColors[n][1], testColors[n][2], testColors[n][3])
-            local borderSz = db.borderSize or 1
-            if f.BorderTextures then
-                for _, tex in ipairs(f.BorderTextures) do
-                    tex:SetHeight(borderSz)
-                    tex:SetWidth(borderSz)
-                end
-            end
-            f:Show()
-            prevFrame = f
+    for n = 1, NP_DR_TEST_COUNT do
+        local f = self._testNPDRFrames[n]
+        if not f then
+            f = CreateTestNPDRFrame(n)
+            self._testNPDRFrames[n] = f
         end
+
+        f:SetSize(size, size)
+        f:SetScale(sc)
+        f:SetAlpha(drAlpha)
+        f:ClearAllPoints()
+
+        if n == 1 then
+            if grow == 4 then
+                f:SetPoint("RIGHT", anchor, "CENTER", posX, posY)
+            elseif grow == 3 then
+                f:SetPoint("LEFT", anchor, "CENTER", posX, posY)
+            elseif grow == 1 then
+                f:SetPoint("TOP", anchor, "CENTER", posX, posY)
+            else
+                f:SetPoint("BOTTOM", anchor, "CENTER", posX, posY)
+            end
+        else
+            if grow == 4 then
+                f:SetPoint("RIGHT", prevFrame, "LEFT", -spacing, 0)
+            elseif grow == 3 then
+                f:SetPoint("LEFT", prevFrame, "RIGHT", spacing, 0)
+            elseif grow == 1 then
+                f:SetPoint("TOP", prevFrame, "BOTTOM", 0, -spacing)
+            else
+                f:SetPoint("BOTTOM", prevFrame, "TOP", 0, spacing)
+            end
+        end
+
+        f.Icon:SetTexture(NP_DR_TEST_TEXTURES[n])
+        f.Icon:SetDesaturated(false)
+        f.Icon:SetVertexColor(1, 1, 1, 1)
+
+        local cd = self._testNPDRCDs[n]
+        local nowT = GetTime()
+        if not cd or (cd.start + cd.duration) <= nowT then
+            cd = { start = nowT, duration = math.random(12, 30) }
+            self._testNPDRCDs[n] = cd
+        end
+        f.Cooldown:Clear()
+        f.Cooldown:SetCooldown(cd.start, cd.duration)
+        f.Cooldown:SetHideCountdownNumbers(hideText and true or false)
+
+        if f.CDText and not hideText then
+            local fontFile = f.CDText.fontFile or select(1, f.CDText:GetFont())
+            local flags = f.CDText.fontFlags or select(3, f.CDText:GetFont())
+            if fontFile then
+                pcall(function() f.CDText:SetFont(fontFile, fontSize, flags or "OUTLINE") end)
+            end
+        end
+
+        if f.BorderTextures then
+            local color = NP_DR_TEST_COLORS[n]
+            for _, tex in ipairs(f.BorderTextures) do
+                tex:SetColorTexture(color[1], color[2], color[3], 1)
+                tex:SetHeight(borderSz)
+                tex:SetWidth(borderSz)
+            end
+        end
+
+        f:Show()
+        prevFrame = f
     end
 end
 
 function sArenaMixin:HideTestNameplateDR()
-    local frame = self.arena1
-    if frame and frame.drFramesNP then
-        frame:HideAllNameplateDR()
+    if self._testNPDRFrames then
+        for _, f in ipairs(self._testNPDRFrames) do
+            if f then
+                if f.Icon then f.Icon:SetTexture(nil) end
+                if f.Cooldown then f.Cooldown:Clear() end
+                f:ClearAllPoints()
+                f:Hide()
+            end
+        end
     end
+    self._testNPDRCDs = nil
 end
 
 -- =============================================

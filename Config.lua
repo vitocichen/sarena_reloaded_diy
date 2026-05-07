@@ -4531,14 +4531,110 @@ function sArenaMixin:GetLayoutOptionsTable(layoutName)
                         set = function(info, v) info.handler.db.profile.nameplateDRMaxIcons = v end,
                     },
                     testWorldDR = {
-                        order = 2, name = L["DR_NP_Test"] or "Test World DR",
-                        desc = L["DR_NP_Test_Desc"] or "Show test DR icons on nearest enemy nameplate.",
+                        order = 2, name = L["DR_NP_Test"] or "Show Test",
+                        desc = L["DR_NP_Test_Desc"] or "Show test DR icons on nearest enemy nameplate (preview only).",
                         type = "execute",
-                        func = function() if self.WorldDR_ShowTest then self:WorldDR_ShowTest() end end,
+                        func = function() if self.ShowTestNameplateDR then self:ShowTestNameplateDR() end end,
                     },
                     hideTestWorldDR = {
                         order = 3, name = L["DR_NP_HideTest"] or "Hide Test", type = "execute",
-                        func = function() if self.WorldDR_HideTest then self:WorldDR_HideTest() end end,
+                        func = function() if self.HideTestNameplateDR then self:HideTestNameplateDR() end end,
+                    },
+                },
+            },
+        },
+    }
+
+    -- ============================================================
+    -- DIY: Nameplate Trinket (mirror PvP CC remover onto enemy nameplate)
+    -- ============================================================
+    optionsTable.npTrinket = {
+        order = 11,
+        name = (L["Category_NPTrinket"] or "Nameplate Trinket") .. " |cffff8000(DIY)|r",
+        type = "group",
+        get = function(info)
+            local d = info.handler.db.profile.nameplateTrinket
+            return d and d[info[#info]]
+        end,
+        set = function(info, val)
+            info.handler.db.profile.nameplateTrinket = info.handler.db.profile.nameplateTrinket or {}
+            self:UpdateNameplateTrinketSettings(info, val)
+        end,
+        args = {
+            enabled = {
+                order = 0,
+                name = L["NPT_Enabled"] or "Enable Nameplate Trinket",
+                desc = L["NPT_Enabled_Desc"] or "Mirror enemy PvP CC remover (trinket) icon and cooldown onto the enemy nameplate above their healthbar.",
+                type = "toggle",
+                width = "full",
+            },
+            shownAs = {
+                order = 1,
+                name = L["NPT_ShownAs"] or "Display Mode",
+                desc = L["NPT_ShownAs_Desc"] or "Always: icon is always visible while the enemy has a trinket.\nUsed: only show during cooldown.",
+                type = "select",
+                style = "dropdown",
+                values = {
+                    always = L["NPT_ShownAs_Always"] or "Always",
+                    used   = L["NPT_ShownAs_Used"]   or "Used (only during cooldown)",
+                },
+                disabled = function(info)
+                    local d = info.handler.db.profile.nameplateTrinket
+                    return not (d and d.enabled)
+                end,
+            },
+            positioning = {
+                order = 2,
+                name = L["Positioning"],
+                type = "group",
+                inline = true,
+                disabled = function(info)
+                    local d = info.handler.db.profile.nameplateTrinket
+                    return not (d and d.enabled)
+                end,
+                args = {
+                    posX = { order = 1, name = L["Horizontal"], type = "range", min = -300, max = 300, softMin = -150, softMax = 150, step = 1 },
+                    posY = { order = 2, name = L["Vertical"],   type = "range", min = -300, max = 300, softMin = -150, softMax = 150, step = 1 },
+                },
+            },
+            sizing = {
+                order = 3,
+                name = L["Sizing"],
+                type = "group",
+                inline = true,
+                disabled = function(info)
+                    local d = info.handler.db.profile.nameplateTrinket
+                    return not (d and d.enabled)
+                end,
+                args = {
+                    size       = { order = 1, name = L["Size"],            type = "range", min = 8,   max = 80,  step = 1 },
+                    fontSize   = { order = 2, name = L["Option_FontSize"], type = "range", min = 6,   max = 32,  step = 1 },
+                    borderSize = { order = 3, name = L["BorderSize"] or "Border Size", type = "range", min = 1, max = 6, step = 1 },
+                    alpha      = { order = 4, name = L["DR_NP_Alpha"] or "Alpha", type = "range", min = 0.1, max = 1.0, step = 0.05, isPercent = true },
+                },
+            },
+            test = {
+                order = 4,
+                name = L["NPT_Test"] or "Test",
+                type = "group",
+                inline = true,
+                disabled = function(info)
+                    local d = info.handler.db.profile.nameplateTrinket
+                    return not (d and d.enabled)
+                end,
+                args = {
+                    showTest = {
+                        order = 1,
+                        name = L["NPT_Test_Show"] or "Show Test",
+                        desc = L["NPT_Test_Show_Desc"] or "Show a test trinket icon on the nearest enemy nameplate.",
+                        type = "execute",
+                        func = function() if self.ShowTestNameplateTrinket then self:ShowTestNameplateTrinket() end end,
+                    },
+                    hideTest = {
+                        order = 2,
+                        name = L["NPT_Test_Hide"] or "Hide Test",
+                        type = "execute",
+                        func = function() if self.HideTestNameplateTrinket then self:HideTestNameplateTrinket() end end,
                     },
                 },
             },
@@ -9335,6 +9431,19 @@ else
                         name = "\n|cff888888" .. (L["Changelog_About"] or "DIY: DK-jiangshili (Burning Blade CN)") .. "|r",
                     },
                     sep0 = { order = 0.7, type = "header", name = "" },
+                    changelogTitle107 = {
+                        order = 0.71,
+                        type = "description",
+                        fontSize = "large",
+                        name = "|cffffd700v1.0.7|r",
+                    },
+                    info107 = {
+                        order = 0.72,
+                        type = "description",
+                        fontSize = "medium",
+                        name = "\n" .. (L["Changelog_v107"] or "Add focus-target prediction (heuristic, may be inaccurate)") .. "\n",
+                    },
+                    sep0_5 = { order = 0.73, type = "header", name = "" },
                     changelogTitle106 = {
                         order = 0.75,
                         type = "description",
