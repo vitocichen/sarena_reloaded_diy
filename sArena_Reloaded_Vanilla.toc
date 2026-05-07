@@ -1,14 +1,14 @@
 ## Interface: 11508
 ## Title: sArena |cffff8000Reloaded|r |cff00ff00DIY|r
 ## Notes: Enhanced Arena Frames (DIY: PetBar / SelfDR / NameplateDR / 简体中文)
-## Version: v2.5.1-DIY
+## Version: v2.5.1-DIY-v1.0.7
 ## Author: Stako, "reloaded" by Bodify
 ## IconTexture: 135884
 ## OptionalDeps: sArena, sArena_Updated2_by_sammers
 ## X-Category: PvP/Arena
 ## X-Credits: Tekkub, Starship, Kouri, Kollektiv, Lyn, haste, evl, Zork, jturel, wardz, A3st (delayy), sammers21, Aeded, Xaryu, Mageiden, Probably more...
 ## X-DIY: DK-姜世离(燃烧之刃)
-## X-DIY-Version: v1.0.6
+## X-DIY-Version: v1.0.7
 ## SavedVariables: sArena_ReloadedDB
 ## X-Curse-Project-ID: 1351104
 ## X-Wago-ID: 5NRebvG3

@@ -1,6 +1,6 @@
 # sArena Reloaded DIY
 
-基于 sArena Reloaded v2.4.3 的二次开发版本。
+基于 sArena Reloaded v2.5.1 的二次开发版本（DIY 子版本：v1.0.7）。
 
 **DIY: DK-姜世离(燃烧之刃)**
 
