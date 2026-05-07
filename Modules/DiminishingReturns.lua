@@ -1,4 +1,6 @@
 local drCategories = sArenaMixin.drCategories
+local isMidnight = sArenaMixin.isMidnight
+local L = sArenaMixin.L
 
 function sArenaFrameMixin:ResetDRCooldownTextColors()
 	local useDrFrames = self.drFrames ~= nil
@@ -18,63 +20,41 @@ end
 
 function sArenaFrameMixin:UpdateDRPositions()
 	local layoutdb = self.parent.layoutdb
+	local numActive = 0
+	local prevFrame
 	local spacing = layoutdb.dr.spacing
 	local growthDirection = layoutdb.dr.growthDirection
-	local fixedPositions = layoutdb.dr.fixedPositions
 	local useDrFrames = self.drFrames ~= nil
 	local frames = self.drFrames or drCategories
-	local baseSize = self.parent.drBaseSize or 28
 
-	if fixedPositions then
-		for i = 1, #frames do
-			local frame = useDrFrames and frames[i] or self[frames[i]]
-			if frame then
-				frame:ClearAllPoints()
-				local slotIndex = i - 1
-				local offset = baseSize / 2
+	for i = 1, #frames do
+		local frame = useDrFrames and frames[i] or self[frames[i]]
+		if frame and frame:IsShown() then
+			frame:ClearAllPoints()
+			if numActive == 0 then
+				local offset = (self.parent.drBaseSize or 28) / 2
 				if growthDirection == 4 then
-					frame:SetPoint("RIGHT", self, "CENTER", layoutdb.dr.posX + offset - slotIndex * (baseSize + spacing), layoutdb.dr.posY)
+					frame:SetPoint("RIGHT", self, "CENTER", layoutdb.dr.posX + offset, layoutdb.dr.posY)
 				elseif growthDirection == 3 then
-					frame:SetPoint("LEFT", self, "CENTER", layoutdb.dr.posX - offset + slotIndex * (baseSize + spacing), layoutdb.dr.posY)
+					frame:SetPoint("LEFT", self, "CENTER", layoutdb.dr.posX - offset, layoutdb.dr.posY)
 				elseif growthDirection == 1 then
-					frame:SetPoint("TOP", self, "CENTER", layoutdb.dr.posX, layoutdb.dr.posY + offset - slotIndex * (baseSize + spacing))
+					frame:SetPoint("TOP", self, "CENTER", layoutdb.dr.posX, layoutdb.dr.posY + offset)
 				elseif growthDirection == 2 then
-					frame:SetPoint("BOTTOM", self, "CENTER", layoutdb.dr.posX, layoutdb.dr.posY - offset + slotIndex * (baseSize + spacing))
+					frame:SetPoint("BOTTOM", self, "CENTER", layoutdb.dr.posX, layoutdb.dr.posY - offset)
+				end
+			else
+				if growthDirection == 4 then
+					frame:SetPoint("RIGHT", prevFrame, "LEFT", -spacing, 0)
+				elseif growthDirection == 3 then
+					frame:SetPoint("LEFT", prevFrame, "RIGHT", spacing, 0)
+				elseif growthDirection == 1 then
+					frame:SetPoint("TOP", prevFrame, "BOTTOM", 0, -spacing)
+				elseif growthDirection == 2 then
+					frame:SetPoint("BOTTOM", prevFrame, "TOP", 0, spacing)
 				end
 			end
-		end
-	else
-		local numActive = 0
-		local prevFrame
-		for i = 1, #frames do
-			local frame = useDrFrames and frames[i] or self[frames[i]]
-			if frame and frame:IsShown() then
-				frame:ClearAllPoints()
-				if numActive == 0 then
-					local offset = baseSize / 2
-					if growthDirection == 4 then
-						frame:SetPoint("RIGHT", self, "CENTER", layoutdb.dr.posX + offset, layoutdb.dr.posY)
-					elseif growthDirection == 3 then
-						frame:SetPoint("LEFT", self, "CENTER", layoutdb.dr.posX - offset, layoutdb.dr.posY)
-					elseif growthDirection == 1 then
-						frame:SetPoint("TOP", self, "CENTER", layoutdb.dr.posX, layoutdb.dr.posY + offset)
-					elseif growthDirection == 2 then
-						frame:SetPoint("BOTTOM", self, "CENTER", layoutdb.dr.posX, layoutdb.dr.posY - offset)
-					end
-				else
-					if growthDirection == 4 then
-						frame:SetPoint("RIGHT", prevFrame, "LEFT", -spacing, 0)
-					elseif growthDirection == 3 then
-						frame:SetPoint("LEFT", prevFrame, "RIGHT", spacing, 0)
-					elseif growthDirection == 1 then
-						frame:SetPoint("TOP", prevFrame, "BOTTOM", 0, -spacing)
-					elseif growthDirection == 2 then
-						frame:SetPoint("BOTTOM", prevFrame, "TOP", 0, spacing)
-					end
-				end
-				numActive = numActive + 1
-				prevFrame = frame
-			end
+			numActive = numActive + 1
+			prevFrame = frame
 		end
 	end
 end
@@ -90,13 +70,26 @@ function sArenaFrameMixin:ResetDR()
 	end
 end
 
-if sArenaMixin.isMidnight then return end
+local drTime = (isMidnight and 16.1) or 20
+function sArenaMixin:UpdateDRTimeSetting()
+	if isMidnight and not self.db.profile.drResetTimeFixMidnight then
+		self.db.profile.drResetTime = 16.1
+		self.db.profile.drResetTimeFixMidnight = true
+		StaticPopupDialogs["SARENA_DR_LEEWAY_ADJUSTMENT"] = {
+			text = sArenaMixin.popupHeader .. L["DR_LeewayAdjustment_Info"],
+			button1 = OKAY,
+			timeout = 0,
+			whileDead = true,
+		}
+		C_Timer.After(5, function()
+			StaticPopup_Show("SARENA_DR_LEEWAY_ADJUSTMENT")
+		end)
+	end
+    drTime = self.db.profile.drResetTime or (isMidnight and 16.1 or 20)
+end
 
-local isRetail = sArenaMixin.isRetail
--- DR's are static 18 seconds on Retail and dynamic 15-20 on MoP.
--- 0.5 leeway is added for Retail
--- Can be changed in gui, /sarena
-local drTime = (isRetail and 18.5) or 20 -- ^^^^^^^^^^^^
+if isMidnight then return end
+
 local drList = sArenaMixin.drList
 local severityColor = {
 	[1] = { 0, 1, 0, 1 },
@@ -106,15 +99,6 @@ local severityColor = {
 
 local GetTime = GetTime
 local GetSpellTexture = GetSpellTexture or C_Spell.GetSpellTexture
-
-function sArenaMixin:UpdateDRTimeSetting()
-	if not self.db.profile.drResetTimeFix then
-		self.db.profile.drResetTime = (isRetail and 18.5 or 20)
-		self.db.profile.drResetTimeFix = true
-		self.db.profile.drResetTimeDEL = nil
-	end
-    drTime = self.db.profile.drResetTime or (isRetail and 18.5 or 20)
-end
 
 function sArenaFrameMixin:FindDR(combatEvent, spellID)
 	local category = drList[spellID]
@@ -256,30 +240,6 @@ function sArenaFrameMixin:FindDR(combatEvent, spellID)
 		end
 		if frame.Cooldown.sArenaText then
 			frame.Cooldown.sArenaText:SetTextColor(unpack(severityColor[frame.severity]))
-		end
-	end
-
-	if self.parent.layoutdb and self.parent.layoutdb.drFrameEnabled == false then
-		frame:Hide()
-	end
-	if self.parent.layoutdb and self.parent.layoutdb.drNameplateEnabled and self.drFramesNP then
-		local catIndex
-		for ci, cn in ipairs(drCategories) do
-			if cn == category then catIndex = ci; break end
-		end
-		if catIndex then
-			local hbf = self.drFramesNP[catIndex]
-			if hbf then
-				hbf.Icon:SetTexture(textureID)
-				local cdStart, cdDuration = frame.Cooldown:GetCooldownTimes()
-				if cdDuration and cdDuration > 0 then
-					hbf.Cooldown:SetCooldown(cdStart / 1000, cdDuration / 1000)
-				end
-				local bc = severityColor[frame.severity] or severityColor[1]
-				self:SetNameplateDRBorderColor(catIndex, bc[1], bc[2], bc[3])
-				hbf:Show()
-				self:UpdateNameplateDRPositions()
-			end
 		end
 	end
 

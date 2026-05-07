@@ -56,67 +56,86 @@ function sArenaMixin:UpdateAuraPrioImportant()
 end
 
 function sArenaFrameMixin:FindAura(updateInfo)
+    if self.disabledAuras then
+        self:UpdateClassIcon()
+        self:SetAuraHighlightActive()
+        return
+    end
     if not UnitExists(self.unit) then
         self.currentAuraSpellID = nil
         self.currentAuraDurationObj = nil
         self.currentAuraTexture = nil
         self.currentAuraApplications = nil
+        self:SetAuraHighlightActive()
         self:UpdateClassIcon(true)
         return
     end
     if updateInfo and not AurasChanged(updateInfo) then return end
 
     local unit = self.unit
-    local spellID, texture, auraInstanceID, applications
+    local spellID, texture, auraInstanceID, applications, auraCategory
     local seen = {}
 
     -- Crowd Control
     spellID, texture, auraInstanceID = IterateAuras("HARMFUL|CROWD_CONTROL", C_Spell.IsSpellCrowdControl, unit, seen)
+    if spellID then auraCategory = "cc" end
 
     if prioImportant then
         -- Important buffs
         if not spellID then
             spellID, texture, auraInstanceID, applications = IterateAuras("HELPFUL|IMPORTANT", C_Spell.IsSpellImportant, unit, seen)
+            if spellID then auraCategory = "important" end
         end
 
         -- Big Defensives
         if not spellID then
             spellID, texture, auraInstanceID, applications = IterateAuras("HELPFUL|BIG_DEFENSIVE", C_UnitAuras.AuraIsBigDefensive, unit, seen)
+            if spellID then auraCategory = "defensive" end
         end
 
         -- External Defensives
         if not spellID then
             spellID, texture, auraInstanceID, applications = IterateAuras("HELPFUL|EXTERNAL_DEFENSIVE", nil, unit, seen)
+            if spellID then auraCategory = "defensive" end
         end
     else
         -- Big Defensives
         if not spellID then
             spellID, texture, auraInstanceID, applications = IterateAuras("HELPFUL|BIG_DEFENSIVE", C_UnitAuras.AuraIsBigDefensive, unit, seen)
+            if spellID then auraCategory = "defensive" end
         end
 
         -- External Defensives
         if not spellID then
             spellID, texture, auraInstanceID, applications = IterateAuras("HELPFUL|EXTERNAL_DEFENSIVE", nil, unit, seen)
+            if spellID then auraCategory = "defensive" end
         end
 
         -- Important buffs
         if not spellID then
             spellID, texture, auraInstanceID, applications = IterateAuras("HELPFUL|IMPORTANT", C_Spell.IsSpellImportant, unit, seen)
+            if spellID then auraCategory = "important" end
         end
     end
 
-    if spellID then
+    local profile = self.parent and self.parent.db and self.parent.db.profile
+    local hideOnIcon = profile and (profile.disableAurasOnClassIcon or profile.hideClassIcon)
+
+    if spellID and not hideOnIcon then
         self.currentAuraSpellID = spellID
         self.currentAuraDurationObj = C_UnitAuras.GetAuraDuration(unit, auraInstanceID)
         self.currentAuraTexture = texture
         self.currentAuraApplications = applications
+        self.currentAuraCategory = auraCategory
     else
         self.currentAuraSpellID = nil
         self.currentAuraDurationObj = nil
         self.currentAuraTexture = nil
         self.currentAuraApplications = nil
+        self.currentAuraCategory = nil
     end
 
+    self:SetAuraHighlightActive(auraCategory)
     self:UpdateAuraStacks()
     self:UpdateClassIcon()
 end

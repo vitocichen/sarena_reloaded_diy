@@ -23,6 +23,8 @@ function sArenaFrameMixin:CheckForSpecSpell(spellID)
     self.specName = detectedSpec
     self.isHealer = self.parent.healerSpecNames[detectedSpec] or false
     self.specTexture = classSpecs[detectedSpec]
+    self:UpdateAuraHighlightEnabled()
+    self:UpdateHealerStatus()
 
     self.SpecNameText:SetText(detectedSpec)
     local db = self.parent.db
@@ -35,6 +37,13 @@ function sArenaFrameMixin:CheckForSpecSpell(spellID)
     self:UpdateClassIcon(true)
     self:UpdateFrameColors()
     self.parent:UpdateTextures()
+
+    if db then
+        local currentLayout = self.parent.layouts[db.profile.currentLayout]
+        if currentLayout and currentLayout.UpdateHealthbarOrientation then
+            currentLayout:UpdateHealthbarOrientation(self)
+        end
+    end
 
     return true
 end

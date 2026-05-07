@@ -9,6 +9,7 @@ local isTBC = sArenaMixin.isTBC
 local L = sArenaMixin.L
 local GetSpellTexture = GetSpellTexture or C_Spell.GetSpellTexture
 local LSM = LibStub("LibSharedMedia-3.0")
+local LCG = LibStub("LibCustomGlow-1.0", true)
 
 -- Older clients dont show opponents in spawn
 local noEarlyFrames = sArenaMixin.isTBC or sArenaMixin.isWrath
@@ -518,6 +519,7 @@ function sArenaMixin:Test()
     local replaceClassIcon = db.profile.layoutSettings[db.profile.currentLayout].replaceClassIcon
     local hideSpecIcon = db.profile.layoutSettings[db.profile.currentLayout].hideSpecIcon
     local hideClassIcon = db.profile.hideClassIcon
+    local onlyShowAuras = db.profile.onlyShowAuras
     local colorTrinket = db.profile.colorTrinket
     local modernCastbars = db.profile.layoutSettings[db.profile.currentLayout].castBar.useModernCastbars
     local keepDefaultModernTextures = db.profile.layoutSettings[db.profile.currentLayout].castBar.keepDefaultModernTextures
@@ -526,9 +528,22 @@ function sArenaMixin:Test()
         and widgetSettings.partyTargetIndicators.enabled
         and widgetSettings.partyTargetIndicators.partyOnArena
         and widgetSettings.partyTargetIndicators.partyOnArena.enabled
+    local partyTargetTextOn = widgetSettings.partyTargetText
+        and widgetSettings.partyTargetText.enabled
+        and widgetSettings.partyTargetText.partyOnArena
+        and widgetSettings.partyTargetText.partyOnArena.enabled
     local targetIndicatorOn = widgetSettings.targetIndicator.enabled
     local focusIndicatorOn = widgetSettings.focusIndicator.enabled
     local combatIndicatorOn = widgetSettings.combatIndicator.enabled
+    local healerIndicatorOn = widgetSettings.healerIndicator and widgetSettings.healerIndicator.enabled
+
+    local ri = self.db.profile.rangeCheck
+    local rangeCheckOn = ri and ri.enabled
+    local rangeMode = ri and ri.mode or "transparency"
+
+    if rangeCheckOn then
+        self:UpdateRangeSettings()
+    end
 
     local ti = widgetSettings.targetIndicator
     local fi = widgetSettings.focusIndicator
@@ -537,29 +552,28 @@ function sArenaMixin:Test()
     local targetUseBoth = ti and ti.enabled and ti.useBorderWithIcon
     local focusUseBoth = fi and fi.enabled and fi.useBorderWithIcon
 
-    local topFrame
     local numUnits = math.min(self.testUnits or self.maxArenaOpponents, self.maxArenaOpponents)
+    local layoutGrowthDirection = db.profile.layoutSettings[db.profile.currentLayout].growthDirection
+    local topFrame = (layoutGrowthDirection == 2) and self["arena" .. numUnits] or self["arena1"]
 
     for i = 1, numUnits do
         local frame = self["arena" .. i]
         local data = shuffledPlayers[i]
 
-        if i == 1 then
-            topFrame = frame
-        end
-
         if self.masqueOn and frame.masqueHidden then
-            frame.FrameMsq:Show()
+            if frame.FrameMsq then frame.FrameMsq:Show() end
             frame.ClassIconMsq:Show()
             frame.SpecIconMsq:Show()
-            frame.CastBarMsq:Show()
+            if frame.CastBarMsq then frame.CastBarMsq:Show() end
             if frame.CastBar.MSQ then
                 frame.CastBar.MSQ:Show()
                 frame.CastBar.Icon:Hide()
             end
             frame.TrinketMsq:Show()
             frame.RacialMsq:Show()
-            frame.DispelMsq:Show()
+            if frame.DispelMsq then
+                frame.DispelMsq:Show()
+            end
             frame.masqueHidden = false
         end
 
@@ -570,6 +584,11 @@ function sArenaMixin:Test()
         frame.tempSpecIcon = data.specIcon
         frame.replaceClassIcon = replaceClassIcon
         frame.isHealer = self.healerSpecNames[data.specName] or false
+
+        local currentLayout = self.layouts[self.db.profile.currentLayout]
+        if currentLayout and currentLayout.UpdateHealthbarOrientation then
+            currentLayout:UpdateHealthbarOrientation(frame)
+        end
 
         frame:Show()
         frame:SetAlpha(1)
@@ -636,17 +655,61 @@ function sArenaMixin:Test()
             end
         end
 
+        -- Show target text on arena frames
+        frame:UpdateArenaTargetTextTestMode()
+
         if i > 2 and frame.TargetFocusBorder then
             frame.TargetFocusBorder:Hide()
         end
 
         frame.WidgetOverlay.combatIndicator:SetShown(combatIndicatorOn)
+        frame.WidgetOverlay.healerIndicator:SetShown(healerIndicatorOn and (frame.isHealer == true))
+
+        if rangeCheckOn then
+            local showIcon = (rangeMode == "icon" or rangeMode == "both")
+            local inRangeIcon = frame.WidgetOverlay.inRangeIcon
+            local notInRangeIcon = frame.WidgetOverlay.notInRangeIcon
+
+            if showIcon and i == 3 then
+                inRangeIcon:Hide()
+                if notInRangeIcon.hasAtlas then
+                    notInRangeIcon:Show()
+                else
+                    notInRangeIcon:Hide()
+                end
+            elseif showIcon and i ~= 3 then
+                notInRangeIcon:Hide()
+                if inRangeIcon.hasAtlas then
+                    inRangeIcon:Show()
+                else
+                    inRangeIcon:Hide()
+                end
+            else
+                inRangeIcon:Hide()
+                notInRangeIcon:Hide()
+            end
+
+            if (rangeMode == "transparency" or rangeMode == "both") and i == 3 then
+                frame:SetAlpha(ri.notInRangeAlpha or 0.4)
+            end
+            frame.notInRange = (i == 3)
+        else
+            frame.WidgetOverlay.inRangeIcon:Hide()
+            frame.WidgetOverlay.notInRangeIcon:Hide()
+            frame.notInRange = nil
+        end
 
         frame.PowerBar:SetMinMaxValues(0, 100)
         frame.PowerBar:SetValue(100)
 
         -- Class Icon and Spec Icon + Spec Name
         if hideClassIcon then
+            frame.ClassIcon.Texture:SetTexture(nil)
+            frame.ClassIcon.Cooldown:Clear()
+            if frame.ClassIconMsq then
+                frame.ClassIconMsq:Hide()
+            end
+        elseif onlyShowAuras then
             local ccSpells = {408, 2139, 33786, 118, 122}
             local ccIndex = ((i - 1) % #ccSpells) + 1
             local spellTexture = GetSpellTexture(ccSpells[ccIndex])
@@ -662,6 +725,11 @@ function sArenaMixin:Test()
                 frame.SpecIcon.Texture:SetTexture(data.specIcon)
                 if frame.SpecIconMsq then
                     frame.SpecIconMsq:Show()
+                end
+            else
+                frame.SpecIcon:Hide()
+                if frame.SpecIconMsq then
+                    frame.SpecIconMsq:Hide()
                 end
             end
         else
@@ -706,7 +774,14 @@ function sArenaMixin:Test()
         frame.SpecNameText:SetShown(db.profile.layoutSettings[db.profile.currentLayout].showSpecManaText)
         frame:UpdateSpecNameColor()
 
-        frame.ClassIcon.Cooldown:SetCooldown(currTime, math.random(5, 35))
+        if not hideClassIcon then
+            local randomDur = math.random(5, 35)
+            frame.ClassIcon.Cooldown:SetCooldown(currTime, randomDur)
+            if isMidnight then
+                frame.ClassIcon.Cooldown.durationObj = C_DurationUtil.CreateDuration()
+                frame.ClassIcon.Cooldown.durationObj:SetTimeFromStart(currTime, randomDur)
+            end
+        end
 
         if db.profile.showArenaNumber then
             if db.profile.arenaNumberIdOnly then
@@ -730,13 +805,31 @@ function sArenaMixin:Test()
         frame.Trinket.Cooldown:SetCooldown(currTime, math.random(5, 35))
         if colorTrinket then
             local colors = db.profile.trinketColors
+            local keepTexture = db.profile.colorTrinketKeepTexture
+            if keepTexture then
+                if shouldSwapRacialToTrinket then
+                    frame.Trinket.Texture:SetTexture(data.racial or 132089)
+                elseif shouldForceHumanTrinket then
+                    frame.Trinket.Texture:SetTexture(133452)
+                else
+                    if not isModernArena then
+                        frame.Trinket.Texture:SetTexture(GetFactionTrinketIconByRace(data.race))
+                    else
+                        frame.Trinket.Texture:SetTexture(self.trinketTexture)
+                    end
+                end
+                frame.Trinket.Texture:SetDesaturated(true)
+            else
+                frame.Trinket.Texture:SetTexture("Interface\\Buttons\\WHITE8X8")
+            end
             if i <= 2 then
-                frame.Trinket.Texture:SetColorTexture(unpack(colors.available))
+                frame.Trinket.Texture:SetVertexColor(unpack(colors.available))
                 frame.Trinket.Cooldown:Clear()
             else
-                frame.Trinket.Texture:SetColorTexture(unpack(colors.used))
+                frame.Trinket.Texture:SetVertexColor(unpack(colors.used))
             end
         else
+            frame.Trinket.Texture:SetVertexColor(1, 1, 1)
             if shouldSwapRacialToTrinket then
                 frame.Trinket.Texture:SetTexture(data.racial or 132089)
             elseif shouldForceHumanTrinket then
@@ -748,16 +841,21 @@ function sArenaMixin:Test()
                     frame.Trinket.Texture:SetTexture(self.trinketTexture)
                 end
             end
-            frame.Trinket.Texture:SetDesaturated(db.profile.desaturateTrinketCD and i == 3)
+            frame.Trinket.Texture:SetDesaturated(false)
+        end
+
+        if db.profile.trinketUseGlow and (not db.profile.trinketUseGlowHealerOnly or frame.isHealer) then
+            local glowColor = db.profile.trinketUseGlowColorEnabled and db.profile.trinketUseGlowColor or nil
+            LCG.ButtonGlow_Start(frame.Trinket, glowColor)
+            if frame.trinketGlowTimer then frame.trinketGlowTimer:Cancel() end
+            frame.trinketGlowTimer = C_Timer.NewTimer(1, function()
+                LCG.ButtonGlow_Stop(frame.Trinket)
+                frame.trinketGlowTimer = nil
+            end)
         end
 
         frame.updateRacialOnTrinketSlot = shouldSwapRacialToTrinket
-        local shouldShowRacial = false
-
-        if data.race and db.profile.racialCategories and db.profile.racialCategories[data.race] then
-            shouldShowRacial = true
-        end
-
+        local shouldShowRacial = (data.race and db.profile.racialCategories and db.profile.racialCategories[data.race]) or false
         if shouldReplaceHumanRacial then
             frame.Racial.Texture:SetTexture(133452)
             frame.Racial.Cooldown:SetCooldown(currTime, math.random(5, 35))
@@ -784,7 +882,6 @@ function sArenaMixin:Test()
                 frame.Dispel.Texture:SetTexture(dispelInfo.texture)
                 frame.Dispel:Show()
                 frame.Dispel.Cooldown:SetCooldown(currTime, math.random(5, 35))
-                frame.Dispel.Texture:SetDesaturated(db.profile.desaturateDispelCD and i >= 2)
             else
                 frame.Dispel.Texture:SetTexture(nil)
                 frame.Dispel:Hide()
@@ -840,7 +937,10 @@ function sArenaMixin:Test()
                     if drFrame then
                         drFrame.Icon:SetTexture(drCategoryTextures[n])
                         drFrame:Show()
-                        drFrame.Cooldown:SetCooldown(currTime, math.random(12, 35))
+                        local randomDur = math.random(12, 35)
+                        drFrame.Cooldown:SetCooldown(currTime, randomDur)
+                        drFrame.Cooldown.durationObj = C_DurationUtil.CreateDuration()
+                        drFrame.Cooldown.durationObj:SetTimeFromStart(currTime, randomDur)
 
                         local blackDRBorder = drSettings.blackDRBorder
 
@@ -970,20 +1070,6 @@ function sArenaMixin:Test()
             end
         end
 
-        -- Hide frame DR icons when frame DR is disabled
-        if db.profile.layoutSettings[db.profile.currentLayout].drFrameEnabled == false then
-            local useDrFrames = frame.drFrames ~= nil
-            local drList2 = frame.drFrames or self.drCategories
-            if drList2 then
-                for n = 1, #drList2 do
-                    local drFrame = useDrFrames and drList2[n] or frame[drList2[n]]
-                    if drFrame then drFrame:Hide() end
-                end
-            end
-        end
-
-        -- Nameplate DR test: handled once after loop via ShowTestNameplateDR
-
         -- Cast Bar
         if data.castName then
             local layout = self.db.profile.layoutSettings[self.db.profile.currentLayout]
@@ -999,6 +1085,7 @@ function sArenaMixin:Test()
             local useCustomColors = layout.castBar and layout.castBar.recolorCastbar
 
             frame.tempCast = true
+            frame.tempCastName = data.castName
             frame.tempChannel = data.channel or false
             frame.tempUninterruptible = data.unint or false
 
@@ -1007,6 +1094,51 @@ function sArenaMixin:Test()
             frame.CastBar:SetAlpha(1)
             frame.CastBar.Icon:SetTexture(data.castIcon)
             frame.CastBar.Text:SetText(data.castName)
+
+            if db.profile.showCastbarTarget then
+                local playerName = UnitName("player")
+                local _, playerClass = UnitClass("player")
+                local textSettings = layout.textSettings
+                local anchorInside = textSettings and textSettings.castbarTargetAnchorInside
+
+                if anchorInside then
+                    local coloredName = playerName
+                    if playerClass then
+                        local color = C_ClassColor and C_ClassColor.GetClassColor(playerClass) or RAID_CLASS_COLORS[playerClass]
+                        if color then
+                            if color.WrapTextInColorCode then
+                                coloredName = color:WrapTextInColorCode(playerName)
+                            elseif color.colorStr then
+                                coloredName = "|c" .. color.colorStr .. playerName .. "|r"
+                            end
+                        end
+                    end
+                    frame.CastBar.Text:SetText(data.castName .. ": " .. coloredName)
+                else
+                    if frame.CastBar.ArenaTargetText then
+                        local coloredName = playerName
+                        if playerClass then
+                            local color = C_ClassColor and C_ClassColor.GetClassColor(playerClass) or RAID_CLASS_COLORS[playerClass]
+                            if color then
+                                if color.WrapTextInColorCode then
+                                    coloredName = color:WrapTextInColorCode(playerName)
+                                elseif color.colorStr then
+                                    coloredName = "|c" .. color.colorStr .. playerName .. "|r"
+                                end
+                            end
+                        end
+                        local justify = (textSettings and textSettings.castbarTargetJustifyH) or "CENTER"
+                        frame.CastBar.ArenaTargetText:SetText("")
+                        frame.CastBar.ArenaTargetText:SetJustifyH(justify)
+                        frame.CastBar.ArenaTargetText:SetText(coloredName)
+                        frame.CastBar.ArenaTargetText:Show()
+                    end
+                end
+            end
+
+            if db.profile.highlightCastsOnMe and frame.CastBar.ArenaTargetHighlight then
+                frame.CastBar.ArenaTargetHighlight:SetAlpha(i == 2 and 1 or 0)
+            end
 
             if data.unint then
                 frame.CastBar.BorderShield:Show()
@@ -1073,6 +1205,10 @@ function sArenaMixin:Test()
             frame.CastBar.fadeOut = nil
             frame.CastBar:Hide()
             frame.CastBar:SetAlpha(0)
+            if frame.CastBar.ArenaTargetText then
+                frame.CastBar.ArenaTargetText:Hide()
+                frame.CastBar.ArenaTargetText:SetText("")
+            end
         end
 
         if isTBC then
@@ -1112,32 +1248,18 @@ function sArenaMixin:Test()
             frame.FrameMsq:Hide()
             frame.ClassIconMsq:Hide()
             frame.SpecIconMsq:Hide()
-            frame.CastBarMsq:Hide()
+            if frame.CastBarMsq then frame.CastBarMsq:Hide() end
             if frame.CastBar.MSQ then
                 frame.CastBar.MSQ:Hide()
                 frame.CastBar.Icon:Show()
             end
             frame.TrinketMsq:Hide()
             frame.RacialMsq:Hide()
-            frame.DispelMsq:Hide()
+            if frame.DispelMsq then
+                frame.DispelMsq:Hide()
+            end
             frame.masqueHidden = true
         end
-
-        frame:ShowTestPetBar()
-    end
-
-    -- Nameplate DR test: show on nearest nameplate
-    if db.profile.layoutSettings[db.profile.currentLayout].drNameplateEnabled then
-        self:ShowTestNameplateDR()
-    else
-        self:HideTestNameplateDR()
-    end
-
-    -- Self DR test
-    if db.profile.selfDR and db.profile.selfDR.enabled then
-        self:ShowTestSelfDR()
-    else
-        self:HideTestSelfDR()
     end
 
     local arenaTargetsOnPartyOn = widgetSettings.partyTargetIndicators
@@ -1182,6 +1304,8 @@ function sArenaMixin:Test()
         end
     end
 
+    self:UpdateArenaTargetTextOnPartyFramesTestMode()
+
     if not self.TestTitle then
         local f = CreateFrame("Frame")
         self.TestTitle = f
@@ -1191,7 +1315,7 @@ function sArenaMixin:Test()
         t:SetFontObject("GameFontHighlightLarge")
         t:SetFont(self.pFont, 12, "OUTLINE")
         t:SetText("|T132961:16|t "..L["Drag_Hint"])
-        t:SetPoint("BOTTOM", topFrame, "TOP", 17, 17)
+        f.Hint = t
 
         local bg = f:CreateTexture(nil, "BACKGROUND", nil, -1)
         bg:SetPoint("TOPLEFT", t, "TOPLEFT", -6, 4)
@@ -1218,6 +1342,16 @@ function sArenaMixin:Test()
 
         self.TestTitle:SetScript("OnHide", function(frame)
             self.testMode = nil
+            for i = 1, self.maxArenaOpponents do
+                local frame = self["arena" .. i]
+                if frame then
+                    frame:SetAuraHighlightActive()
+                    if frame.WidgetOverlay and frame.WidgetOverlay.arenaTargetText then
+                        frame.WidgetOverlay.arenaTargetText:Hide()
+                    end
+                end
+            end
+            self:RefreshAllAuraHighlights()
             for i = 1, 5 do
                 local partyFrame = self:GetPartyFrame(i)
                 if partyFrame and partyFrame.WidgetOverlay then
@@ -1226,23 +1360,18 @@ function sArenaMixin:Test()
                         indicator:Hide()
                         indicator:SetAlpha(0)
                     end
+                    if partyFrame.WidgetOverlay.partyTargetText then
+                        partyFrame.WidgetOverlay.partyTargetText:Hide()
+                    end
                 end
             end
-            for i = 1, self.maxArenaOpponents do
-                local arenaFrame = self["arena" .. i]
-                if arenaFrame and arenaFrame.PetBar then
-                    arenaFrame.PetBar:SetAlpha(0)
-                end
-                if arenaFrame and arenaFrame.drFramesNP then
-                    arenaFrame:HideAllNameplateDR()
-                end
-            end
-            self:HideTestSelfDR()
         end)
 
         self:SetupDrag(self.TestTitle, self, nil, "UpdateFrameSettings")
     end
 
+    self.TestTitle.Hint:ClearAllPoints()
+    self.TestTitle.Hint:SetPoint("BOTTOM", topFrame, "TOP", 17, 17)
     self.TestTitle:Show()
 
     self:UpdateTextures()
@@ -1268,6 +1397,16 @@ function sArenaMixin:Test()
             if frame then
                 frame:Hide()
             end
+        end
+    end
+
+    self:RefreshAllAuraHighlights()
+    local auraCategories = { "cc", "important", "defensive" }
+    for i = 1, self.maxArenaOpponents do
+        local frame = self["arena" .. i]
+        if frame then
+            local category = auraCategories[((i - 1) % #auraCategories) + 1]
+            frame:SetAuraHighlightActive(category)
         end
     end
 end

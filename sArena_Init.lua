@@ -9,21 +9,33 @@ sArenaMixin.isWrath = gameVersion:match("^3%.")
 sArenaMixin.isTBC = gameVersion:match("^2%.")
 
 sArenaMixin.addonName = "|T135884:13:13|t sArena |cffff8000Reloaded|r"
-sArenaMixin.addonTitle = sArenaMixin.addonName .. " v1.0.5"
-sArenaMixin.popupHeader = "\n" .. sArenaMixin.addonName .. "\n\n"
+sArenaMixin.addonTitle = sArenaMixin.addonName.. " " .. (C_AddOns.GetAddOnMetadata("sArena_Reloaded", "Version") or "")
+sArenaMixin.popupHeader = "\n"..sArenaMixin.addonName.."\n\n"
+
+sArenaMixin.playerClass = select(2, UnitClass("player"))
+sArenaMixin.maxArenaOpponents = (sArenaMixin.isRetail and 3) or 5
+sArenaMixin.noTrinketTexture = (sArenaMixin.isTBC and 132311) or 638661 --temp texture for tbc. todo: export retail and include in sarena
+sArenaMixin.trinketTexture = (sArenaMixin.isRetail and 1322720) or 133453
+sArenaMixin.trinketID = (sArenaMixin.isRetail and 336126) or 42292
+
+sArenaMixin.shadowsightStartTime = 95
+sArenaMixin.shadowsightResetTime = 122
+sArenaMixin.shadowSightID = 34709
+sArenaMixin.shadowsightTimers = {0, 0}
+sArenaMixin.shadowsightAvailable = 2
+
 sArenaMixin.layouts = {}
 sArenaMixin.defaultSettings = {
     profile = {
         currentLayout = "Gladiuish",
         classColors = true,
-        --classColorFrameTexture = (BetterBlizzFramesDB and BetterBlizzFramesDB.classColorFrameTexture) or nil,
         showNames = true,
         hidePowerText = true,
         showDecimalsDR = true,
         showDecimalsClassIcon = true,
         decimalThreshold = 6,
         colorDRCooldownText = false,
-        --darkMode = (BetterBlizzFramesDB and BetterBlizzFramesDB.darkModeUi) or C_AddOns.IsAddOnLoaded("FrameColor") or nil,
+        drBugFixMidnight = true,
         forceShowTrinketOnHuman = not sArenaMixin.isRetail and true or nil,
         shadowSightTimer = (sArenaMixin.isTBC or sArenaMixin.isWrath) and true or nil,
         trinketSoundName = "Lossa Trinket",
@@ -31,9 +43,11 @@ sArenaMixin.defaultSettings = {
         healerTrinketSoundName = "Lossa Trinket",
         healerTrinketSoundFileID = 0,
         trinketSoundChannel = "Master",
+        trinketUseGlowColor = { 1, 1, 1, 1 },
         darkModeValue = 0.2,
         desaturateTrinketCD = true,
         desaturateDispelCD = true,
+        gladTracker = true,
         darkModeDesaturate = true,
         statusText = {
             alwaysShow = true,
@@ -51,53 +65,41 @@ sArenaMixin.defaultSettings = {
         },
         layoutSettings = {},
         invertClassIconCooldown = true,
-        rightClickFocus = true,
+        cooldownSwipeColor = { 0, 0, 0, 0.55 },
+        stealthAlpha = 0.4,
+        rangeCheckSpellsPerSpec = {},
+        rangeCheck = {
+            enabled = false,
+            mode = "both",
+            notInRangeAlpha = 0.7,
+            inRangeAtlas = "common-icon-checkmark-yellow",
+            inRangeCustomAtlas = "",
+            inRangeColorEnabled = true,
+            inRangeColor = { 0, 1, 0, 1 },
+            inRangeScale = 1,
+            inRangePosX = 0,
+            inRangePosY = 0,
+            notInRangeAtlas = "common-icon-redx",
+            notInRangeCustomAtlas = "",
+            notInRangeColorEnabled = false,
+            notInRangeColor = { 1, 0.2, 0.2, 1 },
+            notInRangeScale = 1,
+            notInRangePosX = 0,
+            notInRangePosY = 0,
+        },
         clickAttributes = {
             ["Left"] = { button = "1", action = "target" },
             ["Right"] = { button = "2", action = "focus" },
         },
-        trinketOnHealthBar = {
+        auraHighlight = {
             enabled = false,
-            size = 20,
-            posX = 0,
-            posY = 0,
-        },
-        nameplateDRZones = {
-            enableInArena = true,
-            enableInWorld = true,
-            enableInBattleground = true,
-            enableInDungeon = true,
-        },
-        nameplateDRCategories = {
-            stun = true,
-            incap = true,
-            fear = true,
-            root = true,
-            disarm = true,
-            silence = true,
-        },
-        nameplateDRMaxIcons = 5,
-        selfDR = {
-            enabled = false,
-            enableInArena = true,
-            enableInBattleground = true,
-            enableInWorld = true,
-            iconSize = 36,
-            iconPadding = 4,
-            fontSize = 14,
-            growthDirection = "RIGHT",
-            showDRText = true,
-            showCountdown = true,
-            containerPos = { point = "CENTER", relPoint = "CENTER", x = 0, y = 200 },
-            categories = {
-                stun = true,
-                disorient = true,
-                incapacitate = true,
-                root = true,
-                silence = false,
-                knockback = false,
-                disarm = false,
-            },
+            onlyOnHealer = false,
+            cc        = { enabled = true, color = {1, 0.87, 0,    1} },
+            important = { enabled = true, color = {0, 1,    0,    1} },
+            defensive = { enabled = true, color = {1, 0.66, 0.95, 1} },
+            glowClassIcon  = { enabled = true },
+            pixelBorder    = { enabled = true,  lines = 8, frequency = 0.2, length = 15, thickness = 2 },
+            pixelClassIcon = { enabled = false, lines = 8, frequency = 0.2, length = 15, thickness = 2 },
         },
     }
 }

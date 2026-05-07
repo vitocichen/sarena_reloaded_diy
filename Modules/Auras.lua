@@ -106,12 +106,12 @@ local function AuraTooltipExtractPercent(unit, index, filter)
 end
 
 function sArenaFrameMixin:FindAura()
-    if (self.parent.db and self.parent.db.profile.disableAurasOnClassIcon) or self.parent.isMidnight then
+    if self.disabledAuras then
         self:UpdateClassIcon()
         return
     end
     local unit = self.unit
-    local currentSpellID, currentDuration, currentExpirationTime, currentTexture, currentApplications
+    local currentSpellID, currentDuration, currentExpirationTime, currentTexture, currentApplications, currentAuraCategory
     local currentPriority, currentRemaining = 0, 0
 
     if self.currentInterruptSpellID then
@@ -132,15 +132,18 @@ function sArenaFrameMixin:FindAura()
             if not aura then break end
 
             local spellID = aura.spellId
-            local priority = auraList[spellID]
+            local keyAura = auraList[spellID]
 
             -- TBC Spec Detection: Check if this buff indicates a spec
             if noEarlyFrames and i == 1 then -- Only check buffs (HELPFUL)
                 self:CheckForSpecSpell(spellID)
             end
 
-            if priority then
+            if keyAura then
 
+                -- Number check to allow old custom code using [spellID] = priority to still work.
+                local priority = type(keyAura) == "number" and keyAura or keyAura[1]
+                local auraCategory = type(keyAura) == "table" and keyAura[2] or nil
                 local duration = aura.duration or 0
                 local expirationTime = aura.expirationTime or 0
                 local texture = aura.icon
@@ -185,6 +188,7 @@ function sArenaFrameMixin:FindAura()
                     currentPriority = priority
                     currentRemaining = remaining
                     currentApplications = applications
+                    currentAuraCategory = auraCategory
                 end
             end
         end
@@ -203,24 +207,31 @@ function sArenaFrameMixin:FindAura()
                 currentPriority = stancePriority
                 currentRemaining = 0
                 currentApplications = nil
+                currentAuraCategory = nil
             end
         end
     end
 
-    if currentSpellID then
+    local profile = self.parent and self.parent.db and self.parent.db.profile
+    local hideOnIcon = profile and (profile.disableAurasOnClassIcon or profile.hideClassIcon)
+
+    if currentSpellID and not hideOnIcon then
         self.currentAuraSpellID = currentSpellID
         self.currentAuraStartTime = currentExpirationTime - currentDuration
         self.currentAuraDuration = currentDuration
         self.currentAuraTexture = currentTexture
         self.currentAuraApplications = currentApplications
+        self.currentAuraCategory = currentAuraCategory
     else
         self.currentAuraSpellID = nil
         self.currentAuraStartTime = 0
         self.currentAuraDuration = 0
         self.currentAuraTexture = nil
         self.currentAuraApplications = nil
+        self.currentAuraCategory = nil
     end
 
+    self:SetAuraHighlightActive(currentAuraCategory)
     self:UpdateAuraStacks()
     self:UpdateClassIcon()
 end

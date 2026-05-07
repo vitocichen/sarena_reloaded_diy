@@ -7,11 +7,6 @@ local isRetail = sArenaMixin.isRetail
 local isMidnight = sArenaMixin.isMidnight
 local LSM = LibStub("LibSharedMedia-3.0")
 
-function sArenaFrameMixin:FindTrinket()
-    local trinket = self.Trinket
-    trinket.Cooldown:SetCooldown(GetTime(), 120);
-end
-
 function sArenaFrameMixin:GetFactionTrinketIcon()
     local faction, _ = UnitFactionGroup(self.unit)
     if (faction == "Alliance") then
@@ -113,6 +108,19 @@ function sArenaFrameMixin:UpdateTrinket()
                                 end
                             end
                         end
+
+                        if db and db.profile.trinketUseGlow and (not db.profile.trinketUseGlowHealerOnly or self.isHealer) then
+                            local LCG = LibStub("LibCustomGlow-1.0", true)
+                            if LCG then
+                                local glowColor = db.profile.trinketUseGlowColorEnabled and db.profile.trinketUseGlowColor or nil
+                                LCG.ButtonGlow_Start(self.Trinket, glowColor)
+                                if self.trinketGlowTimer then self.trinketGlowTimer:Cancel() end
+                                self.trinketGlowTimer = C_Timer.NewTimer(1, function()
+                                    LCG.ButtonGlow_Stop(self.Trinket)
+                                    self.trinketGlowTimer = nil
+                                end)
+                            end
+                        end
                     end
                     if self.updateRacialOnTrinketSlot then
                         local racialDuration = self:GetRacialDuration()
@@ -159,6 +167,7 @@ function sArenaFrameMixin:ResetTrinket()
 
     self.Trinket.spellID = nil
     self.Trinket.Texture:SetTexture(nil)
-    self.Trinket.Cooldown:Clear()
+    self.Trinket.Texture:SetVertexColor(1, 1, 1)
     self.Trinket.Texture:SetDesaturated(false)
+    self.Trinket.Cooldown:Clear()
 end

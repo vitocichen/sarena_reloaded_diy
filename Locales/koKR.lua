@@ -327,6 +327,8 @@ L["Healthbar_ReverseFill"] = "체력바 채우기 반전"
 L["Healthbar_ReverseFill_Desc"] = "체력과 자원바를 왼쪽에서 오른쪽 대신 오른쪽에서 왼쪽으로 채웁니다"
 L["ClassIcon_HideAndShowOnlyAuras"] = "직업 아이콘 숨기기, 오라만 표시"
 L["ClassIcon_HideAndShowOnlyAuras_Desc"] = "직업 아이콘을 숨기고 활성화될 때만 오라를 표시합니다."
+L["Option_HideClassIcon_Desc"] = "직업 아이콘을 완전히 숨깁니다. 오라나 직업/특성 아이콘이 표시되지 않습니다. 오라 추적을 비활성화합니다."
+L["Option_HideClassIcon"] = "직업 아이콘 숨기기"
 L["ClassIcon_DontShowAuras"] = "직업 아이콘에 오라 표시 안 함"
 L["ClassIcon_DontShowAuras_Desc"] = "직업 아이콘에 오라를 표시하지 않고 항상 직업/특성 아이콘을 표시합니다."
 
@@ -377,12 +379,6 @@ L["Human_AlwaysShowTrinket"] = "인간에게 항상 얼라이언스 장신구 �
 L["Human_AlwaysShowTrinket_Desc"] = "인간 플레이어가 장신구를 장착하지 않았어도 항상 얼라이언스 장신구 텍스처를 표시합니다."
 
 L["Drag_Hint"] = "Ctrl+Shift+클릭하여 드래그"
-L["Drag_Hint_Unlocked"] = "프레임 잠금 해제 - 좌클릭하여 드래그"
-L["Option_UnlockFrames"] = "프레임 잠금 해제"
-L["Option_LockFrames"] = "프레임 잠금"
-L["Option_UnlockFrames_Desc"] = "프레임 잠금을 전환합니다. 잠금 해제 시 테스트 모드에서 좌클릭으로 모든 요소를 드래그하여 재배치할 수 있습니다 (GladiusEx와 유사). 잠금 시 Ctrl+Shift+클릭으로 드래그합니다."
-L["Print_FramesUnlocked"] = "프레임 |cff00ff00잠금 해제|r - 좌클릭으로 프레임 요소를 드래그하세요."
-L["Print_FramesLocked"] = "프레임 |cffff3300잠금|r - Ctrl+Shift+클릭으로 드래그하세요."
 
 ---------------------------------------
 -- Dispel Classes/Specs
@@ -431,7 +427,7 @@ L["Option_ReplaceHealerIcon"] = "힐러 아이콘 교체"
 L["Option_ShowNames"] = "이름 표시"
 L["Option_ShowArenaNumber"] = "투기장 번호 표시"
 L["Option_ReverseBarsFill"] = "바 채우기 반전"
-L["Option_HideClassIconShowAurasOnly"] = "직업 아이콘 숨기기 (오라만 표시)"
+L["Option_HideClassIconShowAurasOnly"] = "오라만 표시"
 L["Option_DisableAurasOnClassIcon"] = "직업 아이콘에 오라 비활성화"
 L["Option_ShadowsightTimer"] = "어둠의 시야 타이머 활성화"
 L["Option_ShadowsightTimer_Desc"] = "투기장에서 어둠의 시야 버프가 생성될 때 화면 상단에 타이머를 표시합니다"

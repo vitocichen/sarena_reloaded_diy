@@ -51,24 +51,16 @@ layout.defaultSettings = {
         spacing = 6,
         growthDirection = 4,
     },
-    drFrameEnabled = true,
-    drNameplateEnabled = false,
-    drNameplate = {
-        posX = 2,
-        posY = 0,
-        size = 22,
-        spacing = 2,
-        growthDirection = 3,
-        immuneGlow = false,
-        fontSize = 12,
-        borderSize = 1,
-        alpha = 1.0,
-    },
     widgets = {
         combatIndicator = {
             posX = 0,
             posY = 0,
             scale = 0.8,
+        },
+        healerIndicator = {
+            posX = 0,
+            posY = 0,
+            scale = 1,
         },
         targetIndicator = {
             posX = 0,
@@ -102,22 +94,22 @@ layout.defaultSettings = {
                 spacing = 0,
             },
         },
-    },
-    petBar = {
-        enabled = false,
-        posX = 0,
-        posY = -30,
-        scale = 1,
-        width = 100,
-        height = 16,
-        color = {0, 1, 0, 1},
-        bgColor = {0, 0, 0, 0.6},
-        classColor = false,
-        showName = true,
-        showHealthText = true,
-        healthTextPercent = true,
-        texture = "sArena Default",
-        bgBarTexture = "Solid",
+        partyTargetText = {
+            partyOnArena = {
+                enabled = true,
+                anchor = "RIGHT",
+                fontSize = 10,
+                posX = 0,
+                posY = 0,
+            },
+            arenaOnParty = {
+                enabled = true,
+                anchor = "RIGHT",
+                fontSize = 10,
+                posX = 0,
+                posY = 0,
+            },
+        },
     },
 
     textures          = {
@@ -251,6 +243,14 @@ function layout:Initialize(frame)
 
     f.Mask:SetSize(34, 34)
 
+    if not f.bgTexture then
+        f.bgTexture = f:CreateTexture(nil, "BORDER", nil, -1)
+    end
+    f.bgTexture:SetAllPoints(f.Texture)
+    f.bgTexture:SetColorTexture(0.1, 0.1, 0.1, 1)
+    f.bgTexture:AddMaskTexture(f.Mask)
+    f.bgTexture:Show()
+
     local trinket = frame.Trinket
     if self.db.trinketCircleBorder then
         frame.parent.showTrinketCircleBorder = true
@@ -378,6 +378,15 @@ function layout:UpdateOrientation(frame)
                 (w.combatIndicator.posX or 0), (w.combatIndicator.posY or 0) - 20)
         end
 
+        -- Healer Indicator
+        if w.healerIndicator then
+            frame.WidgetOverlay.healerIndicator:ClearAllPoints()
+            frame.WidgetOverlay.healerIndicator:SetSize(17, 17)
+            frame.WidgetOverlay.healerIndicator:SetScale(w.healerIndicator.scale or 1)
+            frame.WidgetOverlay.healerIndicator:SetPoint("BOTTOMLEFT", frame.HealthBar, "TOPLEFT",
+                (w.healerIndicator.posX or 0) + 2, (w.healerIndicator.posY or 0) + 2.5)
+        end
+
         -- Target Indicator
         if w.targetIndicator then
             frame.WidgetOverlay.targetIndicator:ClearAllPoints()
@@ -474,6 +483,12 @@ function layout:UpdateOrientation(frame)
             castbarText:SetPoint("RIGHT", frame.CastBar, "RIGHT", -3 + (txt.castbarOffsetX or 0), (modernCastbar and (simpleCastbar and 0 or -11) or 0) + (txt.castbarOffsetY or 0))
         else
             castbarText:SetPoint("CENTER", frame.CastBar, "CENTER", (txt.castbarOffsetX or 0), (modernCastbar and (simpleCastbar and 0 or -11) or 0) + (txt.castbarOffsetY or 0))
+        end
+
+        if txt.forceCastbarTextWidth then
+            castbarText:SetWidth(self.db.castBar.width or frame.CastBar:GetWidth())
+        else
+            castbarText:SetWidth(0)
         end
     end
 

@@ -16,20 +16,23 @@ function sArenaMixin:AddMasqueSupport()
     local sArenaTrinket = Masque:Group("sArena |cffff8000Reloaded|r |T135884:13:13|t", "Trinket")
     local sArenaSpecIcon = Masque:Group("sArena |cffff8000Reloaded|r |T135884:13:13|t", "SpecIcon")
     local sArenaRacial = Masque:Group("sArena |cffff8000Reloaded|r |T135884:13:13|t", "Racial")
-    local sArenaDispel = Masque:Group("sArena |cffff8000Reloaded|r |T135884:13:13|t", "Dispel")
+    local sArenaDispel = not self.isMidnight and Masque:Group("sArena |cffff8000Reloaded|r |T135884:13:13|t", "Dispel")
     local sArenaDRs = Masque:Group("sArena |cffff8000Reloaded|r |T135884:13:13|t", "DRs")
-    local sArenaFrame = Masque:Group("sArena |cffff8000Reloaded|r |T135884:13:13|t", "Frame")
-    local sArenaCastbar = Masque:Group("sArena |cffff8000Reloaded|r |T135884:13:13|t", "Castbar")
+    local sArenaFrame = self.db.profile.enableMasqueExtra and Masque:Group("sArena |cffff8000Reloaded|r |T135884:13:13|t", "Frame")
+    local sArenaCastbar = self.db.profile.enableMasqueExtra and Masque:Group("sArena |cffff8000Reloaded|r |T135884:13:13|t", "Castbar")
     local sArenaCastbarIcon = Masque:Group("sArena |cffff8000Reloaded|r |T135884:13:13|t", "Castbar Icon")
 
-    function sArenaMixin:RefreshMasque()
+    function self:RefreshMasque()
         sArenaClass:ReSkin(true)
         sArenaTrinket:ReSkin(true)
         sArenaSpecIcon:ReSkin(true)
         sArenaRacial:ReSkin(true)
-        sArenaDispel:ReSkin(true)
+        if sArenaDispel then
+            sArenaDispel:ReSkin(true)
+        end
         sArenaDRs:ReSkin(true)
-        sArenaFrame:ReSkin(true)
+        if sArenaFrame then sArenaFrame:ReSkin(true) end
+        if sArenaCastbar then sArenaCastbar:ReSkin(true) end
         sArenaCastbarIcon:ReSkin(true)
     end
 
@@ -55,82 +58,90 @@ function sArenaMixin:AddMasqueSupport()
 
     for i = 1, self.maxArenaOpponents do
         local frame = self["arena" .. i]
-        frame.FrameMsq = CreateFrame("Frame", nil, frame)
-        frame.FrameMsq:SetFrameStrata("HIGH")
-        frame.FrameMsq:SetPoint("TOPLEFT", frame.HealthBar, "TOPLEFT", 0, 0)
-        frame.FrameMsq:SetPoint("BOTTOMRIGHT", frame.PowerBar, "BOTTOMRIGHT", 0, 0)
+        if not frame.FrameMsq and sArenaFrame then
+            frame.FrameMsq = CreateFrame("Frame", nil, frame)
+            frame.FrameMsq:SetFrameStrata("MEDIUM")
+            frame.FrameMsq:SetFrameLevel(19)
+            frame.FrameMsq:SetPoint("TOPLEFT", frame.HealthBar, "TOPLEFT", 0, 0)
+            frame.FrameMsq:SetPoint("BOTTOMRIGHT", frame.PowerBar, "BOTTOMRIGHT", 0, 0)
+        end
 
         frame.ClassIconMsq = CreateFrame("Frame", nil, frame)
-        frame.ClassIconMsq:SetFrameStrata("DIALOG")
+        frame.ClassIconMsq:SetFrameStrata("MEDIUM")
+        frame.ClassIconMsq:SetFrameLevel(19)
         frame.ClassIconMsq:SetAllPoints(frame.ClassIcon)
 
         frame.SpecIconMsq = CreateFrame("Frame", nil, frame)
-        frame.SpecIconMsq:SetFrameStrata("DIALOG")
+        frame.SpecIconMsq:SetFrameStrata("MEDIUM")
+        frame.SpecIconMsq:SetFrameLevel(19)
         frame.SpecIconMsq:SetAllPoints(frame.SpecIcon)
 
         frame.TrinketMsq = CreateFrame("Frame", nil, frame)
-        frame.TrinketMsq:SetFrameStrata("DIALOG")
+        frame.TrinketMsq:SetFrameStrata("MEDIUM")
+        frame.TrinketMsq:SetFrameLevel(19)
         frame.TrinketMsq:SetAllPoints(frame.Trinket)
 
         frame.RacialMsq = CreateFrame("Frame", nil, frame)
-        frame.RacialMsq:SetFrameStrata("DIALOG")
+        frame.RacialMsq:SetFrameStrata("MEDIUM")
+        frame.RacialMsq:SetFrameLevel(19)
         frame.RacialMsq:SetAllPoints(frame.Racial)
 
-        frame.DispelMsq = CreateFrame("Frame", nil, frame)
-        frame.DispelMsq:SetFrameStrata("DIALOG")
-        frame.DispelMsq:SetAllPoints(frame.Dispel)
+        if sArenaDispel then
+            frame.DispelMsq = CreateFrame("Frame", nil, frame)
+            frame.DispelMsq:SetFrameStrata("MEDIUM")
+            frame.DispelMsq:SetFrameLevel(19)
+            frame.DispelMsq:SetAllPoints(frame.Dispel)
+        end
 
-        frame.CastBarMsq = CreateFrame("Frame", nil, frame.CastBar)
-        frame.CastBarMsq:SetFrameStrata("HIGH")
-        frame.CastBarMsq:SetAllPoints(frame.CastBar)
+        if not frame.CastBarMsq and sArenaCastbar then
+            frame.CastBarMsq = CreateFrame("Frame", nil, frame.CastBar)
+            frame.CastBarMsq:SetFrameStrata("HIGH")
+            frame.CastBarMsq:SetAllPoints(frame.CastBar)
+        end
 
-        addToMasque(frame.FrameMsq, sArenaFrame)
+        if frame.FrameMsq then addToMasque(frame.FrameMsq, sArenaFrame) end
         addToMasque(frame.ClassIconMsq, sArenaClass)
         addToMasque(frame.SpecIconMsq, sArenaSpecIcon)
         addToMasque(frame.TrinketMsq, sArenaTrinket)
         addToMasque(frame.RacialMsq, sArenaRacial)
-        addToMasque(frame.DispelMsq, sArenaDispel)
-        addToMasque(frame.CastBarMsq, sArenaCastbar)
+        if sArenaDispel then
+            addToMasque(frame.DispelMsq, sArenaDispel)
+        end
+        if frame.CastBarMsq then addToMasque(frame.CastBarMsq, sArenaCastbar) end
         MsqSkinIcon(frame.CastBar, sArenaCastbarIcon)
 
         frame.CastBar.MSQ:SetFrameStrata("DIALOG")
 
         -- Add MasqueBorderHook for Trinket
-        if not frame.Trinket.MasqueBorderHook then
-            hooksecurefunc(frame.Trinket.Texture, "SetTexture", function(self, t)
-                if not t then
-                    if frame.TrinketMsq then
-                        frame.TrinketMsq:Hide()
-                    end
-                else
-                    if frame.TrinketMsq and frame.parent.db.profile.enableMasque then
-                        frame.TrinketMsq:Hide()
-                        frame.TrinketMsq:Show()
-                    end
+        hooksecurefunc(frame.Trinket.Texture, "SetTexture", function(self, t)
+            if not t then
+                if frame.TrinketMsq then
+                    frame.TrinketMsq:Hide()
                 end
-            end)
-            frame.Trinket.MasqueBorderHook = true
-        end
+            else
+                if frame.TrinketMsq and frame.parent.db.profile.enableMasque then
+                    frame.TrinketMsq:Hide()
+                    frame.TrinketMsq:Show()
+                end
+            end
+        end)
 
         -- Add MasqueBorderHook for Racial
-        if not frame.Racial.MasqueBorderHook then
-            hooksecurefunc(frame.Racial.Texture, "SetTexture", function(self, t)
-                if not t then
-                    if frame.RacialMsq then
-                        frame.RacialMsq:Hide()
-                    end
-                else
-                    if frame.RacialMsq and frame.parent.db.profile.enableMasque then
-                        frame.RacialMsq:Hide()
-                        frame.RacialMsq:Show()
-                    end
+        hooksecurefunc(frame.Racial.Texture, "SetTexture", function(self, t)
+            if not t then
+                if frame.RacialMsq then
+                    frame.RacialMsq:Hide()
                 end
-            end)
-            frame.Racial.MasqueBorderHook = true
-        end
+            else
+                if frame.RacialMsq and frame.parent.db.profile.enableMasque then
+                    frame.RacialMsq:Hide()
+                    frame.RacialMsq:Show()
+                end
+            end
+        end)
 
         -- Add MasqueBorderHook for Dispel
-        if not frame.Dispel.MasqueBorderHook then
+        if sArenaDispel then
             hooksecurefunc(frame.Dispel.Texture, "SetTexture", function(self, t)
                 if not t then
                     if frame.DispelMsq then
@@ -143,7 +154,6 @@ function sArenaMixin:AddMasqueSupport()
                     end
                 end
             end)
-            frame.Dispel.MasqueBorderHook = true
         end
 
         -- DR frames

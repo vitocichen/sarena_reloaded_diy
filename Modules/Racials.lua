@@ -251,7 +251,12 @@ function sArenaFrameMixin:FindRacial(spellID)
 				end
 				if self.parent.db.profile.colorTrinket then
 					local colors = self.parent.db.profile.trinketColors
-					self.Trinket.Texture:SetColorTexture(unpack(colors.used))
+					if self.parent.db.profile.colorTrinketKeepTexture then
+						self.Trinket.Texture:SetDesaturated(true)
+					else
+						self.Trinket.Texture:SetTexture("Interface\\Buttons\\WHITE8X8")
+					end
+					self.Trinket.Texture:SetVertexColor(unpack(colors.used))
 				else
 					self.Trinket.Texture:SetDesaturated(self.parent.db.profile.desaturateTrinketCD)
 				end
@@ -305,10 +310,15 @@ function sArenaFrameMixin:UpdateRacial()
 							else
 								local colors = self.parent.db.profile.trinketColors
 								local start, duration = self.Racial.Cooldown:GetCooldownTimes()
-								if duration and duration > 0 and (start > 0) then
-									self.Trinket.Texture:SetColorTexture(unpack(colors.used))
-								else
-									self.Trinket.Texture:SetColorTexture(unpack(colors.available))
+							if self.parent.db.profile.colorTrinketKeepTexture then
+								self.Trinket.Texture:SetDesaturated(true)
+							else
+								self.Trinket.Texture:SetTexture("Interface\\Buttons\\WHITE8X8")
+							end
+							if duration and duration > 0 and (start > 0) then
+								self.Trinket.Texture:SetVertexColor(unpack(colors.used))
+							else
+									self.Trinket.Texture:SetVertexColor(unpack(colors.available))
 								end
 							end
 						else
@@ -343,5 +353,7 @@ function sArenaFrameMixin:ResetRacial()
     self.Racial.Cooldown:Clear()
     self.updateRacialOnTrinketSlot = nil
     self.sharedRacialCDActive = nil
+    if self.racialDetectTimer then self.racialDetectTimer:Cancel(); self.racialDetectTimer = nil end
+    if self.racialDetectConfirmTimer then self.racialDetectConfirmTimer:Cancel(); self.racialDetectConfirmTimer = nil end
     self:UpdateRacial()
 end

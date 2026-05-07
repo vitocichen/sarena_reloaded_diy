@@ -1,28 +1,149 @@
-DIY v1.0.5
-- 修复姓名版递减(DIY)区域选择中"竞技场"开关不生效的问题：取消勾选后JJC血条上仍显示递减图标
-- 竞技场区域开关现在同时控制 Arena Nameplate DR 和 WorldDR 两套子系统
+# DIY v1.0.6（基线升级到上游 2.5.1）
+- 上游基线从 2.4.3 升级到 2.5.1，合并 2.4.4 ~ 2.5.1 所有 Bug 修复与新功能（Absorbs / AuraHighlight / Clicks / RangeCheck / CooldownFrame / Trinket Glow / Glad Tracker 等）
+- 完整保留 DIY 模块：HealthBarDR、PetBar、PetFrames、SelfDR
+- 补译 164 条新功能简体中文，zhCN 100% 覆盖 enUS
+- 新增 Ace3 库 LibCustomGlow-1.0
+- 旧 CompatibilityCheck 替换为上游 ConflictCheck（保留兼容接口）
 
-DIY v1.0.4
-- 姓名板递减全面重构，对齐MidnightDR：SafeSecureCall安全调用、CompositeKey匹配、锚点自动回退
-- 野外递减修复：总开关/坐标/大小/倒计时数字
-- 新增野德递减法术：锐利之爪、割碎、野性冲锋
+---
 
-DIY v1.0.3
-- 完全集成MidnightDR姓名板递减，支持竞技场/战场/野外/副本区域独立开关
+# sArena Reloaded 2.5.1
+## New
+- Midnight: Absorbs and Overshields are back! (And again huge thanks to Verz (MiniCC, FrameSort, etc) for being the goat and helping me a bit here)
+## Bugfix
+- Fix potential nil error on login.
 
-DIY v1.0.2
-- 修复 Pixelated 布局缺少 UpdatePetFrameSettings 调用的问题
+# sArena Reloaded 2.5.0
+## New
+- Trinket Glow: Adds a glow animation around the Trinket icon when it gets used. Settings in Global -> Trinket,
+## Tweak
+- Tweak lingo about Glad Tracker requirement being 2400 when its supposed to be 2300.
 
-DIY v1.0.1
-- 重写自身递减模块，改为纯自身追踪（参考 MyDRs），支持 7 种递减分类独立开关
-- 可拖拽、可配置图标大小/间距/增长方向/倒计时/递减文字
-- 新增测试模式，循环演示各递减状态
-- 修复竞技场宠物框体不显示名字的问题，无信息时回退显示"宠物"
-- 自身递减配置全面汉化
+# sArena Reloaded 2.4.9b
+## New
+- Midnight: Glad Tracker (same as in BetterBlizzFrames). This will add tracking of your Arena/Shuffle/BG elite achievements to your honor panel and display number of wins and required for the achievement. One win above elite rating is required for it to display. It is enabled by default but can be turned off at the very bottom of Global -> Arena Frames -> Misc.
+## Bugfix
+- Fix new Cooldown Swipe Color setting on Classic versions of WoW causing a lua error due to the function accidentally being left out on Classic versions.
+- Fix potential errors caused from old custom code tweaking sArena's aura priority.
 
-2.4.3
+# sArena Reloaded 2.4.9
+## New
+- Midnight: Added back DR leeway adjustments (due to Blizzard bug). Tldr is Blizzards DR frames can sometimes be inaccurate by around 0.3sec. This lets you set a safer value than the original intended 16 seconds. By default its set to 16.1 but 16.3 might be safer. (Global -> Diminishing Returns)
+## Tweak
+- Tweak frame strata & levels of stuff.
+- Make sure statusbar text is hidden between shuffle rounds on all frames.
+## Bugfix
+- Fix Aura Highlights potentially getting stuck on between shuffle rounds in spawn room if class icon was set to hidden.
+
+# sArena Reloaded 2.4.8
+### New
+- Cooldown Swipe Color setting (Global -> Cooldown Swipe Color)
+### Tweak
+- Support for ShadowedUnitFrames partyframes for Party/Arena Targets by void-ow@GitHub. Thank you!
+- Update Dissonance profle (www.twitch.tv/dissonancewow)
+- Tweak Spec Icon Button and Widgets FrameStrata & Levels (to avoid it showing on top of talent frame for example)
+- Midnight: Tweak handling of Party/Arena Targets so icons properly stack in one direction (no gaps or starting in wrong end)
+
+# sArena Reloaded 2.4.7c
+## Tweak
+- Added Arena Target Indicator support for ElvUI, Cell, Grid2, DandersFrames, VuhDo and default Blizzard non-raidstyle PartyFrames. If theres an addon you miss let me know.
+- Aura logic reworked a little bit so Aura Highlights can now work alone on its own if Class Icon is hidden or Auras on Class Icon is disabled.
+- Aura Highlight around Class Icon disabled while "Hide Class Icon" is enabled.
+
+# sArena Reloaded 2.4.7b
+## Tweak
+- Add back Masque support for Frame & Castbar (the bar itself) as a subsetting in Global -> Misc at the bottom (off by default).
+- Fix test mode title text being anchored to the wrong frame when growth direction of arena frames was set to up.
+
+# sArena Reloaded 2.4.7
+## New
+- Aura Highlight: Shows a glow/pixel highlight on arena frames during CC/Defensives/Important auras. (Global -> Aura Highlights). Classics: For classics this offers much more customizeability but I want to keep it similar to Midnight so whats expected from it is the same. If you have feedback on the spells on TBC/Wrath/MoP please let me hear it!
+- Healer Indicator: New Widget that just shows a cross on the healer frame (Layout -> Widgets -> Healer Indicator)
+- New "Arena/Party Target Text" setting in Widgets section. Show target name of arena/party unit.
+- Midnight: Workaround setting for Blizzard DR Bug (Global -> Diminishing Returns). This setting will to a crude workaround so you wont get fooled by a bug related to Mass Invis and DR frames not updating properly because of it. Thank Blizzard for this, I wish I could fix it properly. This is now enabled by default but can be turned off or tweaked more.
+- Added "Minimalist" texture as option due to demand.
+## Tweak
+- Midnight: New workaround for Party/Arena Target Indicators (the icons from before, not the new target text).
+- Remove Masque categories for "Castbar" (not the Icon, but the bar itself) and "Frame". I don't think these are needed or wanted but if you were using them let me know.
+## Bugfix
+- Fix mistake in Masque support code after earlier refactor causing a lua error now.
+- Fix Masque support showing Masque border on Dispel Icons in Midnight (which shouldve been hidden since dispels are not supported on Midnight)
+
+# sArena Reloaded 2.4.6
+## New
+- Hide Class Icon setting. Hide it entirely, no class or aura.
+## Tweak
+- Split all the global Class Icon settings into its own section so it's easier to navigate.
+- Raise frame level of Widget: Target/Focus border so it shows above MiniCC icons.
+- Fix Shadowsight timer for Midnight. (Wont accurately detect pickup, only spawn time then auto hide after 35 sec. Not active in Solo Shuffle)
+
+# sArena Reloaded 2.4.5
+## New
+- New Range Check settings in Global. You can now enable icons/colors/transparency settings for range and set a specific range depending on the spell you pick. (Global -> Range Check)
+- Castbar background can now also be changed texture and set color for (Layout -> Castbar)
+- Stealth Alpha slider (Global -> Arena Frames)
+- New disconnected icon on healthbar similar to death icon when disconnected.
+## Tweak
+- Midnight: Make sure Racial Shared CD does not reset an already active Racial CD when Trinket gets used 2nd.
+- Midnight: Mention Blizzards new API restriction bricking the current Party/Arena Targets feature in its section (and that a new similar feature is inc).
+- Midnight: Add missing Warlock Pet Spell Lock ID to interrupt list so castbars color properly.
+- Tweak healthbar size for Blizz Retail layout when hiding powerbars to not leave a small gap on the bottom left side.
+- Add a dark background texture for "Hide Class Icon (Show Auras Only)" setting on layouts that have a circle border around class icon to make it look less strange with it being see through.
+## Bugfix
+- Fix test mode running into an error on Classic clients due to some Midnight-only code accidentally being run.
+
+# sArena Reloaded 2.4.4c
+## Tweak
+- Midnight: Now if racials with shared trinket cd are used first they will first display the shared cooldown then afterwards update with the remaining full cooldown. (API limitation workaround to show racial CD)
+## Bugfix
+- Fix sArena Frames showing up in battlegrounds. I might add a new setting to enable this as a setting if that is of interest (for bg objectives only, flags, orbs, etc) lmk.
+
+# sArena Reloaded 2.4.4b
+## New
+- Clique support. If you have Clique theres a new checkbox in the Click Actions tab to let Clique handle all click actions instead.
+## Tweak
+- Midnight: Decimals are now working again for Midnight. Temporary solution until new proper API in 12.0.5 comes.
+- Midnight: Improve the Instant DR Cooldown a little bit by making it consider DR severity and do a lower time if already on DR.
+## Bugfix
+- Midnight: Fix issue with DR frames disappearing if DR got refreshed just as the first DR was ending. (This is not the Blizzard bug with Mass Invisibility, that one I cannot fix its on Blizzard)
+
+# sArena Reloaded 2.4.4
+## New
+- Click Actions (Global). You can now add new and customize existing Click Actions like Left Click to Target and Right Click to Focus. For example Shift+RightClick to use a macro.
+- Midnight only: New castbar setting "Highlight Casts on Me" that puts a bright border around the castbar if the spell is being casted on you. (Layout -> Cast Bar)
+## Tweak
+- Fix Castbar TargetText/ID not getting proper font sometimes.
+- Castbar color tweaks to be more consistent.
+- Midnight: Fix castbar interrupt detection so now castbars will immediately hide again when a cast is over except for when they get interrupted and it will say who interrupted it and fade out slowly.
+## Bugfix
+- Midnight: Fix percent display on manabars being stuck at 0-1 instead of 0-100.
+- Midnight: Fix DR Black Border setting being white.
+
+# sArena Reloaded 2.4.3b
+## New
+- Color Trinket: Keep Original Texture; Instead of replacing the texture entirely with a solid color keep the original texture but tinted in a color.
+## Bugfix
+- Midnight: Fix Color Trinket setting not working due to a last minute change and mistake in the logic for it.
+
+# sArena Reloaded 2.4.3
+## New
+- Show Target Text on Castbar setting (Layout -> Castbars). On Midnight this shows True Target with new API, on older classic versions this will just show the units target and not neccesarily where the spell is going due to macros etc so I would only use this on Midnight tbh but the option is there anyway.
+- Trinket used sound effect (Global -> Trinkets). Can be customized for healer/dps.
+- Hide Manabar and Hide Manabar: Keep healer mana shown settings. (Layout -> Arena Frames)
+- Added DR setting for "Only show DR's I can trigger" (Global -> DR)
+- Hide castbars setting (Layout -> Castbars).
+- Midnight: Added setting to hide DR's (Global -> DR). (On classics you can do this by unchecking DR categories)
+- Added "Enable/Disable all" buttons for Racials (Global -> Racials). Also noted down on Midnight that racial cd's cannot be tracked anymore, only shared CD with trinket can be tracked (if trinket is used first).
+- Allow negative spacing value on frame spacing setting for some layouts having a little gap even with 0 set as spacing.
+- Force Castbar Text Width setting, on by default now and makes it so castbar text doesnt overflow the width of the castbar. (Layout -> Text Settings)
+## Tweak
+- On stealth player healthbar no longer jump up to 100% but instead remain at what they were when they stealthed.
+## Bugfix
+- Fix issues with Trinket etc not working properly due to ElvUI's setting to disable default arena frames. Will be fixed automatically but require a reload.
 - Fix some problems with the frames not being fully visible in spawn room all the time.
-- Fix some misconfiguration issues behind the scenes. This is a lot of small changes everywhere in the addon so launching as beta for a while before release.
+- Fix some issues with trinket cooldown going off despite enemy not having trinket
+- Fix some issues with racial cooldown (when triggered by shared CD) kept triggering multiple times.
+- Fix some misconfiguration issues behind the scenes. This is a lot of small changes everywhere in the addon so potential for a little mishap if there's something I've missed.
 
 2.4.2d
 - Tweaks to interrupt tracking and coloring.
