@@ -1378,6 +1378,9 @@ function sArenaFrameMixin:OnEvent(event, eventUnit, arg1)
             self:ResetDispel()
         end
         self:ResetDR()
+        -- DIY: reset PetBar alpha so a stale pet bar from previous match / test mode
+        -- doesn't bleed into the new arena (e.g. showing a pet bar above a Warrior).
+        if self.ResetPetBar then self:ResetPetBar() end
         self:UpdateHealPrediction()
         self:UpdateAbsorb()
         self:UpdatePlayer(UnitExists(self.unit) and "seen" or "unseen")
@@ -1639,6 +1642,10 @@ function sArenaFrameMixin:UpdatePlayer(unitEvent)
     if noEarlyFrames or (not self:IsShown() and not InCombatLockdown()) then
         self:Show()
     end
+
+    -- DIY: keep PetBar in sync with the parent frame's seen/unseen state so
+    -- the bar appears only when the corresponding arenapetN actually exists.
+    if self.RefreshPetBar then self:RefreshPetBar() end
 end
 
 function sArenaFrameMixin:SetMysteryPlayer()
@@ -2041,6 +2048,10 @@ function sArenaFrameMixin:ResetLayout()
     f.Text:SetFont(fontName, s, "OUTLINE")
 
     self.TexturePool:ReleaseAll()
+
+    -- DIY: layout reset must clear PetBar too, otherwise switching layouts
+    -- leaves the previous PetBar visible at its old anchor.
+    if self.ResetPetBar then self:ResetPetBar() end
 end
 
 function sArenaFrameMixin:SetPowerType(powerType)
