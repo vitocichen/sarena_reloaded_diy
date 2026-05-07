@@ -512,6 +512,10 @@ function sArenaMixin:OnEvent(event, ...)
         self.testMode = nil
         if self.HideTestNameplateDR then self:HideTestNameplateDR() end
         if self.HideTestNameplateTrinket then self:HideTestNameplateTrinket() end
+        -- DIY: wipe nameplate trinket mirror state so the previous match's cooldown
+        -- does not bleed into the next arena. Hooks will be re-installed by the
+        -- arena-only RefreshAllNameplateTrinket() call further down.
+        if self.ResetAllNameplateTrinket then self:ResetAllNameplateTrinket() end
         self.arenaMatchStarted = nil
         if self.RefreshAllAuraHighlights then self:RefreshAllAuraHighlights() end
 

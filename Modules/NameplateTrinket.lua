@@ -255,6 +255,28 @@ function sArenaFrameMixin:HideNameplateTrinket()
     self.TrinketNP:Hide()
 end
 
+-- Clear mirror state on zone transitions so a fresh arena match doesn't inherit
+-- the previous match's cooldown / icon. hooksecurefunc cannot be undone, so we
+-- only clear the hooked flag - the next RefreshAllNameplateTrinket() call will
+-- re-install hooks against whatever CompactArenaFrameMember{i}.CcRemoverFrame
+-- Blizzard exposes for the new match.
+function sArenaFrameMixin:ResetNameplateTrinketState()
+    self._npTrinketHooked = nil
+    self._npTrinketSrc = nil
+    self._npTrinketCDActive = nil
+
+    if self.TrinketNP then
+        if self.TrinketNP.Cooldown then
+            pcall(function() self.TrinketNP.Cooldown:Clear() end)
+            pcall(function() self.TrinketNP.Cooldown:SetCooldown(0, 0) end)
+        end
+        if self.TrinketNP.Icon and self.TrinketNP.Icon.SetTexture then
+            pcall(function() self.TrinketNP.Icon:SetTexture(nil) end)
+        end
+        self.TrinketNP:Hide()
+    end
+end
+
 -- =============================================
 -- Position / show logic
 -- =============================================
@@ -376,6 +398,17 @@ function sArenaMixin:HideAllNameplateTrinket()
         local frame = self["arena" .. i]
         if frame and frame.TrinketNP then
             frame.TrinketNP:Hide()
+        end
+    end
+end
+
+-- Wipe every mirror's cooldown/icon/hook state. Called from PLAYER_ENTERING_WORLD
+-- so the previous arena match's residual cooldown does not bleed into the next match.
+function sArenaMixin:ResetAllNameplateTrinket()
+    for i = 1, self.maxArenaOpponents do
+        local frame = self["arena" .. i]
+        if frame and frame.ResetNameplateTrinketState then
+            frame:ResetNameplateTrinketState()
         end
     end
 end
