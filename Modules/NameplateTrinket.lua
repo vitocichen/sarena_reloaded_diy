@@ -124,11 +124,23 @@ local function GetBlizzCcRemoverFrame(arenaIndex)
 end
 
 function sArenaFrameMixin:InstallNameplateTrinketHooks()
-    if self._npTrinketHooked then return end
-
     local idx = self:GetID()
     local src = GetBlizzCcRemoverFrame(idx)
     if not src then return end
+
+    -- If we already hooked the same Blizzard CcRemoverFrame, the existing
+    -- closures still mirror SetTexture/SetCooldown, so there's nothing to do.
+    -- This matches MidnightDR's permanent-hook strategy and avoids stacking
+    -- duplicate hooks across arena transitions.
+    if self._npTrinketHooked and self._npTrinketSrc == src then return end
+
+    -- We get here in two cases:
+    -- (1) first install for this frame, OR
+    -- (2) Blizzard rebuilt CompactArenaFrameMember{i}.CcRemoverFrame so the old
+    --     src is now dead and we need to hook the new one.
+    -- hooksecurefunc cannot be undone, but the dead src is no longer referenced
+    -- by Blizzard so its old closure simply never fires again.
+    local isFirstInstall = not self._npTrinketHooked
 
     local icon = SafeIndex(src, "Icon") or SafeIndex(src, "icon")
     if icon and IsForbidden(icon) then icon = nil end
@@ -142,18 +154,25 @@ function sArenaFrameMixin:InstallNameplateTrinketHooks()
 
     local arenaFrame = self
 
-    -- Initial copy of current source texture (if any), to bootstrap mirror.
-    pcall(function()
-        local t = icon.GetTexture and icon:GetTexture() or nil
-        if t ~= nil then
-            if not IsSecret(t) then
-                if t == 0 or t == "" then return end
+    -- Initial copy of current source texture (if any), to bootstrap mirror -
+    -- ONLY on the very first install. On a re-install triggered by Blizzard
+    -- swapping the CcRemoverFrame instance the new src's icon is normally
+    -- empty for a fresh match, and we explicitly do NOT want to re-import an
+    -- old texture left over from the previous arena (which would make the
+    -- mirror look "stuck" on the prior trinket icon at match start).
+    if isFirstInstall then
+        pcall(function()
+            local t = icon.GetTexture and icon:GetTexture() or nil
+            if t ~= nil then
+                if not IsSecret(t) then
+                    if t == 0 or t == "" then return end
+                end
+                if arenaFrame.SyncNameplateTrinketTexture then
+                    arenaFrame:SyncNameplateTrinketTexture(t)
+                end
             end
-            if arenaFrame.SyncNameplateTrinketTexture then
-                arenaFrame:SyncNameplateTrinketTexture(t)
-            end
-        end
-    end)
+        end)
+    end
 
     pcall(function()
         hooksecurefunc(icon, "SetTexture", function(_, tex)
@@ -256,13 +275,24 @@ function sArenaFrameMixin:HideNameplateTrinket()
 end
 
 -- Clear mirror state on zone transitions so a fresh arena match doesn't inherit
--- the previous match's cooldown / icon. hooksecurefunc cannot be undone, so we
--- only clear the hooked flag - the next RefreshAllNameplateTrinket() call will
--- re-install hooks against whatever CompactArenaFrameMember{i}.CcRemoverFrame
--- Blizzard exposes for the new match.
+-- the previous match's cooldown / icon.
+--
+-- IMPORTANT: We deliberately keep _npTrinketHooked / _npTrinketSrc set. Two
+-- reasons:
+--   (1) hooksecurefunc cannot be undone, so flipping _npTrinketHooked back to
+--       nil and re-running InstallNameplateTrinketHooks would simply stack a
+--       second closure on the same Blizzard frame.
+--   (2) The previous version re-ran the "initial copy" block on every reinstall,
+--       which read whatever texture Blizzard happened to still have on
+--       CompactArenaFrameMember{i}.CcRemoverFrame.Icon and copied it to the
+--       mirror - i.e. the trinket icon from the previous match would appear at
+--       the start of the next match (with cooldown 0), looking like "the mirror
+--       isn't refreshing".
+--
+-- With hook flag preserved, the existing closure keeps mirroring SetTexture /
+-- SetCooldown for the new match. If Blizzard ever rebuilds the CcRemoverFrame
+-- instance, InstallNameplateTrinketHooks will detect the src change and rehook.
 function sArenaFrameMixin:ResetNameplateTrinketState()
-    self._npTrinketHooked = nil
-    self._npTrinketSrc = nil
     self._npTrinketCDActive = nil
 
     if self.TrinketNP then
@@ -383,9 +413,14 @@ function sArenaMixin:RefreshAllNameplateTrinket()
             if not frame.TrinketNP then
                 frame:CreateNameplateTrinket()
             end
-            -- Retry hook installation if it didn't take the first time
-            -- (Blizzard CompactArenaFrameMember{i} may not be ready until arena init)
-            if not frame._npTrinketHooked and frame.InstallNameplateTrinketHooks then
+            -- Always call InstallNameplateTrinketHooks - it is idempotent:
+            --   * not hooked yet         -> first install + initial copy
+            --   * hooked, same src       -> no-op (returns immediately)
+            --   * hooked, src changed    -> rehook the new Blizzard frame
+            -- This handles both "Blizzard CompactArenaFrameMember{i} not ready
+            -- on initial PLAYER_ENTERING_WORLD" and "Blizzard rebuilt the
+            -- CcRemoverFrame instance between matches" without leaking state.
+            if frame.InstallNameplateTrinketHooks then
                 frame:InstallNameplateTrinketHooks()
             end
             frame:UpdateNameplateTrinketPosition()

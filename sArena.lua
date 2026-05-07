@@ -512,9 +512,12 @@ function sArenaMixin:OnEvent(event, ...)
         self.testMode = nil
         if self.HideTestNameplateDR then self:HideTestNameplateDR() end
         if self.HideTestNameplateTrinket then self:HideTestNameplateTrinket() end
-        -- DIY: wipe nameplate trinket mirror state so the previous match's cooldown
-        -- does not bleed into the next arena. Hooks will be re-installed by the
-        -- arena-only RefreshAllNameplateTrinket() call further down.
+        -- DIY: wipe nameplate trinket mirror display (cooldown swipe + icon) so the
+        -- previous match's residual visuals do not bleed into the next arena. The
+        -- existing hooksecurefunc closures stay attached (intentional - matches
+        -- MidnightDR's permanent-hook approach and avoids re-importing the previous
+        -- match's icon via initial-copy). RefreshAllNameplateTrinket() further down
+        -- will detect any src change (Blizzard rebuilt CcRemoverFrame) and rehook.
         if self.ResetAllNameplateTrinket then self:ResetAllNameplateTrinket() end
         -- DIY: hide all PetBars on zone change so they don't linger after leaving
         -- arena or after the test-mode "Hide" button is clicked.
