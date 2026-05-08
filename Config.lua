@@ -9431,6 +9431,19 @@ else
                         name = "\n|cff888888" .. (L["Changelog_About"] or "DIY: DK-jiangshili (Burning Blade CN)") .. "|r",
                     },
                     sep0 = { order = 0.7, type = "header", name = "" },
+                    changelogTitle108 = {
+                        order = 0.705,
+                        type = "description",
+                        fontSize = "large",
+                        name = "|cffffd700v1.0.8|r",
+                    },
+                    info108 = {
+                        order = 0.707,
+                        type = "description",
+                        fontSize = "medium",
+                        name = "\n" .. (L["Changelog_v108"] or "Fix nameplate DR size/alpha mismatch in arena (align with MidnightDR)") .. "\n",
+                    },
+                    sep0_25 = { order = 0.709, type = "header", name = "" },
                     changelogTitle107 = {
                         order = 0.71,
                         type = "description",
