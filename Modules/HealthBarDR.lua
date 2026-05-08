@@ -438,11 +438,13 @@ function sArenaFrameMixin:UpdateNameplateDRPositions()
         return
     end
 
-    local us = (anchor.GetEffectiveScale and anchor:GetEffectiveScale()) or 1
-    local ps = (UIParent.GetEffectiveScale and UIParent:GetEffectiveScale()) or 1
-    local sc = us / ps
-    if sc < 0.1 then sc = 0.1 elseif sc > 10 then sc = 10 end
-
+    -- DIY: in arena, Blizzard rescales the currently-targeted nameplate to
+    -- nameplateSelectedScale (typically 1.4) while other nameplates use
+    -- nameplateOtherScale (typically 1.0). If we feed anchor:GetEffectiveScale()
+    -- into f:SetScale(), every PLAYER_TARGET_CHANGED makes the DR icons jump in
+    -- size as the user switches focus. Position must still follow the nameplate
+    -- (via SetPoint below), but size should be stable and driven only by the
+    -- user's `size` slider, so we lock the frame scale to 1.0.
     local fontSize = db.fontSize or 12
     local hideText = db.hideText
     local borderSz = db.borderSize or 1
@@ -452,7 +454,7 @@ function sArenaFrameMixin:UpdateNameplateDRPositions()
     local prevFrame
     for _, f in ipairs(self.drFramesNP) do
         f:SetSize(size, size)
-        f:SetScale(sc)
+        f:SetScale(1)
         f:SetAlpha(drAlpha)
         f.Cooldown:SetHideCountdownNumbers(hideText and true or false)
         if f.BorderTextures then
