@@ -438,13 +438,15 @@ function sArenaFrameMixin:UpdateNameplateDRPositions()
         return
     end
 
-    -- DIY: in arena, Blizzard rescales the currently-targeted nameplate to
-    -- nameplateSelectedScale (typically 1.4) while other nameplates use
-    -- nameplateOtherScale (typically 1.0). If we feed anchor:GetEffectiveScale()
-    -- into f:SetScale(), every PLAYER_TARGET_CHANGED makes the DR icons jump in
-    -- size as the user switches focus. Position must still follow the nameplate
-    -- (via SetPoint below), but size should be stable and driven only by the
-    -- user's `size` slider, so we lock the frame scale to 1.0.
+    -- MDR-compatible scale sync:
+    -- 12.0.5+ clients changed nameplate scaling behavior; the old UIParent +
+    -- SetScale(us/ps) hack is prone to "jumping" (selected nameplate scale) and
+    -- inconsistent size/alpha between arena and world.
+    --
+    -- Mirror MDR: parent each NP DR icon to the nameplate anchor and rely on
+    -- inheriting parent scale (SetIgnoreParentScale(false)) while keeping our
+    -- own alpha (SetIgnoreParentAlpha(true)). We then keep our own scale at 1.
+
     local fontSize = db.fontSize or 12
     local hideText = db.hideText
     local borderSz = db.borderSize or 1
@@ -453,6 +455,12 @@ function sArenaFrameMixin:UpdateNameplateDRPositions()
     local numActive = 0
     local prevFrame
     for _, f in ipairs(self.drFramesNP) do
+        -- Parent to anchor so scale tracks nameplate (MDR strategy)
+        if f.GetParent and f.SetParent and f:GetParent() ~= anchor then
+            pcall(function() f:SetParent(anchor) end)
+        end
+        pcall(function() f:SetIgnoreParentScale(false) end)
+        pcall(function() f:SetIgnoreParentAlpha(true) end)
         f:SetSize(size, size)
         f:SetScale(1)
         f:SetAlpha(drAlpha)
@@ -1144,13 +1152,19 @@ local function WorldDR_ApplyLayout(w)
         w:SetPoint("CENTER", UIParent, "CENTER", px, py)
     end
 
-    local us = (w.uf and w.uf.GetEffectiveScale and w.uf:GetEffectiveScale()) or 1
-    local ps = (UIParent and UIParent.GetEffectiveScale and UIParent:GetEffectiveScale()) or 1
-    local sc = us / ps
-    if sc < 0.1 then sc = 0.1 elseif sc > 10 then sc = 10 end
-    w:SetScale(sc)
+    -- MDR-compatible scale sync:
+    -- parent the widget to the nameplate UnitFrame (or plate) and inherit its
+    -- scale naturally instead of copying us/ps.
+    local parentFrame = w.uf or w.plate or UIParent
+    if w.GetParent and w.SetParent and parentFrame and w:GetParent() ~= parentFrame then
+        pcall(function() w:SetParent(parentFrame) end)
+    end
+    pcall(function() w:SetIgnoreParentScale(false) end)
+    pcall(function() w:SetIgnoreParentAlpha(true) end)
+    pcall(function() w:SetScale(1) end)
 
-    w:SetAlpha(1)
+    local alpha = tonumber(npdb and npdb.alpha) or 1
+    w:SetAlpha(alpha)
 
     local fontPath = "Fonts\\FRIZQT__.TTF"
     for i, f in ipairs(w.icons) do
