@@ -304,6 +304,21 @@ function sArenaFrameMixin:CreateNameplateDRFrames()
         cd:SetHideCountdownNumbers(false)
         f.Cooldown = cd
 
+        -- DIY: when the nameplate mirror cooldown (drResetTime, e.g. 16.1s) finishes,
+        -- clear our own icon/cooldown and reflow positions. Health bar uses a longer
+        -- duration (drResetTime + leeway) to mask Blizzard's expiry bug, so without
+        -- this self-clean we'd see the nameplate icon "stuck" for a few seconds after
+        -- the swipe completes.
+        local arenaFrame = self
+        cd:HookScript("OnCooldownDone", function()
+            if f.Icon then f.Icon:SetTexture(nil) end
+            f.Cooldown:Clear()
+            f:Hide()
+            if arenaFrame.UpdateNameplateDRPositions then
+                arenaFrame:UpdateNameplateDRPositions()
+            end
+        end)
+
         local cdText = nil
         if cd.GetRegions then
             for _, region in next, { cd:GetRegions() } do

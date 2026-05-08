@@ -1289,12 +1289,25 @@ function sArenaMixin:InitializeMidnightDRFrames()
 
                     hooksecurefunc(blizzDRFrame.Icon, "SetTexture", function(_, texture)
                         sArenaDRFrame.Icon:SetTexture(texture)
+                        -- DIY: mirror DR icon onto nameplate frame (drFramesNP[drIndex])
+                        if self.layoutdb and self.layoutdb.drNameplateEnabled then
+                            local hbf = arenaFrame.drFramesNP and arenaFrame.drFramesNP[drIndex]
+                            if hbf then hbf.Icon:SetTexture(texture) end
+                        end
                     end)
 
                     hooksecurefunc(blizzDRFrame, "Show", function()
                         sArenaDRFrame:Show()
                         arenaFrame:UpdateDRPositions()
                         sArenaDRFrame.DRSeverity = 1
+                        -- DIY: also show the nameplate mirror frame and reflow positions
+                        if self.layoutdb and self.layoutdb.drNameplateEnabled then
+                            local hbf = arenaFrame.drFramesNP and arenaFrame.drFramesNP[drIndex]
+                            if hbf then
+                                hbf:Show()
+                                arenaFrame:UpdateNameplateDRPositions()
+                            end
+                        end
                     end)
 
                     hooksecurefunc(blizzDRFrame, "Hide", function()
@@ -1304,6 +1317,14 @@ function sArenaMixin:InitializeMidnightDRFrames()
                         sArenaDRFrame:Hide()
                         sArenaDRFrame.DRSeverity = 0
                         arenaFrame:UpdateDRPositions()
+                        -- DIY: clear & hide the nameplate mirror frame in lockstep with health bar
+                        local hbf = arenaFrame.drFramesNP and arenaFrame.drFramesNP[drIndex]
+                        if hbf then
+                            hbf.Icon:SetTexture(nil)
+                            hbf.Cooldown:Clear()
+                            hbf:Hide()
+                            arenaFrame:UpdateNameplateDRPositions()
+                        end
                     end)
 
                     sArenaDRFrame.Cooldown:HookScript("OnCooldownDone", function()
@@ -1312,6 +1333,14 @@ function sArenaMixin:InitializeMidnightDRFrames()
                         sArenaDRFrame:Hide()
                         sArenaDRFrame.DRSeverity = 0
                         arenaFrame:UpdateDRPositions()
+                        -- DIY: same cleanup on nameplate when the health bar DR window expires
+                        local hbf = arenaFrame.drFramesNP and arenaFrame.drFramesNP[drIndex]
+                        if hbf then
+                            hbf.Icon:SetTexture(nil)
+                            hbf.Cooldown:Clear()
+                            hbf:Hide()
+                            arenaFrame:UpdateNameplateDRPositions()
+                        end
                     end)
 
                     hooksecurefunc(blizzDRFrame.Cooldown, "SetCooldown", function(_, start, duration)
@@ -1319,6 +1348,13 @@ function sArenaMixin:InitializeMidnightDRFrames()
                         sArenaDRFrame.Cooldown:SetCooldown(GetTime(), self.db.profile.drResetTime or 16.1)
                         sArenaDRFrame.Cooldown.durationObj = C_DurationUtil.CreateDuration()
                         sArenaDRFrame.Cooldown.durationObj:SetTimeFromStart(GetTime(), self.db.profile.drResetTime or 16.1)
+                        -- DIY: drive the nameplate mirror cooldown using the same drResetTime
+                        if self.layoutdb and self.layoutdb.drNameplateEnabled then
+                            local hbf = arenaFrame.drFramesNP and arenaFrame.drFramesNP[drIndex]
+                            if hbf and hbf.Cooldown then
+                                hbf.Cooldown:SetCooldown(GetTime(), self.db.profile.drResetTime or 16.1)
+                            end
+                        end
                     end)
 
                     local green = CreateColor(0, 1, 0, 1)
@@ -1376,6 +1412,20 @@ function sArenaMixin:InitializeMidnightDRFrames()
                         local drTextImmune = sArenaDRFrame.DRTextFrame.DRTextImmune
                         drText:SetAlphaFromBoolean(shown, 0, 1)
                         drTextImmune:SetAlphaFromBoolean(shown, 1, 0)
+
+                        -- DIY: mirror border color / instant cooldown / glow onto nameplate frame
+                        if self.layoutdb and self.layoutdb.drNameplateEnabled then
+                            local hbf = arenaFrame.drFramesNP and arenaFrame.drFramesNP[drIndex]
+                            if hbf then
+                                local r, g, b = shown and 1 or 0, shown and 0 or 1, 0
+                                arenaFrame:SetNameplateDRBorderColor(drIndex, r, g, b)
+                                if hbf.Cooldown and not self.db.profile.disableInstantDRCooldown then
+                                    hbf.Cooldown:SetCooldown(GetTime(), self.db.profile.drResetTime or 16.1)
+                                end
+                                local glowEnabled = self.layoutdb.drNameplate and self.layoutdb.drNameplate.immuneGlow
+                                arenaFrame:SetNameplateDRGlow(drIndex, glowEnabled and shown, 1, 0, 0)
+                            end
+                        end
                     end)
                 end
             end
