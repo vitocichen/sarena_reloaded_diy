@@ -456,9 +456,15 @@ function sArenaFrameMixin:UpdateNameplateDRPositions()
         f:SetAlpha(drAlpha)
         f.Cooldown:SetHideCountdownNumbers(hideText and true or false)
         if f.BorderTextures then
+            -- DIY: only adjust border thickness here. The border color is managed
+            -- by SetNameplateDRBorderColor (driven from the ImmunityIndicator hook
+            -- in Functions.lua) and by the initial SetColorTexture in
+            -- CreateNameplateDRFrames. The previous GetVertexColor()/SetColorTexture
+            -- round-trip clobbered the active color to white because GetVertexColor
+            -- returns the vertex color (default (1,1,1)), which is independent from
+            -- the color baked in by SetColorTexture - so every refresh overwrote
+            -- the green/red border color set by the hook.
             for _, tex in ipairs(f.BorderTextures) do
-                local r, g, b = tex:GetVertexColor()
-                tex:SetColorTexture(r or 0, g or 1, b or 0, 1)
                 tex:SetHeight(borderSz)
                 tex:SetWidth(borderSz)
             end
