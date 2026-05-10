@@ -1413,17 +1413,22 @@ function sArenaMixin:InitializeMidnightDRFrames()
                         drText:SetAlphaFromBoolean(shown, 0, 1)
                         drTextImmune:SetAlphaFromBoolean(shown, 1, 0)
 
-                        -- DIY: mirror border color / instant cooldown / glow onto nameplate frame
+                        -- DIY: mirror border color / instant cooldown / glow onto nameplate frame.
+                        -- NOTE: 'shown' may be a secret boolean (taint-tracked) when the hook
+                        -- is fired from secure code (Blizzard_SpellDiminishUI 11.x+). We must
+                        -- NOT do `shown and X or Y` / `if shown` on it, otherwise our entire
+                        -- execution chain gets tainted and any subsequent secure call breaks.
+                        -- Instead we use the MDR pattern: pass 'shown' straight into helpers
+                        -- that only consume it via SetAlphaFromBoolean (the one safe API).
                         if self.layoutdb and self.layoutdb.drNameplateEnabled then
                             local hbf = arenaFrame.drFramesNP and arenaFrame.drFramesNP[drIndex]
                             if hbf then
-                                local r, g, b = shown and 1 or 0, shown and 0 or 1, 0
-                                arenaFrame:SetNameplateDRBorderColor(drIndex, r, g, b)
+                                arenaFrame:SetNameplateDRBorderImmunity(drIndex, shown)
                                 if hbf.Cooldown and not self.db.profile.disableInstantDRCooldown then
                                     hbf.Cooldown:SetCooldown(GetTime(), self.db.profile.drResetTime or 16.1)
                                 end
                                 local glowEnabled = self.layoutdb.drNameplate and self.layoutdb.drNameplate.immuneGlow
-                                arenaFrame:SetNameplateDRGlow(drIndex, glowEnabled and shown, 1, 0, 0)
+                                arenaFrame:SetNameplateDRGlow(drIndex, glowEnabled, shown, 1, 0, 0)
                             end
                         end
                     end)

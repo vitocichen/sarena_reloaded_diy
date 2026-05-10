@@ -908,6 +908,7 @@ L["Widget_RangeCheck_UseDefault_Desc"] = "重置为你的职业/专精的默认�
 
 -- Changelog
 L["Changelog_About"] = "DIY: DK-姜世离(燃烧之刃)\n基于 sArena Reloaded v2.5.1 二次开发"
+L["Changelog_v109"] = "|cffffd700● 姓名版递减：免疫提示修复（DIY）|r — 修复 JJC 内姓名版递减图标在目标免疫时不变红边、不发光的问题，并消除战斗中相关报错。"
 L["Changelog_v108"] = "|cffffd700● 姓名版递减：JJC 尺寸/透明度修复（DIY）|r — 对齐 MidnightDR：姓名版递减图标 parent 到姓名版锚点继承缩放，并使用独立 alpha，修复「野外正常、进 JJC 变小/变淡」的问题。"
 L["Changelog_v107"] = "|cffffd700● 集火目标预测（DIY）|r — 在 JJC / 小队框架上显示「队友/自己当前目标 = arena 几」。\n|cffaaaaaa原理|r：Midnight 把 |cffffaa00UnitIsUnit|r 在 PvP 战斗中变成了 secret value，改用 |cffffaa00[职业 + 种族 + 荣誉等级]|r 三元组近似比对，|cffff5555撞车时会判错，仅供参考|r。"
 L["Changelog_v106"] = "|cffffd700● 上游基线升级|r — 一次性合并上游 sArena Reloaded 2.5.1，吸收 2.4.4 ~ 2.5.1 全部 Bug 修复和新功能\n|cffffd700● 新增上游模块|r — Absorbs（吸收/护盾）/ AuraHighlight（光环高亮）/ Clicks（点击动作）/ RangeCheck（距离检查）/ CooldownFrame（冷却扫光）/ ConflictCheck（冲突检查）\n|cffffd700● 新增 Ace3 库|r — LibCustomGlow-1.0（用于饰品发光 / 光环高亮）\n|cffffd700● DIY 完整保留|r — 全部 DIY 模块（HealthBarDR / SelfDR / PetBar / PetFrames）和简体中文汉化无损保留"

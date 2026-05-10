@@ -333,47 +333,87 @@ function sArenaFrameMixin:CreateNameplateDRFrames()
         end
         f.CDText = cdText
 
+        -- Border layout (MDR-style): TWO parallel border sets stacked on top of
+        -- each other. The green set is visible by default, the red set is fully
+        -- transparent. The ImmunityIndicator hook drives both alphas via
+        -- Region:SetAlphaFromBoolean so we never touch the (potentially secret)
+        -- 'shown' boolean directly. Inverse alpha = inverse visibility.
         local borderFrame = CreateFrame("Frame", nil, f)
         borderFrame:SetPoint("TOPLEFT", -1, 1)
         borderFrame:SetPoint("BOTTOMRIGHT", 1, -1)
         borderFrame:SetFrameLevel(f:GetFrameLevel() + 2)
-        local bTop = borderFrame:CreateTexture(nil, "OVERLAY")
-        bTop:SetHeight(1); bTop:SetPoint("TOPLEFT"); bTop:SetPoint("TOPRIGHT"); bTop:SetColorTexture(0, 1, 0, 1)
-        local bBot = borderFrame:CreateTexture(nil, "OVERLAY")
-        bBot:SetHeight(1); bBot:SetPoint("BOTTOMLEFT"); bBot:SetPoint("BOTTOMRIGHT"); bBot:SetColorTexture(0, 1, 0, 1)
-        local bLeft = borderFrame:CreateTexture(nil, "OVERLAY")
-        bLeft:SetWidth(1); bLeft:SetPoint("TOPLEFT"); bLeft:SetPoint("BOTTOMLEFT"); bLeft:SetColorTexture(0, 1, 0, 1)
-        local bRight = borderFrame:CreateTexture(nil, "OVERLAY")
-        bRight:SetWidth(1); bRight:SetPoint("TOPRIGHT"); bRight:SetPoint("BOTTOMRIGHT"); bRight:SetColorTexture(0, 1, 0, 1)
-        f.BorderTextures = { bTop, bBot, bLeft, bRight }
 
-        f.GlowTexture = f:CreateTexture(nil, "OVERLAY", nil, 7)
-        f.GlowTexture:SetPoint("TOPLEFT", -3, 3)
-        f.GlowTexture:SetPoint("BOTTOMRIGHT", 3, -3)
+        local function makeBorderTextures(parent, r, g, b, initialAlpha)
+            local top = parent:CreateTexture(nil, "OVERLAY")
+            top:SetHeight(1); top:SetPoint("TOPLEFT"); top:SetPoint("TOPRIGHT")
+            top:SetColorTexture(r, g, b, 1); top:SetAlpha(initialAlpha)
+            local bot = parent:CreateTexture(nil, "OVERLAY")
+            bot:SetHeight(1); bot:SetPoint("BOTTOMLEFT"); bot:SetPoint("BOTTOMRIGHT")
+            bot:SetColorTexture(r, g, b, 1); bot:SetAlpha(initialAlpha)
+            local left = parent:CreateTexture(nil, "OVERLAY")
+            left:SetWidth(1); left:SetPoint("TOPLEFT"); left:SetPoint("BOTTOMLEFT")
+            left:SetColorTexture(r, g, b, 1); left:SetAlpha(initialAlpha)
+            local right = parent:CreateTexture(nil, "OVERLAY")
+            right:SetWidth(1); right:SetPoint("TOPRIGHT"); right:SetPoint("BOTTOMRIGHT")
+            right:SetColorTexture(r, g, b, 1); right:SetAlpha(initialAlpha)
+            return { top, bot, left, right }
+        end
+
+        f.BorderTextures = makeBorderTextures(borderFrame, 0, 1, 0, 1) -- green, visible
+        f.RedBorderTextures = makeBorderTextures(borderFrame, 1, 0, 0, 0) -- red, hidden
+
+        -- Glow wrapped in a Frame so we can drive visibility via the parent
+        -- frame's alpha (SetAlphaFromBoolean) without fighting the alpha
+        -- animation that runs on the texture itself.
+        local glowFrame = CreateFrame("Frame", nil, f)
+        glowFrame:SetPoint("TOPLEFT", -3, 3)
+        glowFrame:SetPoint("BOTTOMRIGHT", 3, -3)
+        glowFrame:SetAlpha(0)
+        f.GlowFrame = glowFrame
+
+        f.GlowTexture = glowFrame:CreateTexture(nil, "OVERLAY", nil, 7)
+        f.GlowTexture:SetAllPoints()
         f.GlowTexture:SetTexture("Interface\\Buttons\\UI-ActionButton-Border")
         f.GlowTexture:SetBlendMode("ADD")
-        f.GlowTexture:SetAlpha(0)
+        f.GlowTexture:SetAlpha(0.8)
 
         self.drFramesNP[s] = f
     end
 end
 
-function sArenaFrameMixin:SetNameplateDRBorderColor(slot, r, g, b, a)
+-- Drive the green/red border visibility from the (possibly secret) 'shown'
+-- boolean coming straight from the ImmunityIndicator hook. SetAlphaFromBoolean
+-- is the only safe way to consume a secret boolean: it never tests the value
+-- in Lua, so it never taints us.
+function sArenaFrameMixin:SetNameplateDRBorderImmunity(slot, shown)
     local f = self.drFramesNP and self.drFramesNP[slot]
-    if not f or not f.BorderTextures then return end
-    for _, tex in ipairs(f.BorderTextures) do
-        tex:SetColorTexture(r, g, b, a or 1)
+    if not f then return end
+    if f.BorderTextures then
+        for _, tex in ipairs(f.BorderTextures) do
+            tex:SetAlphaFromBoolean(shown, 0, 1)
+        end
+    end
+    if f.RedBorderTextures then
+        for _, tex in ipairs(f.RedBorderTextures) do
+            tex:SetAlphaFromBoolean(shown, 1, 0)
+        end
     end
 end
 
-function sArenaFrameMixin:SetNameplateDRGlow(slot, enabled, r, g, b)
+-- Glow visibility is gated by two separate signals:
+--   * glowEnabled : a regular Lua bool from user db (master switch)
+--   * shown       : a possibly-secret boolean from the ImmunityIndicator hook
+-- We branch only on the regular bool, then route the secret bool through
+-- SetAlphaFromBoolean on the glow's parent frame. The looping alpha animation
+-- runs on the texture itself, which is independent from the parent frame's
+-- alpha, so the two never fight.
+function sArenaFrameMixin:SetNameplateDRGlow(slot, glowEnabled, shown, r, g, b)
     if not self.drFramesNP then return end
     local f = self.drFramesNP[slot]
-    if not f or not f.GlowTexture then return end
+    if not f or not f.GlowTexture or not f.GlowFrame then return end
 
-    if enabled then
+    if glowEnabled then
         f.GlowTexture:SetVertexColor(r or 1, g or 0, b or 0)
-        f.GlowTexture:SetAlpha(0.8)
         if not f.glowAnim then
             local ag = f.GlowTexture:CreateAnimationGroup()
             ag:SetLooping("BOUNCE")
@@ -384,10 +424,11 @@ function sArenaFrameMixin:SetNameplateDRGlow(slot, enabled, r, g, b)
             fade:SetSmoothing("IN_OUT")
             f.glowAnim = ag
         end
-        f.glowAnim:Play()
+        if not f.glowAnim:IsPlaying() then f.glowAnim:Play() end
+        f.GlowFrame:SetAlphaFromBoolean(shown, 1, 0)
     else
-        if f.glowAnim then f.glowAnim:Stop() end
-        f.GlowTexture:SetAlpha(0)
+        if f.glowAnim and f.glowAnim:IsPlaying() then f.glowAnim:Stop() end
+        f.GlowFrame:SetAlpha(0)
     end
 end
 
@@ -465,20 +506,23 @@ function sArenaFrameMixin:UpdateNameplateDRPositions()
         f:SetScale(1)
         f:SetAlpha(drAlpha)
         f.Cooldown:SetHideCountdownNumbers(hideText and true or false)
-        if f.BorderTextures then
-            -- DIY: only adjust border thickness here. The border color is managed
-            -- by SetNameplateDRBorderColor (driven from the ImmunityIndicator hook
-            -- in Functions.lua) and by the initial SetColorTexture in
-            -- CreateNameplateDRFrames. The previous GetVertexColor()/SetColorTexture
-            -- round-trip clobbered the active color to white because GetVertexColor
-            -- returns the vertex color (default (1,1,1)), which is independent from
-            -- the color baked in by SetColorTexture - so every refresh overwrote
-            -- the green/red border color set by the hook.
-            for _, tex in ipairs(f.BorderTextures) do
+        -- DIY: only adjust border thickness here. Border colors are baked in
+        -- by SetColorTexture at frame creation time (green for BorderTextures,
+        -- red for RedBorderTextures). Visibility is driven via alpha from the
+        -- ImmunityIndicator hook (SetNameplateDRBorderImmunity), so we must NOT
+        -- call SetColorTexture / GetVertexColor here -- that would clobber the
+        -- active color to white because GetVertexColor returns the vertex color
+        -- (default (1,1,1)), which is independent from the color baked in by
+        -- SetColorTexture.
+        local function resizeBorders(tbl)
+            if not tbl then return end
+            for _, tex in ipairs(tbl) do
                 tex:SetHeight(borderSz)
                 tex:SetWidth(borderSz)
             end
         end
+        resizeBorders(f.BorderTextures)
+        resizeBorders(f.RedBorderTextures)
         if f.CDText and not hideText then
             local fontFile = f.CDText.fontFile or select(1, f.CDText:GetFont())
             local flags = f.CDText.fontFlags or select(3, f.CDText:GetFont())

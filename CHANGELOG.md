@@ -1,3 +1,16 @@
+# DIY v1.0.9（姓名版递减：免疫红边 + 不再污染战斗）
+
+- 修复 v1.0.8 引入的姓名版递减图标 **免疫态边框/发光功能** 在 11.x 客户端下的两个问题：
+  1. **战斗中刷 Lua 报错**：`Functions.lua:1420: attempt to perform boolean test on local 'shown' (a secret boolean value, while execution tainted by 'sArena_Reloaded')`。原因是 11.x 客户端把 `ImmunityIndicator:SetShown(shown)` 的 `shown` 改成了"保密布尔值"（secret boolean），而我们在新加的姓名版镜像逻辑里对它做了 `shown and X or Y` 的布尔测试，导致整条调用链被打上 taint 标记，后续每次 DR/免疫切换都会刷一次报错（用户日志里 124x），同时还会把 sArena 自己的安全调用一并污染掉。
+  2. **姓名版边框永远绿色**：报错被吞掉之后，红色免疫边框 / 免疫发光实际上根本没切换上去——姓名版上的递减图标在被免疫时仍然是绿边，和竞技场框上正确显示的红边不一致。
+- 修复方式：**完全照搬外层目录 MidnightDR 的实现**，对 secret boolean 不做任何 Lua 布尔测试。
+  - 姓名版递减图标改为 **绿 + 红双层独立边框纹理** 的结构，初始时绿可见、红透明；hook 里直接对两套纹理调 `Region:SetAlphaFromBoolean(shown, ...)`（这是唯一能安全消费保密布尔的官方 API），相反的两个 alpha 取值天然实现"互斥可见"。
+  - 免疫发光改为把 `GlowTexture` 装进一个父 Frame，发光动画继续在纹理本体上跑，"是否显示"由父 Frame 的 alpha 通过 `SetAlphaFromBoolean` 决定，动画和可见性不再互相冲突。
+  - 拆掉旧的 `SetNameplateDRBorderColor`（运行时改色）与 `glowEnabled and shown` 写法，新增 `SetNameplateDRBorderImmunity(slot, shown)` 与改造后的 `SetNameplateDRGlow(slot, glowEnabled, shown, ...)`。
+- 顺带：竞技场主框的递减显示行为完全没动，本次只动姓名版镜像那一块。
+
+---
+
 # DIY v1.0.8（姓名版递减：JJC 尺寸/透明度修复）
 
 - 修复竞技场（JJC）内姓名版递减图标的尺寸/透明度异常：对齐 MidnightDR 的实现，改为 parent 到姓名版锚点继承缩放，并使用独立 alpha（不再出现“野外正常、进 JJC 变小/变淡”的情况）。

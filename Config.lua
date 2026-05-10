@@ -9431,6 +9431,19 @@ else
                         name = "\n|cff888888" .. (L["Changelog_About"] or "DIY: DK-jiangshili (Burning Blade CN)") .. "|r",
                     },
                     sep0 = { order = 0.7, type = "header", name = "" },
+                    changelogTitle109 = {
+                        order = 0.701,
+                        type = "description",
+                        fontSize = "large",
+                        name = "|cffffd700v1.0.9|r",
+                    },
+                    info109 = {
+                        order = 0.702,
+                        type = "description",
+                        fontSize = "medium",
+                        name = "\n" .. (L["Changelog_v109"] or "Fix nameplate DR icon not turning red / glowing when target is immune in arena, and silence the related combat Lua error") .. "\n",
+                    },
+                    sep0_125 = { order = 0.703, type = "header", name = "" },
                     changelogTitle108 = {
                         order = 0.705,
                         type = "description",
