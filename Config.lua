@@ -4,6 +4,62 @@ local isMidnight = sArenaMixin.isMidnight
 local isTBC = sArenaMixin.isTBC
 local L = sArenaMixin.L
 
+local donateURL = "https://vitocichen.github.io/DK-jiangshili/"
+local donatePopup
+
+local function GetOrCreateDonatePopup()
+    if donatePopup then return donatePopup end
+
+    donatePopup = CreateFrame("Frame", "sArenaDonatePopup", UIParent, "BasicFrameTemplateWithInset")
+    donatePopup:SetSize(440, 140)
+    donatePopup:SetPoint("CENTER")
+    donatePopup:SetFrameStrata("DIALOG")
+    donatePopup:EnableMouse(true)
+    donatePopup:SetMovable(true)
+    donatePopup:RegisterForDrag("LeftButton")
+    donatePopup:SetScript("OnDragStart", donatePopup.StartMoving)
+    donatePopup:SetScript("OnDragStop", donatePopup.StopMovingOrSizing)
+    donatePopup:Hide()
+    donatePopup.TitleText:SetText(L["Donate_PopupTitle"] or "Donate")
+
+    local hint = donatePopup:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
+    hint:SetText(L["Donate_PopupHint"] or "Copy the link and open in your browser to donate:")
+    hint:SetPoint("TOP", donatePopup, "TOP", 0, -32)
+
+    local editBox = CreateFrame("EditBox", nil, donatePopup, "InputBoxTemplate")
+    editBox:SetSize(300, 20)
+    editBox:SetPoint("TOP", hint, "BOTTOM", -20, -12)
+    editBox:SetAutoFocus(false)
+    editBox:SetText(donateURL)
+    editBox:SetCursorPosition(0)
+    editBox:SetScript("OnEditFocusGained", function(self) self:HighlightText() end)
+    editBox:SetScript("OnEscapePressed", function(self) self:ClearFocus() end)
+    editBox:SetScript("OnTextChanged", function(self)
+        self:SetText(donateURL)
+        self:HighlightText()
+    end)
+    donatePopup.editBox = editBox
+
+    local copyBtn = CreateFrame("Button", nil, donatePopup, "UIPanelButtonTemplate")
+    copyBtn:SetSize(60, 22)
+    copyBtn:SetPoint("LEFT", editBox, "RIGHT", 8, 0)
+    copyBtn:SetText(L["Donate_Copy"] or "Copy")
+    copyBtn:SetScript("OnClick", function(self)
+        editBox:SetText(donateURL)
+        editBox:HighlightText()
+        editBox:SetFocus()
+        self:SetText(L["Donate_Copied"] or "Copied")
+        C_Timer.After(1.5, function() self:SetText(L["Donate_Copy"] or "Copy") end)
+    end)
+
+    local openHint = donatePopup:CreateFontString(nil, "ARTWORK", "GameFontNormalSmall")
+    openHint:SetText(L["Donate_OpenHint"] or "|cFF888888Can't open? Try visiting the URL above in your browser|r")
+    openHint:SetPoint("TOP", editBox, "BOTTOM", -20, -8)
+
+    return donatePopup
+end
+
+
 local function GetClassOptionName(classToken)
     local icon = sArenaMixin.classIcons[classToken]
     local color = C_ClassColor.GetClassColor(classToken)
@@ -5019,6 +5075,659 @@ function sArenaMixin:GetLayoutOptionsTable(layoutName)
         }
     end
 
+    -- ============================================================
+    -- DIY 扩展：姓名板递减 / 宠物条 / 自身递减
+    -- ============================================================
+    optionsTable.drNameplate = {
+        order = 10,
+        name = (L["Category_DRNameplate"] or "Nameplate DR") .. " |cffff8000(DIY)|r",
+        type = "group",
+        get = function(info)
+            local hb = info.handler.db.profile.layoutSettings[layoutName].drNameplate
+            return hb and hb[info[#info]]
+        end,
+        set = function(info, val)
+            local hb = info.handler.db.profile.layoutSettings[layoutName].drNameplate
+            if not hb then
+                info.handler.db.profile.layoutSettings[layoutName].drNameplate = {}
+                hb = info.handler.db.profile.layoutSettings[layoutName].drNameplate
+            end
+            self:UpdateNameplateDRSettings(hb, info, val)
+        end,
+        args = {
+            drNameplateEnabled = {
+                order = 0,
+                name = L["DR_NameplateEnabled"] or "Enable Nameplate DR",
+                desc = L["DR_NameplateEnabled_Desc"] or "Show DR icons on nameplates.",
+                type = "toggle",
+                width = "full",
+                get = function(info)
+                    return info.handler.db.profile.layoutSettings[layoutName].drNameplateEnabled or false
+                end,
+                set = function(info, val)
+                    info.handler.db.profile.layoutSettings[layoutName].drNameplateEnabled = val
+                    if info.handler.db.profile.layoutSettings[layoutName].drNameplate then
+                        self:UpdateNameplateDRSettings(info.handler.db.profile.layoutSettings[layoutName].drNameplate)
+                    end
+                    if self.WorldDR_Evaluate then self:WorldDR_Evaluate() end
+                    info.handler:Test()
+                end,
+            },
+            zones = {
+                order = 0.5,
+                name = L["DR_NP_Zones"] or "Zone Selection",
+                type = "group",
+                inline = true,
+                disabled = function(info)
+                    return not info.handler.db.profile.layoutSettings[layoutName].drNameplateEnabled
+                end,
+                args = {
+                    enableInArena = {
+                        order = 1,
+                        name = L["DR_NP_Zone_Arena"] or "Arena",
+                        type = "toggle",
+                        get = function(info)
+                            local z = info.handler.db.profile.nameplateDRZones
+                            return z and z.enableInArena ~= false
+                        end,
+                        set = function(info, val)
+                            info.handler.db.profile.nameplateDRZones = info.handler.db.profile.nameplateDRZones or {}
+                            info.handler.db.profile.nameplateDRZones.enableInArena = val and true or false
+                            if self.WorldDR_Evaluate then self:WorldDR_Evaluate() end
+                            if self.RefreshAllNameplateDR then self:RefreshAllNameplateDR() end
+                        end,
+                    },
+                    enableInBattleground = {
+                        order = 2,
+                        name = L["DR_NP_Zone_BG"] or "Battleground",
+                        type = "toggle",
+                        get = function(info)
+                            local z = info.handler.db.profile.nameplateDRZones
+                            return z and z.enableInBattleground == true
+                        end,
+                        set = function(info, val)
+                            info.handler.db.profile.nameplateDRZones = info.handler.db.profile.nameplateDRZones or {}
+                            info.handler.db.profile.nameplateDRZones.enableInBattleground = val and true or false
+                            if self.WorldDR_Evaluate then self:WorldDR_Evaluate() end
+                        end,
+                    },
+                    enableInWorld = {
+                        order = 3,
+                        name = L["DR_NP_Zone_World"] or "World PvP",
+                        type = "toggle",
+                        get = function(info)
+                            local z = info.handler.db.profile.nameplateDRZones
+                            return z and z.enableInWorld == true
+                        end,
+                        set = function(info, val)
+                            info.handler.db.profile.nameplateDRZones = info.handler.db.profile.nameplateDRZones or {}
+                            info.handler.db.profile.nameplateDRZones.enableInWorld = val and true or false
+                            if self.WorldDR_Evaluate then self:WorldDR_Evaluate() end
+                        end,
+                    },
+                    enableInDungeon = {
+                        order = 4,
+                        name = L["DR_NP_Zone_Dungeon"] or "Dungeon / Raid",
+                        type = "toggle",
+                        get = function(info)
+                            local z = info.handler.db.profile.nameplateDRZones
+                            return z and z.enableInDungeon == true
+                        end,
+                        set = function(info, val)
+                            info.handler.db.profile.nameplateDRZones = info.handler.db.profile.nameplateDRZones or {}
+                            info.handler.db.profile.nameplateDRZones.enableInDungeon = val and true or false
+                            if self.WorldDR_Evaluate then self:WorldDR_Evaluate() end
+                        end,
+                    },
+                },
+            },
+            positioning = {
+                order = 1,
+                name = L["Positioning"],
+                type = "group",
+                inline = true,
+                disabled = function(info)
+                    return not info.handler.db.profile.layoutSettings[layoutName].drNameplateEnabled
+                end,
+                args = {
+                    posX = { order = 1, name = L["Horizontal"], type = "range", min = -300, max = 300, softMin = -150, softMax = 150, step = 1 },
+                    posY = { order = 2, name = L["Vertical"], type = "range", min = -300, max = 300, softMin = -150, softMax = 150, step = 1 },
+                    growthDirection = { order = 3, name = L["Option_GrowthDirection"], type = "select", style = "dropdown", values = growthValues },
+                },
+            },
+            sizing = {
+                order = 2,
+                name = L["Sizing"],
+                type = "group",
+                inline = true,
+                disabled = function(info)
+                    return not info.handler.db.profile.layoutSettings[layoutName].drNameplateEnabled
+                end,
+                args = {
+                    size = { order = 1, name = L["Size"], type = "range", min = 8, max = 80, step = 1 },
+                    spacing = { order = 2, name = L["Spacing"], type = "range", min = 0, max = 20, step = 1 },
+                    fontSize = {
+                        order = 3, name = L["Option_FontSize"], desc = L["Option_FontSize_Desc"],
+                        type = "range", min = 6, max = 32, step = 1,
+                        disabled = function(info)
+                            local np = info.handler.db.profile.layoutSettings[layoutName].drNameplate
+                            return np and np.hideText
+                        end,
+                    },
+                    hideText = { order = 4, name = L["DR_NP_HideText"] or "Hide Text", desc = L["DR_NP_HideText_Desc"] or "", type = "toggle" },
+                    borderSize = { order = 5, name = L["BorderSize"] or "Border Size", type = "range", min = 1, max = 6, step = 1 },
+                    alpha = { order = 6, name = L["DR_NP_Alpha"] or "Alpha", desc = L["DR_NP_Alpha_Desc"] or "", type = "range", min = 0.1, max = 1.0, step = 0.05, isPercent = true },
+                },
+            },
+            effects = {
+                order = 3,
+                name = L["DR_HB_Effects"] or "Effects",
+                type = "group",
+                inline = true,
+                disabled = function(info)
+                    return not info.handler.db.profile.layoutSettings[layoutName].drNameplateEnabled
+                end,
+                args = {
+                    immuneGlow = { order = 1, name = L["DR_ImmuneGlow"] or "Immune Glow", desc = L["DR_ImmuneGlow_Desc"] or "", type = "toggle", width = "full" },
+                },
+            },
+            categories = {
+                order = 4,
+                name = L["DR_NP_Categories"] or "Categories",
+                type = "group",
+                inline = true,
+                disabled = function(info)
+                    return not info.handler.db.profile.layoutSettings[layoutName].drNameplateEnabled
+                end,
+                args = {
+                    stun = { order = 1, type = "toggle", name = L["DR_NP_Cat_Stun"] or "Stun",
+                        get = function(info) local c = info.handler.db.profile.nameplateDRCategories; return c and c.stun ~= false end,
+                        set = function(info, v) info.handler.db.profile.nameplateDRCategories = info.handler.db.profile.nameplateDRCategories or {}; info.handler.db.profile.nameplateDRCategories.stun = v and true or false end },
+                    incap = { order = 2, type = "toggle", name = L["DR_NP_Cat_Incap"] or "Incap",
+                        get = function(info) local c = info.handler.db.profile.nameplateDRCategories; return c and c.incap ~= false end,
+                        set = function(info, v) info.handler.db.profile.nameplateDRCategories = info.handler.db.profile.nameplateDRCategories or {}; info.handler.db.profile.nameplateDRCategories.incap = v and true or false end },
+                    fear = { order = 3, type = "toggle", name = L["DR_NP_Cat_Fear"] or "Fear",
+                        get = function(info) local c = info.handler.db.profile.nameplateDRCategories; return c and c.fear ~= false end,
+                        set = function(info, v) info.handler.db.profile.nameplateDRCategories = info.handler.db.profile.nameplateDRCategories or {}; info.handler.db.profile.nameplateDRCategories.fear = v and true or false end },
+                    root = { order = 4, type = "toggle", name = L["DR_NP_Cat_Root"] or "Root",
+                        get = function(info) local c = info.handler.db.profile.nameplateDRCategories; return c and c.root ~= false end,
+                        set = function(info, v) info.handler.db.profile.nameplateDRCategories = info.handler.db.profile.nameplateDRCategories or {}; info.handler.db.profile.nameplateDRCategories.root = v and true or false end },
+                    disarm = { order = 5, type = "toggle", name = L["DR_NP_Cat_Disarm"] or "Disarm",
+                        get = function(info) local c = info.handler.db.profile.nameplateDRCategories; return c and c.disarm ~= false end,
+                        set = function(info, v) info.handler.db.profile.nameplateDRCategories = info.handler.db.profile.nameplateDRCategories or {}; info.handler.db.profile.nameplateDRCategories.disarm = v and true or false end },
+                    silence = { order = 6, type = "toggle", name = L["DR_NP_Cat_Silence"] or "Silence",
+                        get = function(info) local c = info.handler.db.profile.nameplateDRCategories; return c and c.silence ~= false end,
+                        set = function(info, v) info.handler.db.profile.nameplateDRCategories = info.handler.db.profile.nameplateDRCategories or {}; info.handler.db.profile.nameplateDRCategories.silence = v and true or false end },
+                },
+            },
+            worldDRSettings = {
+                order = 5,
+                name = L["DR_NP_WorldSettings"] or "World DR Settings",
+                type = "group",
+                inline = true,
+                disabled = function(info)
+                    return not info.handler.db.profile.layoutSettings[layoutName].drNameplateEnabled
+                end,
+                args = {
+                    maxIcons = {
+                        order = 1, name = L["DR_NP_MaxIcons"] or "Max Icons",
+                        desc = L["DR_NP_MaxIcons_Desc"] or "Maximum number of DR icons per nameplate.",
+                        type = "range", min = 1, max = 6, step = 1,
+                        get = function(info) return info.handler.db.profile.nameplateDRMaxIcons or 5 end,
+                        set = function(info, v) info.handler.db.profile.nameplateDRMaxIcons = v end,
+                    },
+                    testWorldDR = {
+                        order = 2, name = L["DR_NP_Test"] or "Show Test",
+                        desc = L["DR_NP_Test_Desc"] or "Show test DR icons on nearest enemy nameplate (preview only).",
+                        type = "execute",
+                        func = function() if self.ShowTestNameplateDR then self:ShowTestNameplateDR() end end,
+                    },
+                    hideTestWorldDR = {
+                        order = 3, name = L["DR_NP_HideTest"] or "Hide Test", type = "execute",
+                        func = function() if self.HideTestNameplateDR then self:HideTestNameplateDR() end end,
+                    },
+                },
+            },
+        },
+    }
+
+    -- ============================================================
+    -- DIY: Nameplate Trinket (mirror PvP CC remover onto enemy nameplate)
+    -- ============================================================
+    optionsTable.npTrinket = {
+        order = 11,
+        name = (L["Category_NPTrinket"] or "Nameplate Trinket") .. " |cffff8000(DIY)|r",
+        type = "group",
+        get = function(info)
+            local d = info.handler.db.profile.nameplateTrinket
+            return d and d[info[#info]]
+        end,
+        set = function(info, val)
+            info.handler.db.profile.nameplateTrinket = info.handler.db.profile.nameplateTrinket or {}
+            self:UpdateNameplateTrinketSettings(info, val)
+        end,
+        args = {
+            enabled = {
+                order = 0,
+                name = L["NPT_Enabled"] or "Enable Nameplate Trinket",
+                desc = L["NPT_Enabled_Desc"] or "Mirror enemy PvP CC remover (trinket) icon and cooldown onto the enemy nameplate above their healthbar.",
+                type = "toggle",
+                width = "full",
+            },
+            shownAs = {
+                order = 1,
+                name = L["NPT_ShownAs"] or "Display Mode",
+                desc = L["NPT_ShownAs_Desc"] or "Always: icon is always visible while the enemy has a trinket.\nUsed: only show during cooldown.",
+                type = "select",
+                style = "dropdown",
+                values = {
+                    always = L["NPT_ShownAs_Always"] or "Always",
+                    used   = L["NPT_ShownAs_Used"]   or "Used (only during cooldown)",
+                },
+                disabled = function(info)
+                    local d = info.handler.db.profile.nameplateTrinket
+                    return not (d and d.enabled)
+                end,
+            },
+            positioning = {
+                order = 2,
+                name = L["Positioning"],
+                type = "group",
+                inline = true,
+                disabled = function(info)
+                    local d = info.handler.db.profile.nameplateTrinket
+                    return not (d and d.enabled)
+                end,
+                args = {
+                    posX = { order = 1, name = L["Horizontal"], type = "range", min = -300, max = 300, softMin = -150, softMax = 150, step = 1 },
+                    posY = { order = 2, name = L["Vertical"],   type = "range", min = -300, max = 300, softMin = -150, softMax = 150, step = 1 },
+                },
+            },
+            sizing = {
+                order = 3,
+                name = L["Sizing"],
+                type = "group",
+                inline = true,
+                disabled = function(info)
+                    local d = info.handler.db.profile.nameplateTrinket
+                    return not (d and d.enabled)
+                end,
+                args = {
+                    size       = { order = 1, name = L["Size"],            type = "range", min = 8,   max = 80,  step = 1 },
+                    fontSize   = { order = 2, name = L["Option_FontSize"], type = "range", min = 6,   max = 32,  step = 1 },
+                    borderSize = { order = 3, name = L["BorderSize"] or "Border Size", type = "range", min = 1, max = 6, step = 1 },
+                    alpha      = { order = 4, name = L["DR_NP_Alpha"] or "Alpha", type = "range", min = 0.1, max = 1.0, step = 0.05, isPercent = true },
+                },
+            },
+            test = {
+                order = 4,
+                name = L["NPT_Test"] or "Test",
+                type = "group",
+                inline = true,
+                disabled = function(info)
+                    local d = info.handler.db.profile.nameplateTrinket
+                    return not (d and d.enabled)
+                end,
+                args = {
+                    showTest = {
+                        order = 1,
+                        name = L["NPT_Test_Show"] or "Show Test",
+                        desc = L["NPT_Test_Show_Desc"] or "Show a test trinket icon on the nearest enemy nameplate.",
+                        type = "execute",
+                        func = function() if self.ShowTestNameplateTrinket then self:ShowTestNameplateTrinket() end end,
+                    },
+                    hideTest = {
+                        order = 2,
+                        name = L["NPT_Test_Hide"] or "Hide Test",
+                        type = "execute",
+                        func = function() if self.HideTestNameplateTrinket then self:HideTestNameplateTrinket() end end,
+                    },
+                },
+            },
+        },
+    }
+
+    optionsTable.petBar = {
+        order = 8,
+        name = (L["Category_PetBar"] or "Pet Bar") .. " |cffff8000(DIY)|r",
+        type = "group",
+        get = function(info)
+            local petBar = info.handler.db.profile.layoutSettings[layoutName].petBar
+            if petBar then
+                return petBar[info[#info]]
+            end
+        end,
+        set = function(info, val)
+            local petBar = info.handler.db.profile.layoutSettings[layoutName].petBar
+            if not petBar then
+                info.handler.db.profile.layoutSettings[layoutName].petBar = {}
+                petBar = info.handler.db.profile.layoutSettings[layoutName].petBar
+            end
+            self:UpdatePetBarSettings(petBar, info, val)
+        end,
+        args = {
+            enabled = {
+                order = 0,
+                name = L["PetBar_Enable"] or "Enable Pet Bar",
+                desc = L["PetBar_Enable_Desc"] or "",
+                type = "toggle",
+                width = "full",
+                get = function(info)
+                    local pb = info.handler.db.profile.layoutSettings[layoutName].petBar
+                    return pb and pb.enabled
+                end,
+                set = function(info, val)
+                    local pb = info.handler.db.profile.layoutSettings[layoutName].petBar
+                    if not pb then
+                        info.handler.db.profile.layoutSettings[layoutName].petBar = {}
+                        pb = info.handler.db.profile.layoutSettings[layoutName].petBar
+                    end
+                    pb.enabled = val
+                    self:UpdatePetBarSettings(pb)
+                    local _, instanceType = IsInInstance()
+                    if instanceType ~= "arena" and info.handler.arena1:IsShown() then
+                        info.handler:Test()
+                    end
+                end,
+            },
+            positioning = {
+                order = 1,
+                name = L["Positioning"],
+                type = "group",
+                inline = true,
+                args = {
+                    posX = { order = 1, name = L["Horizontal"], type = "range", min = -500, max = 500, softMin = -250, softMax = 250, step = 0.1, bigStep = 1 },
+                    posY = { order = 2, name = L["Vertical"], type = "range", min = -500, max = 500, softMin = -250, softMax = 250, step = 0.1, bigStep = 1 },
+                },
+            },
+            sizing = {
+                order = 2,
+                name = L["Sizing"],
+                type = "group",
+                inline = true,
+                args = {
+                    scale = { order = 1, name = L["Scale"], type = "range", min = 0.1, max = 5.0, softMin = 0.3, softMax = 3.0, step = 0.01, bigStep = 0.01, isPercent = true },
+                    width = { order = 2, name = L["Width"], type = "range", min = 10, max = 400, step = 1 },
+                    height = { order = 3, name = L["Height"], type = "range", min = 4, max = 100, step = 1 },
+                },
+            },
+            appearance = {
+                order = 3,
+                name = L["PetBar_Appearance"] or "Appearance",
+                type = "group",
+                inline = true,
+                args = {
+                    classColor = { order = 1, name = L["PetBar_ClassColor"] or "Class Color", desc = L["PetBar_ClassColor_Desc"] or "", type = "toggle" },
+                    color = {
+                        order = 2,
+                        name = L["PetBar_Color"] or "Bar Color", desc = L["PetBar_Color_Desc"] or "",
+                        type = "color", hasAlpha = true,
+                        get = function(info)
+                            local petBar = info.handler.db.profile.layoutSettings[layoutName].petBar
+                            local c = petBar and petBar.color or {0, 1, 0, 1}
+                            return c[1], c[2], c[3], c[4]
+                        end,
+                        set = function(info, r, g, b, a)
+                            local petBar = info.handler.db.profile.layoutSettings[layoutName].petBar
+                            if not petBar then
+                                info.handler.db.profile.layoutSettings[layoutName].petBar = {}
+                                petBar = info.handler.db.profile.layoutSettings[layoutName].petBar
+                            end
+                            petBar.color = {r, g, b, a}
+                            self:UpdatePetBarSettings(petBar)
+                        end,
+                    },
+                    bgColor = {
+                        order = 3,
+                        name = L["PetBar_BgColor"] or "Background Color", desc = L["PetBar_BgColor_Desc"] or "",
+                        type = "color", hasAlpha = true,
+                        get = function(info)
+                            local petBar = info.handler.db.profile.layoutSettings[layoutName].petBar
+                            local c = petBar and petBar.bgColor or {0, 0, 0, 0.6}
+                            return c[1], c[2], c[3], c[4]
+                        end,
+                        set = function(info, r, g, b, a)
+                            local petBar = info.handler.db.profile.layoutSettings[layoutName].petBar
+                            if not petBar then
+                                info.handler.db.profile.layoutSettings[layoutName].petBar = {}
+                                petBar = info.handler.db.profile.layoutSettings[layoutName].petBar
+                            end
+                            petBar.bgColor = {r, g, b, a}
+                            self:UpdatePetBarSettings(petBar)
+                        end,
+                    },
+                    texture = {
+                        order = 4, name = L["PetBar_Texture"] or "Texture",
+                        type = "select", style = "dropdown",
+                        dialogControl = "LSM30_Statusbar", values = StatusbarValues,
+                        get = function(info)
+                            local petBar = info.handler.db.profile.layoutSettings[layoutName].petBar
+                            return petBar and petBar.texture or "sArena Default"
+                        end,
+                        set = function(info, key)
+                            local petBar = info.handler.db.profile.layoutSettings[layoutName].petBar
+                            if not petBar then
+                                info.handler.db.profile.layoutSettings[layoutName].petBar = {}
+                                petBar = info.handler.db.profile.layoutSettings[layoutName].petBar
+                            end
+                            petBar.texture = key
+                            self:UpdatePetBarSettings(petBar)
+                        end,
+                    },
+                    bgBarTexture = {
+                        order = 5, name = L["PetBar_BgTexture"] or "Background Texture",
+                        type = "select", style = "dropdown",
+                        dialogControl = "LSM30_Statusbar", values = StatusbarValues,
+                        get = function(info)
+                            local petBar = info.handler.db.profile.layoutSettings[layoutName].petBar
+                            return petBar and petBar.bgBarTexture or "Solid"
+                        end,
+                        set = function(info, key)
+                            local petBar = info.handler.db.profile.layoutSettings[layoutName].petBar
+                            if not petBar then
+                                info.handler.db.profile.layoutSettings[layoutName].petBar = {}
+                                petBar = info.handler.db.profile.layoutSettings[layoutName].petBar
+                            end
+                            petBar.bgBarTexture = key
+                            self:UpdatePetBarSettings(petBar)
+                        end,
+                    },
+                },
+            },
+            textOptions = {
+                order = 4,
+                name = L["PetBar_TextOptions"] or "Text Options",
+                type = "group",
+                inline = true,
+                args = {
+                    showName = { order = 1, name = L["PetBar_ShowName"] or "Show Name", desc = L["PetBar_ShowName_Desc"] or "", type = "toggle" },
+                    showHealthText = { order = 2, name = L["PetBar_ShowHealthText"] or "Show Health Text", desc = L["PetBar_ShowHealthText_Desc"] or "", type = "toggle" },
+                    healthTextPercent = { order = 3, name = L["PetBar_HealthPercent"] or "Show Percentage", desc = L["PetBar_HealthPercent_Desc"] or "", type = "toggle" },
+                },
+            },
+        },
+    }
+
+    optionsTable.selfDR = {
+        order = 11,
+        name = (L["Category_SelfDR"] or "Self DR") .. " |cffff8000(DIY)|r",
+        type = "group",
+        args = {
+            enabled = {
+                order = 1, name = L["SelfDR_Enable"] or "Enable Self DR",
+                desc = L["SelfDR_Enable_Desc"] or "",
+                type = "toggle", width = "full",
+                get = function(info) return info.handler.db.profile.selfDR and info.handler.db.profile.selfDR.enabled end,
+                set = function(info, val)
+                    info.handler.db.profile.selfDR = info.handler.db.profile.selfDR or {}
+                    info.handler.db.profile.selfDR.enabled = val
+                    if info.handler.EnableSelfDR then info.handler:EnableSelfDR() end
+                    if info.handler.testMode then
+                        if val and info.handler.ShowTestSelfDR then info.handler:ShowTestSelfDR()
+                        elseif info.handler.HideTestSelfDR then info.handler:HideTestSelfDR() end
+                    end
+                end,
+            },
+            dragHint = {
+                order = 1.5,
+                type = "description",
+                name = "|cff00ff00" .. (L["SelfDR_DragHint"] or "Use Test Mode or /selfdr test to drag DR icons to your preferred position.") .. "|r",
+            },
+            zoneHeader = {
+                order = 1.6,
+                type = "description",
+                fontSize = "large",
+                name = L["SelfDR_EnableTrackingIn"] or "Enable Tracking In:",
+                disabled = function(info) return not (info.handler.db.profile.selfDR and info.handler.db.profile.selfDR.enabled) end,
+            },
+            enableInArena = {
+                order = 1.7,
+                type = "toggle",
+                name = L["SelfDR_Arenas"] or "Arenas",
+                disabled = function(info) return not (info.handler.db.profile.selfDR and info.handler.db.profile.selfDR.enabled) end,
+                get = function(info) return info.handler.db.profile.selfDR and info.handler.db.profile.selfDR.enableInArena ~= false end,
+                set = function(info, val)
+                    info.handler.db.profile.selfDR = info.handler.db.profile.selfDR or {}
+                    info.handler.db.profile.selfDR.enableInArena = val
+                    if info.handler.EnableSelfDR then info.handler:EnableSelfDR() end
+                end,
+            },
+            enableInBattleground = {
+                order = 1.8,
+                type = "toggle",
+                name = L["SelfDR_Battlegrounds"] or "Battlegrounds",
+                disabled = function(info) return not (info.handler.db.profile.selfDR and info.handler.db.profile.selfDR.enabled) end,
+                get = function(info) return info.handler.db.profile.selfDR and info.handler.db.profile.selfDR.enableInBattleground == true end,
+                set = function(info, val)
+                    info.handler.db.profile.selfDR = info.handler.db.profile.selfDR or {}
+                    info.handler.db.profile.selfDR.enableInBattleground = val
+                    if info.handler.EnableSelfDR then info.handler:EnableSelfDR() end
+                end,
+            },
+            enableInWorld = {
+                order = 1.9,
+                type = "toggle",
+                name = L["SelfDR_World"] or "World",
+                disabled = function(info) return not (info.handler.db.profile.selfDR and info.handler.db.profile.selfDR.enabled) end,
+                get = function(info) return info.handler.db.profile.selfDR and info.handler.db.profile.selfDR.enableInWorld == true end,
+                set = function(info, val)
+                    info.handler.db.profile.selfDR = info.handler.db.profile.selfDR or {}
+                    info.handler.db.profile.selfDR.enableInWorld = val
+                    if info.handler.EnableSelfDR then info.handler:EnableSelfDR() end
+                end,
+            },
+            sizing = {
+                order = 2,
+                name = L["Sizing"],
+                type = "group",
+                inline = true,
+                disabled = function(info) return not (info.handler.db.profile.selfDR and info.handler.db.profile.selfDR.enabled) end,
+                args = {
+                    iconSize = {
+                        order = 1, name = L["Size"], type = "range", min = 20, max = 80, step = 1,
+                        get = function(info) return info.handler.db.profile.selfDR and info.handler.db.profile.selfDR.iconSize or 36 end,
+                        set = function(info, val)
+                            info.handler.db.profile.selfDR = info.handler.db.profile.selfDR or {}
+                            info.handler.db.profile.selfDR.iconSize = val
+                            if info.handler.EnableSelfDR then info.handler:EnableSelfDR() end
+                            if info.handler.testMode and info.handler.ShowTestSelfDR then info.handler:ShowTestSelfDR() end
+                        end,
+                    },
+                    iconPadding = {
+                        order = 2, name = L["Spacing"], type = "range", min = 0, max = 20, step = 1,
+                        get = function(info) return info.handler.db.profile.selfDR and info.handler.db.profile.selfDR.iconPadding or 4 end,
+                        set = function(info, val)
+                            info.handler.db.profile.selfDR = info.handler.db.profile.selfDR or {}
+                            info.handler.db.profile.selfDR.iconPadding = val
+                            if info.handler.EnableSelfDR then info.handler:EnableSelfDR() end
+                            if info.handler.testMode and info.handler.ShowTestSelfDR then info.handler:ShowTestSelfDR() end
+                        end,
+                    },
+                    fontSize = {
+                        order = 3, name = L["Option_FontSize"], type = "range", min = 8, max = 32, step = 1,
+                        get = function(info) return info.handler.db.profile.selfDR and info.handler.db.profile.selfDR.fontSize or 14 end,
+                        set = function(info, val)
+                            info.handler.db.profile.selfDR = info.handler.db.profile.selfDR or {}
+                            info.handler.db.profile.selfDR.fontSize = val
+                            if info.handler.EnableSelfDR then info.handler:EnableSelfDR() end
+                            if info.handler.testMode and info.handler.ShowTestSelfDR then info.handler:ShowTestSelfDR() end
+                        end,
+                    },
+                    growthDirection = {
+                        order = 4, name = L["Option_GrowthDirection"], type = "select", style = "dropdown",
+                        values = { RIGHT = L["Right"] or "Right", LEFT = L["Left"] or "Left", UP = L["Up"] or "Up", DOWN = L["Down"] or "Down" },
+                        get = function(info) return info.handler.db.profile.selfDR and info.handler.db.profile.selfDR.growthDirection or "RIGHT" end,
+                        set = function(info, val)
+                            info.handler.db.profile.selfDR = info.handler.db.profile.selfDR or {}
+                            info.handler.db.profile.selfDR.growthDirection = val
+                            if info.handler.EnableSelfDR then info.handler:EnableSelfDR() end
+                            if info.handler.testMode and info.handler.ShowTestSelfDR then info.handler:ShowTestSelfDR() end
+                        end,
+                    },
+                    showDRText = {
+                        order = 5, name = L["SelfDR_ShowDRText"] or "Show DR Text (50%/IMM)", type = "toggle",
+                        get = function(info) return info.handler.db.profile.selfDR and info.handler.db.profile.selfDR.showDRText ~= false end,
+                        set = function(info, val)
+                            info.handler.db.profile.selfDR = info.handler.db.profile.selfDR or {}
+                            info.handler.db.profile.selfDR.showDRText = val
+                            if info.handler.EnableSelfDR then info.handler:EnableSelfDR() end
+                            if info.handler.testMode and info.handler.ShowTestSelfDR then info.handler:ShowTestSelfDR() end
+                        end,
+                    },
+                    showCountdown = {
+                        order = 6, name = L["SelfDR_ShowCountdown"] or "Show Countdown", type = "toggle",
+                        get = function(info) return info.handler.db.profile.selfDR and info.handler.db.profile.selfDR.showCountdown ~= false end,
+                        set = function(info, val)
+                            info.handler.db.profile.selfDR = info.handler.db.profile.selfDR or {}
+                            info.handler.db.profile.selfDR.showCountdown = val
+                            if info.handler.EnableSelfDR then info.handler:EnableSelfDR() end
+                            if info.handler.testMode and info.handler.ShowTestSelfDR then info.handler:ShowTestSelfDR() end
+                        end,
+                    },
+                    resetPos = {
+                        order = 7, name = L["SelfDR_ResetPos"] or "Reset Position", type = "execute",
+                        func = function(info)
+                            info.handler.db.profile.selfDR = info.handler.db.profile.selfDR or {}
+                            info.handler.db.profile.selfDR.containerPos = { point = "CENTER", relPoint = "CENTER", x = 0, y = 200 }
+                            if info.handler.EnableSelfDR then info.handler:EnableSelfDR() end
+                            if info.handler.testMode and info.handler.ShowTestSelfDR then info.handler:ShowTestSelfDR() end
+                        end,
+                    },
+                },
+            },
+            categories = {
+                order = 3,
+                name = L["Option_Categories"] or "Categories",
+                type = "group",
+                inline = true,
+                disabled = function(info) return not (info.handler.db.profile.selfDR and info.handler.db.profile.selfDR.enabled) end,
+                args = {
+                    stun = { order = 1, name = L["SelfDR_Cat_Stun"] or "Stun", type = "toggle",
+                        get = function(info) local c = info.handler.db.profile.selfDR and info.handler.db.profile.selfDR.categories; return c and c.stun ~= false end,
+                        set = function(info, val) info.handler.db.profile.selfDR = info.handler.db.profile.selfDR or {}; info.handler.db.profile.selfDR.categories = info.handler.db.profile.selfDR.categories or {}; info.handler.db.profile.selfDR.categories.stun = val; if info.handler.testMode and info.handler.ShowTestSelfDR then info.handler:ShowTestSelfDR() end end },
+                    disorient = { order = 2, name = L["SelfDR_Cat_Confuse"] or "Disorient", type = "toggle",
+                        get = function(info) local c = info.handler.db.profile.selfDR and info.handler.db.profile.selfDR.categories; return c and c.disorient ~= false end,
+                        set = function(info, val) info.handler.db.profile.selfDR = info.handler.db.profile.selfDR or {}; info.handler.db.profile.selfDR.categories = info.handler.db.profile.selfDR.categories or {}; info.handler.db.profile.selfDR.categories.disorient = val; if info.handler.testMode and info.handler.ShowTestSelfDR then info.handler:ShowTestSelfDR() end end },
+                    incapacitate = { order = 3, name = L["SelfDR_Cat_Incap"] or "Incapacitate", type = "toggle",
+                        get = function(info) local c = info.handler.db.profile.selfDR and info.handler.db.profile.selfDR.categories; return c and c.incapacitate ~= false end,
+                        set = function(info, val) info.handler.db.profile.selfDR = info.handler.db.profile.selfDR or {}; info.handler.db.profile.selfDR.categories = info.handler.db.profile.selfDR.categories or {}; info.handler.db.profile.selfDR.categories.incapacitate = val; if info.handler.testMode and info.handler.ShowTestSelfDR then info.handler:ShowTestSelfDR() end end },
+                    root = { order = 4, name = L["SelfDR_Cat_Root"] or "Root", type = "toggle",
+                        get = function(info) local c = info.handler.db.profile.selfDR and info.handler.db.profile.selfDR.categories; return c and c.root ~= false end,
+                        set = function(info, val) info.handler.db.profile.selfDR = info.handler.db.profile.selfDR or {}; info.handler.db.profile.selfDR.categories = info.handler.db.profile.selfDR.categories or {}; info.handler.db.profile.selfDR.categories.root = val; if info.handler.testMode and info.handler.ShowTestSelfDR then info.handler:ShowTestSelfDR() end end },
+                    silence = { order = 5, name = L["SelfDR_Cat_Silence"] or "Silence", type = "toggle",
+                        get = function(info) local c = info.handler.db.profile.selfDR and info.handler.db.profile.selfDR.categories; return c and c.silence end,
+                        set = function(info, val) info.handler.db.profile.selfDR = info.handler.db.profile.selfDR or {}; info.handler.db.profile.selfDR.categories = info.handler.db.profile.selfDR.categories or {}; info.handler.db.profile.selfDR.categories.silence = val; if info.handler.testMode and info.handler.ShowTestSelfDR then info.handler:ShowTestSelfDR() end end },
+                    knockback = { order = 6, name = L["SelfDR_Cat_Knock"] or "Knockback", type = "toggle",
+                        get = function(info) local c = info.handler.db.profile.selfDR and info.handler.db.profile.selfDR.categories; return c and c.knockback end,
+                        set = function(info, val) info.handler.db.profile.selfDR = info.handler.db.profile.selfDR or {}; info.handler.db.profile.selfDR.categories = info.handler.db.profile.selfDR.categories or {}; info.handler.db.profile.selfDR.categories.knockback = val; if info.handler.testMode and info.handler.ShowTestSelfDR then info.handler:ShowTestSelfDR() end end },
+                    disarm = { order = 7, name = L["SelfDR_Cat_Disarm"] or "Disarm", type = "toggle",
+                        get = function(info) local c = info.handler.db.profile.selfDR and info.handler.db.profile.selfDR.categories; return c and c.disarm end,
+                        set = function(info, val) info.handler.db.profile.selfDR = info.handler.db.profile.selfDR or {}; info.handler.db.profile.selfDR.categories = info.handler.db.profile.selfDR.categories or {}; info.handler.db.profile.selfDR.categories.disarm = val; if info.handler.testMode and info.handler.ShowTestSelfDR then info.handler:ShowTestSelfDR() end end },
+                },
+            },
+        },
+    }
+
     return optionsTable
 end
 
@@ -6011,6 +6720,36 @@ else
         childGroups = "tab",
         validate = validateCombat,
         args = {
+            topAuthor = {
+                order = 0.3,
+                type = "description",
+                name = "|cffff8800DIY:|r |cff00ff96DK-姜世离(燃烧之刃)|r  ",
+                fontSize = "medium",
+                width = 1.2,
+            },
+            topDonate = {
+                order = 0.4,
+                type = "execute",
+                name = "|cffff8800" .. (L["Donate_Button"] or "Donate") .. "|r",
+                desc = L["Donate_ButtonDesc"] or "Support the DIY author",
+                width = 0.5,
+                func = function()
+                    local popup = GetOrCreateDonatePopup()
+                    if popup:IsShown() then
+                        popup:Hide()
+                    else
+                        popup:Show()
+                        popup.editBox:SetText(donateURL)
+                        popup.editBox:SetCursorPosition(0)
+                    end
+                end,
+            },
+            topSpacer = {
+                order = 0.6,
+                type = "description",
+                name = " ",
+                width = "full",
+            },
             setLayout = {
                 order = 1,
                 name = L["Option_Layout"],
@@ -10136,6 +10875,161 @@ else
                                 sArena_ReloadedDB.reOpenOptions = true
                             end
                         end,
+                    },
+                },
+            },
+            changelog = {
+                order = 10,
+                name = "|cff00ff00DIY \230\155\180\230\150\176\232\174\176\229\189\149|r",
+                type = "group",
+                args = {
+                    header = {
+                        order = 0.5,
+                        type = "description",
+                        fontSize = "large",
+                        name = "|cffff8800sArena Reloaded DIY|r",
+                    },
+                    about = {
+                        order = 0.6,
+                        type = "description",
+                        fontSize = "medium",
+                        name = "\n|cff888888" .. (L["Changelog_About"] or "DIY: DK-jiangshili (Burning Blade CN)") .. "|r",
+                    },
+                    sep0 = { order = 0.7, type = "header", name = "" },
+                    changelogTitle111 = {
+                        order = 0.71,
+                        type = "description",
+                        fontSize = "large",
+                        name = "|cffffd700v1.1.1|r",
+                    },
+                    info111 = {
+                        order = 0.72,
+                        type = "description",
+                        fontSize = "medium",
+                        name = "\n" .. (L["Changelog_v111"] or "Restore DIY modules after upstream merge") .. "\n",
+                    },
+                    sep0_111 = { order = 0.73, type = "header", name = "" },
+                    changelogTitle109 = {
+                        order = 0.701,
+                        type = "description",
+                        fontSize = "large",
+                        name = "|cffffd700v1.0.9|r",
+                    },
+                    info109 = {
+                        order = 0.702,
+                        type = "description",
+                        fontSize = "medium",
+                        name = "\n" .. (L["Changelog_v109"] or "Fix nameplate DR icon not turning red / glowing when target is immune in arena, and silence the related combat Lua error") .. "\n",
+                    },
+                    sep0_125 = { order = 0.703, type = "header", name = "" },
+                    changelogTitle108 = {
+                        order = 0.705,
+                        type = "description",
+                        fontSize = "large",
+                        name = "|cffffd700v1.0.8|r",
+                    },
+                    info108 = {
+                        order = 0.707,
+                        type = "description",
+                        fontSize = "medium",
+                        name = "\n" .. (L["Changelog_v108"] or "Fix nameplate DR size/alpha mismatch in arena (align with MidnightDR)") .. "\n",
+                    },
+                    sep0_25 = { order = 0.709, type = "header", name = "" },
+                    changelogTitle107 = {
+                        order = 0.71,
+                        type = "description",
+                        fontSize = "large",
+                        name = "|cffffd700v1.0.7|r",
+                    },
+                    info107 = {
+                        order = 0.72,
+                        type = "description",
+                        fontSize = "medium",
+                        name = "\n" .. (L["Changelog_v107"] or "Add focus-target prediction (heuristic, may be inaccurate)") .. "\n",
+                    },
+                    sep0_5 = { order = 0.73, type = "header", name = "" },
+                    changelogTitle106 = {
+                        order = 0.75,
+                        type = "description",
+                        fontSize = "large",
+                        name = "|cffffd700v1.0.6|r",
+                    },
+                    info106 = {
+                        order = 0.78,
+                        type = "description",
+                        fontSize = "medium",
+                        name = "\n" .. (L["Changelog_v106"] or "Rebase to upstream sArena Reloaded 2.5.1, full zhCN localization") .. "\n",
+                    },
+                    sep1 = { order = 0.8, type = "header", name = "" },
+                    changelogTitle = {
+                        order = 0.85,
+                        type = "description",
+                        fontSize = "large",
+                        name = "|cffffd700v1.0.5|r",
+                    },
+                    info = {
+                        order = 1,
+                        type = "description",
+                        fontSize = "medium",
+                        name = "\n" .. (L["Changelog_v105"] or "") .. "\n",
+                    },
+                    sep3 = { order = 1.5, type = "header", name = "" },
+                    prevTitle105 = {
+                        order = 1.55,
+                        type = "description",
+                        fontSize = "large",
+                        name = "|cffffd700v1.0.4|r",
+                    },
+                    prevInfo105 = {
+                        order = 1.6,
+                        type = "description",
+                        fontSize = "medium",
+                        name = "\n" .. (L["Changelog_v104"] or "") .. "\n",
+                    },
+                    sep4 = { order = 1.65, type = "header", name = "" },
+                    prevTitle104 = {
+                        order = 1.7,
+                        type = "description",
+                        fontSize = "large",
+                        name = "|cffffd700v1.0.3|r",
+                    },
+                    prevInfo104 = {
+                        order = 1.8,
+                        type = "description",
+                        fontSize = "medium",
+                        name = "\n" .. (L["Changelog_v103"] or "") .. "\n",
+                    },
+                    sep5 = { order = 1.85, type = "header", name = "" },
+                    prevTitle103 = {
+                        order = 1.9,
+                        type = "description",
+                        fontSize = "large",
+                        name = "|cffffd700v1.0.2|r",
+                    },
+                    prevInfo103 = {
+                        order = 2.0,
+                        type = "description",
+                        fontSize = "medium",
+                        name = "\n" .. (L["Changelog_v102"] or "") .. "\n",
+                    },
+                    sep6 = { order = 2.05, type = "header", name = "" },
+                    prevTitle = {
+                        order = 2.1,
+                        type = "description",
+                        fontSize = "large",
+                        name = "|cffffd700v1.0.1|r",
+                    },
+                    prevInfo = {
+                        order = 2.2,
+                        type = "description",
+                        fontSize = "medium",
+                        name = "\n" .. (L["Changelog_v101"] or "") .. "\n",
+                    },
+                    sep2 = { order = 2.5, type = "header", name = "" },
+                    credits = {
+                        order = 3,
+                        type = "description",
+                        name = "\n" .. (L["Changelog_Author"] or "") .. "\n" .. (L["Changelog_References"] or ""),
                     },
                 },
             }

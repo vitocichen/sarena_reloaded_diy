@@ -48,6 +48,7 @@ local iconsFrame = nil
 local drFrames = {}
 local drState = {}
 local testTicker = nil
+local ResetCatState, SortIcons
 
 local function GetDB()
     if not _parentDb then return nil end
@@ -192,7 +193,7 @@ local function CreateIcons()
     end
 end
 
-function ResetCatState(cat)
+ResetCatState = function(cat)
     local st = drState[cat]
     if st then
         st.isActive = false
@@ -220,7 +221,7 @@ local function ResetAll()
     SortIcons()
 end
 
-function SortIcons()
+SortIcons = function()
     if not iconsFrame then return end
     local db = GetDB()
     local scale = db and (db.iconSize or 36) / BASE_ICON_SIZE or 1

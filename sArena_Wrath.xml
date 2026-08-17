@@ -46,6 +46,11 @@
     <Script file="Modules\Trinkets.lua"/>
     <Script file="Modules\ModernCastbar.lua"/>
     <Script file="Modules\Masque.lua"/>
+    <!-- DIY modules -->
+    <Script file="Modules\PetBar.lua"/>
+    <Script file="Modules\SelfDR.lua"/>
+    <Script file="Modules\HealthBarDR.lua"/>
+    <Script file="Modules\NameplateTrinket.lua"/>
     <Script file="Layouts\BlizzArena.lua"/>
     <Script file="Layouts\BlizzRaid.lua"/>
     <Script file="Layouts\BlizzRetail.lua"/>

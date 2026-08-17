@@ -116,19 +116,18 @@ local npTokenToArena = {}
 -- MDR-compatible plate token resolution: try multiple possible field names.
 local function PlateToken(np)
     local tok = SafeIndex(np, "namePlateUnitToken")
-    if tok then return tok end
-    local tok2 = SafeIndex(np, "unitToken")
-    if tok2 then return tok2 end
-    local uf = SafeIndex(np, "UnitFrame") or SafeIndex(np, "unitFrame")
-    tok = uf and SafeIndex(uf, "unit") or nil
-    if tok then return tok end
-    -- MDR: also check TPFrame as an intermediate
-    local tp = SafeIndex(np, "TPFrame")
-    if tp then
-        tok = SafeIndex(tp, "unit") or SafeIndex(tp, "namePlateUnitToken")
-        if tok then return tok end
+        or SafeIndex(np, "unitToken")
+    if not tok then
+        local uf = SafeIndex(np, "UnitFrame") or SafeIndex(np, "unitFrame")
+        tok = uf and SafeIndex(uf, "unit") or nil
     end
-    return nil
+    if not tok then
+        local tp = SafeIndex(np, "TPFrame")
+        if tp then
+            tok = SafeIndex(tp, "unit") or SafeIndex(tp, "namePlateUnitToken")
+        end
+    end
+    return SafeCloneString(tok)
 end
 
 -- MDR: determine whether a frame qualifies as a nameplate anchor candidate.
@@ -764,11 +763,6 @@ function sArenaMixin:ShowTestNameplateDR()
     local borderSz = db.borderSize or 1
     local drAlpha = db.alpha or 1.0
 
-    local us = (anchor.GetEffectiveScale and anchor:GetEffectiveScale()) or 1
-    local ps = (UIParent.GetEffectiveScale and UIParent:GetEffectiveScale()) or 1
-    local sc = us / ps
-    if sc < 0.1 then sc = 0.1 elseif sc > 10 then sc = 10 end
-
     self._testNPDRFrames = self._testNPDRFrames or {}
     self._testNPDRCDs = self._testNPDRCDs or {}
 
@@ -780,8 +774,13 @@ function sArenaMixin:ShowTestNameplateDR()
             self._testNPDRFrames[n] = f
         end
 
+        if f.GetParent and f:GetParent() ~= anchor then
+            pcall(function() f:SetParent(anchor) end)
+        end
+        pcall(function() f:SetIgnoreParentScale(false) end)
+        pcall(function() f:SetIgnoreParentAlpha(true) end)
         f:SetSize(size, size)
-        f:SetScale(sc)
+        f:SetScale(1)
         f:SetAlpha(drAlpha)
         f:ClearAllPoints()
 
@@ -1067,15 +1066,21 @@ local function WorldDR_IsEnabledForZone(db)
 end
 
 local function WorldDR_BuildCompositeKey(unit)
-    if not UnitExists(unit) then return nil end
-    local ok1, h = pcall(UnitHonorLevel, unit)
-    local ok2, _, classToken = pcall(UnitClass, unit)
-    local ok3, raceName = pcall(UnitRace, unit)
-    if not ok2 or not classToken then return nil end
+    if type(unit) ~= "string" then return nil end
+    local honor = SafeUnitHonorLevel(unit)
+    local classToken = SafeUnitClassToken(unit)
+    local raceName = SafeUnitRaceName(unit)
+    if type(classToken) ~= "string" then return nil end
+    if type(honor) ~= "number" then honor = 0 end
+    if type(raceName) ~= "string" then raceName = "?" end
     local side = "E"
-    local ok4, fr = pcall(UnitIsFriend, "player", unit)
-    if ok4 and fr then side = "F" end
-    return tostring(h or 0) .. ":" .. tostring(classToken) .. ":" .. tostring(raceName or "?") .. ":" .. side
+    local okFr, fr = pcall(UnitIsFriend, "player", unit)
+    if okFr and type(fr) == "boolean" and not IsSecret(fr) and fr then
+        side = "F"
+    end
+    local ok, key = pcall(string.format, "%d:%s:%s:%s", honor, classToken, raceName, side)
+    if not ok or type(key) ~= "string" then return nil end
+    return key
 end
 
 local function WorldDR_GetSpellTexture(spellID)
@@ -1101,7 +1106,7 @@ local function WorldDR_ScanNameplates()
     for i = 1, #plates do
         local plate = plates[i]
         if plate and not IsForbidden(plate) then
-            local unit = SafeIndex(plate, "namePlateUnitToken") or SafeIndex(plate, "unitToken")
+            local unit = PlateToken(plate)
             if type(unit) == "string" then
                 if inBG then
                     local key = WorldDR_BuildCompositeKey(unit)
@@ -1170,6 +1175,7 @@ local function WorldDR_EnsureWidget(unit)
 
     local uf = SafeIndex(plate, "UnitFrame") or SafeIndex(plate, "unitFrame") or plate
     if (not uf) or IsForbidden(uf) then return nil end
+    local anchor = GetNameplateAnchorFrame(plate) or uf
 
     local w = worldDRState.widgets[unit]
     if w and IsForbidden(w) then
@@ -1187,9 +1193,10 @@ local function WorldDR_EnsureWidget(unit)
         w.unit = unit
         w.plate = plate
         w.uf = uf
+        w.anchor = anchor
 
         w.icons = {}
-        for i = 1, 5 do
+        for i = 1, WorldDR_GetMaxIcons() do
             local f = CreateFrame("Frame", nil, w)
             f:SetFrameStrata("HIGH")
             f:SetFrameLevel(w:GetFrameLevel() + 1)
@@ -1234,6 +1241,7 @@ local function WorldDR_EnsureWidget(unit)
     else
         w.plate = plate
         w.uf = uf
+        w.anchor = anchor
     end
 
     return w
@@ -1255,19 +1263,12 @@ local function WorldDR_ApplyLayout(w)
     local GROW_MAP = { [1] = "DOWN", [2] = "UP", [3] = "RIGHT", [4] = "LEFT" }
     local grow = GROW_MAP[growNum] or "RIGHT"
 
+    local parentFrame = w.plate or w.uf or UIParent
+    local pointFrame = w.anchor or w.uf or w.plate or UIParent
     w:ClearAllPoints()
-    if w.uf then
-        w:SetPoint("CENTER", w.uf, "CENTER", px, py)
-    elseif w.plate then
-        w:SetPoint("CENTER", w.plate, "CENTER", px, py)
-    else
-        w:SetPoint("CENTER", UIParent, "CENTER", px, py)
-    end
+    w:SetPoint("CENTER", pointFrame, "CENTER", px, py)
 
-    -- MDR-compatible scale sync:
-    -- parent the widget to the nameplate UnitFrame (or plate) and inherit its
-    -- scale naturally instead of copying us/ps.
-    local parentFrame = w.uf or w.plate or UIParent
+    -- MDR-compatible scale sync: parent to the nameplate root and inherit scale.
     if w.GetParent and w.SetParent and parentFrame and w:GetParent() ~= parentFrame then
         pcall(function() w:SetParent(parentFrame) end)
     end

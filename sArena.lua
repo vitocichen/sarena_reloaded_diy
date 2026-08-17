@@ -479,6 +479,8 @@ function sArenaMixin:OnEvent(event, ...)
             local frame = self[unit]
             frame:UpdateTarget(frame.unit)
         end
+        if self.RefreshAllNameplateDR then self:RefreshAllNameplateDR() end
+        if self.RefreshAllNameplateTrinket then self:RefreshAllNameplateTrinket() end
 
     elseif (event == "PLAYER_FOCUS_CHANGED") then
         for i = 1, self.maxArenaOpponents do
@@ -486,6 +488,24 @@ function sArenaMixin:OnEvent(event, ...)
             local frame = self[unit]
             frame:UpdateFocus(frame.unit)
         end
+        if self.RefreshAllNameplateDR then self:RefreshAllNameplateDR() end
+        if self.RefreshAllNameplateTrinket then self:RefreshAllNameplateTrinket() end
+
+    elseif event == "NAME_PLATE_UNIT_ADDED" then
+        local token = ...
+        if self.RefreshAllNameplateDR then self:RefreshAllNameplateDR() end
+        if self.RefreshAllNameplateTrinket then self:RefreshAllNameplateTrinket() end
+        if self.WorldDR_OnNamePlateAdded then self:WorldDR_OnNamePlateAdded(token) end
+    elseif event == "NAME_PLATE_UNIT_REMOVED" then
+        local token = ...
+        if token and self.ClearNameplateAnchorCache then self:ClearNameplateAnchorCache(token) end
+        if self.RefreshAllNameplateDR then self:RefreshAllNameplateDR() end
+        if self.RefreshAllNameplateTrinket then self:RefreshAllNameplateTrinket() end
+        if self.WorldDR_OnNamePlateRemoved then self:WorldDR_OnNamePlateRemoved(token) end
+    elseif event == "UNIT_SPELLCAST_SUCCEEDED" then
+        if self.WorldDR_OnSpellcastSucceeded then self:WorldDR_OnSpellcastSucceeded(...) end
+    elseif event == "ZONE_CHANGED_NEW_AREA" then
+        if self.WorldDR_Evaluate then self:WorldDR_Evaluate() end
 
     elseif (event == "UNIT_TARGET") then
         for i = 1, self.maxArenaOpponents do
@@ -517,13 +537,18 @@ function sArenaMixin:OnEvent(event, ...)
             end)
         end
 
-
+        -- DIY: register zone change for World DR evaluation
+        self:RegisterEvent("ZONE_CHANGED_NEW_AREA")
         self:UnregisterEvent("PLAYER_LOGIN")
     elseif (event == "PLAYER_ENTERING_WORLD") then
         self:UpdatePartyFrameReferences(true)
         self:UpdateBlizzArenaFrameVisibility()
         self:SetMouseState(not self:IsInArena())
         self.testMode = nil
+        if self.HideTestNameplateDR then self:HideTestNameplateDR() end
+        if self.HideTestNameplateTrinket then self:HideTestNameplateTrinket() end
+        if self.ResetAllNameplateTrinket then self:ResetAllNameplateTrinket() end
+        if self.HideAllPetBars then self:HideAllPetBars() end
         self.arenaMatchStarted = nil
         self:RefreshAllAuraHighlights()
 
@@ -566,6 +591,12 @@ function sArenaMixin:OnEvent(event, ...)
             self:RegisterWidgetEvents()
             self:RegisterInterruptEvents()
             self:RegisterRangeCheckEvents()
+            -- DIY: Refresh nameplate trinket mirrors (lazy create + position)
+            if self.RefreshAllNameplateTrinket then self:RefreshAllNameplateTrinket() end
+            -- DIY: Nameplate DR + WorldDR
+            self:RegisterEvent("NAME_PLATE_UNIT_ADDED")
+            self:RegisterEvent("NAME_PLATE_UNIT_REMOVED")
+            if self.WorldDR_Stop then self:WorldDR_Stop() end
             self:UpdatePlayerSpec()
             if self.TestTitle then
                 self.TestTitle:Hide()
@@ -598,6 +629,19 @@ function sArenaMixin:OnEvent(event, ...)
             self:UnregisterWidgetEvents()
             self:UnregisterInterruptEvents()
             self:UnregisterRangeCheckEvents()
+            -- DIY: Outside arena, keep nameplate DR active for BG / world; clear arena-specific anchors
+            if self.ClearAllNameplateAnchors then self:ClearAllNameplateAnchors() end
+            for i = 1, self.maxArenaOpponents do
+                local frame = self["arena" .. i]
+                if frame and frame.HideAllNameplateDR then
+                    frame:HideAllNameplateDR()
+                end
+            end
+            if self.HideAllNameplateTrinket then self:HideAllNameplateTrinket() end
+            self:RegisterEvent("NAME_PLATE_UNIT_ADDED")
+            self:RegisterEvent("NAME_PLATE_UNIT_REMOVED")
+            self:RegisterEvent("UNIT_SPELLCAST_SUCCEEDED")
+            if self.WorldDR_Evaluate then self:WorldDR_Evaluate() end
             self:ResetShadowsightTimer()
         end
     elseif event == "CHAT_MSG_BG_SYSTEM_NEUTRAL" then
@@ -751,6 +795,8 @@ function sArenaMixin:Initialize()
             end)
         end
         self:SetLayout(_, db.profile.currentLayout)
+        if self.EnableSelfDR then self:EnableSelfDR() end
+        if self.RefreshAllNameplateTrinket then self:RefreshAllNameplateTrinket() end
     else
         self:PrintConflictMessage(conflictType)
     end
@@ -759,6 +805,7 @@ end
 function sArenaMixin:RefreshConfig()
     self:RebuildClickActionsOptions()
     self:SetLayout(_, db.profile.currentLayout)
+    if self.EnableSelfDR then self:EnableSelfDR() end
 end
 
 function sArenaMixin:PreviewLayout(layout)
@@ -835,6 +882,17 @@ function sArenaMixin:PreviewLayout(layout)
     self:UpdateCastbarVisibility()
     self:ApplyAllClickActions()
     self:UpdateCooldownSwipeColor()
+
+    -- DIY hooks: Pet Bar / Nameplate DR / SelfDR
+    if self.layoutdb.petBar and self.UpdatePetBarSettings then
+        self:UpdatePetBarSettings(self.layoutdb.petBar)
+    end
+    if self.layoutdb.drNameplate and self.UpdateNameplateDRSettings then
+        self:UpdateNameplateDRSettings(self.layoutdb.drNameplate)
+    end
+    if self.UpdateHealthBarTrinketSettings then
+        self:UpdateHealthBarTrinketSettings()
+    end
 
     local _, instanceType = IsInInstance()
     if (instanceType ~= "arena" and self.arena1:IsShown()) then
@@ -1350,6 +1408,9 @@ function sArenaFrameMixin:OnLoad()
     self.TexturePool = CreateTexturePool(self, "ARTWORK", nil, nil, ResetTexture)
 
     self:SetupTrinketCooldownDone()
+
+    if self.CreatePetBar then self:CreatePetBar() end
+    if self.CreateHealthBarTrinket then self:CreateHealthBarTrinket() end
 end
 
 function sArenaFrameMixin:OnEvent(event, eventUnit, arg1)
@@ -1555,6 +1616,9 @@ function sArenaFrameMixin:OnEvent(event, eventUnit, arg1)
             self:ResetDispel()
         end
         self:ResetDR()
+        -- DIY: reset PetBar alpha so a stale pet bar from previous match / test mode
+        -- doesn't bleed into the new arena.
+        if self.ResetPetBar then self:ResetPetBar() end
         self:UpdateHealPrediction()
         self:UpdateAbsorb()
         self:UpdatePlayer(UnitExists(self.unit) and "seen" or "unseen")
@@ -1850,6 +1914,10 @@ function sArenaFrameMixin:UpdatePlayer(unitEvent)
         self:SetAlpha(1)
         self:UpdateRangeCheck(unit)
     end
+
+    -- DIY: keep PetBar in sync with the parent frame's seen/unseen state so
+    -- the bar appears only when the corresponding arenapetN actually exists.
+    if self.RefreshPetBar then self:RefreshPetBar() end
 end
 
 function sArenaFrameMixin:SetPreGatesUnknownPlayer()
@@ -2332,6 +2400,10 @@ function sArenaFrameMixin:ResetLayout()
     f.Text:SetFont(fontName, s, self.parent:GetFontFlags("OUTLINE"))
 
     self.TexturePool:ReleaseAll()
+
+    -- DIY: layout reset must clear PetBar too, otherwise switching layouts
+    -- leaves the previous PetBar visible at its old anchor.
+    if self.ResetPetBar then self:ResetPetBar() end
 end
 
 function sArenaFrameMixin:SetPowerType(powerType)

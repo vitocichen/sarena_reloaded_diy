@@ -1427,6 +1427,8 @@ function sArenaMixin:Test()
 
         self.TestTitle:SetScript("OnHide", function(frame)
             self.testMode = nil
+            -- DIY: hide test PetBars when leaving test mode
+            if self.HideAllPetBars then self:HideAllPetBars() end
             for i = 1, self.maxArenaOpponents do
                 local frame = self["arena" .. i]
                 frame:SetAuraHighlightActive()

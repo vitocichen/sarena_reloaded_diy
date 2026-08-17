@@ -80,6 +80,28 @@ sArenaMixin.defaultSettings = {
             interruptNotReady = { 1.0, 0.0, 0.0, 1 },
         },
         layoutSettings = {},
+        -- DIY: Self diminishing returns tracker
+        selfDR = {
+            enabled = false,
+            enableInArena = true,
+            enableInBattleground = false,
+            enableInWorld = false,
+            iconSize = 36,
+            iconPadding = 4,
+            fontSize = 14,
+            growthDirection = "RIGHT",
+            showDRText = true,
+            showCountdown = true,
+            categories = {
+                stun = true,
+                disorient = true,
+                incapacitate = true,
+                root = true,
+                silence = false,
+                knockback = false,
+                disarm = false,
+            },
+        },
         -- DIY: Nameplate Trinket mirror (mirrors enemy PvP CC remover icon onto enemy nameplate)
         nameplateTrinket = {
             enabled = true,

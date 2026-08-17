@@ -31,7 +31,8 @@
 ## 更新记录
 
 ### v1.1.1 (2026-08-17)
-- 合并 MyDRs v1.1.3：SelfDR 递减重置时间 16 秒 → 20 秒
+- 上游基线升级到 v2.0.6e，并恢复 DIY 接线（SelfDR / PetBar / 姓名板递减 / 姓名板饰品）
+- 合并 MyDRs v1.1.3：SelfDR 递减重置时间 16 秒 → 20 秒（免疫发光与 Masque 未并入）
 - 姓名板锚点解析对齐 MidnightDR：优先走姓名板自身的 `GetAnchor()`，再按 TPFrame / AnchorFrame / UnitFrame 顺序回退
 
 ### v1.1.0 (2026-08-17)
