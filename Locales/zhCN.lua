@@ -908,7 +908,7 @@ L["Widget_RangeCheck_UseDefault_Desc"] = "重置为你的职业/专精的默认�
 
 -- Changelog
 L["Changelog_About"] = "DIY: DK-姜世离(燃烧之刃)\n基于 sArena Reloaded v2.0.6e 二次开发"
-L["Changelog_v111"] = "|cffffd700● 修复上游合并回归|r — 恢复 SelfDR 初始化、姓名板 DR 镜像 hook、DIY 设置界面与 Classic 模块加载\n|cffffd700● 统一锚点策略|r — 竞技场 / 野外 / 测试预览都走 GetNameplateAnchorFrame"
+L["Changelog_v111"] = "|cffffd700● 修复上游合并回归|r — 恢复 SelfDR 初始化、姓名板 DR 镜像 hook、DIY 设置界面与 Classic 模块加载\n|cffffd700● 统一锚点策略|r — 竞技场 / 野外 / 测试预览都走 GetNameplateAnchorFrame\n|cffffd700● 宠物框/拖动|r — 上游已有则用上游，没有才用 DIY PetBar"
 L["Changelog_v110"] = "|cffffd700● 上游基线升级到 v2.0.6e|r — 保留 DIY 模块：SelfDR / PetBar / 姓名板递减 / 姓名板饰品\n|cffffd700● MyDRs 部分合并|r — SelfDR DR_RESET_TIME 16→20秒（免疫发光与 Masque 未从 MyDRs 并入）\n|cffffd700● 姓名板锚点对齐 MidnightDR|r — 优先调用 GetAnchor()，再按 TPFrame / AnchorFrame / UnitFrame 回退"
 L["Changelog_v109"] = "|cffffd700● 姓名版递减：免疫提示修复（DIY）|r — 修复 JJC 内姓名版递减图标在目标免疫时不变红边、不发光的问题，并消除战斗中相关报错。"
 L["Changelog_v108"] = "|cffffd700● 姓名版递减：JJC 尺寸/透明度修复（DIY）|r — 对齐 MidnightDR：姓名版递减图标 parent 到姓名版锚点继承缩放，并使用独立 alpha，修复「野外正常、进 JJC 变小/变淡」的问题。"

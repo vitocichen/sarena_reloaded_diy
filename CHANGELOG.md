@@ -8,7 +8,8 @@
   - `GetNameplateAnchorFrame()` 按 TPFrame → AnchorFrame → UnitFrame 顺序尝试
   - 竞技场 / 野外 / 测试预览统一走该锚点链
 - PetBar.lua / NameplateTrinket.lua 本身未改 MidnightDR（MidnightDR 不含这两个模块），但重新接回了刷新与配置入口
-- 完整保留 DIY 模块：HealthBarDR、PetBar、PetFrames、SelfDR、NameplateTrinket
+- 宠物框体与框体拖动：上游已有则用上游 `PetFrames` / `SetupDrag`；没有才启用 DIY PetBar
+- 完整保留 DIY 模块：HealthBarDR、SelfDR、NameplateTrinket（PetBar 仅作后备）
 
 ---
 

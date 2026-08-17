@@ -10,7 +10,7 @@ sArenaMixin.isWrath = gameVersion:match("^3%.")
 sArenaMixin.isTBC = gameVersion:match("^2%.")
 sArenaMixin.noEarlyFrames = sArenaMixin.isTBC or sArenaMixin.isWrath
 
-sArenaMixin.addonName = "|T135884:13:13|t sArena |cffff8000Reloaded|r"
+sArenaMixin.addonName = "|T135884:13:13|t sArena |cffff8000Reloaded|r |cff00ff00DIY|r"
 sArenaMixin.addonTitle = sArenaMixin.addonName.. " " .. (C_AddOns.GetAddOnMetadata("sArena_Reloaded", "Version") or "")
 sArenaMixin.popupHeader = "\n"..sArenaMixin.addonName.."\n\n"
 

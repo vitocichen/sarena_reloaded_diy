@@ -22,16 +22,17 @@
 ### 姓名版饰品镜像 (NameplateTrinket)
 - 将 Blizzard CompactArenaFrame 的 PvP CC remover 图标和 CD 镜像到姓名板
 
-### 宠物血条 (PetBar)
-- 竞技场对手宠物独立血条框体
-- 支持位置/大小/颜色/名字/目标高亮配置
+### 宠物框体
+- 上游 sArena Reloaded 已自带宠物框体时，直接使用上游实现（含鼠标拖动）
+- 仅在上游没有宠物框体时，才启用 DIY PetBar 作为后备
 
 ---
 
 ## 更新记录
 
 ### v1.1.1 (2026-08-17)
-- 上游基线升级到 v2.0.6e，并恢复 DIY 接线（SelfDR / PetBar / 姓名板递减 / 姓名板饰品）
+- 上游基线升级到 v2.0.6e，并恢复 DIY 接线（SelfDR / 姓名板递减 / 姓名板饰品）
+- 宠物框体与鼠标拖动：上游已有则用上游，没有才用 DIY PetBar
 - 合并 MyDRs v1.1.3：SelfDR 递减重置时间 16 秒 → 20 秒（免疫发光与 Masque 未并入）
 - 姓名板锚点解析对齐 MidnightDR：优先走姓名板自身的 `GetAnchor()`，再按 TPFrame / AnchorFrame / UnitFrame 顺序回退
 

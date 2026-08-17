@@ -5548,6 +5548,11 @@ function sArenaMixin:GetLayoutOptionsTable(layoutName)
         },
     }
 
+    -- Upstream PetFrames already provide pet bars + drag. Hide DIY PetBar unless that mixin is missing.
+    if sArenaPetFrameMixin and type(sArenaPetFrameMixin.Setup) == "function" then
+        optionsTable.petBar = nil
+    end
+
     optionsTable.selfDR = {
         order = 11,
         name = (L["Category_SelfDR"] or "Self DR") .. " |cffff8000(DIY)|r",

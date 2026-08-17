@@ -883,8 +883,9 @@ function sArenaMixin:PreviewLayout(layout)
     self:ApplyAllClickActions()
     self:UpdateCooldownSwipeColor()
 
-    -- DIY hooks: Pet Bar / Nameplate DR / SelfDR
-    if self.layoutdb.petBar and self.UpdatePetBarSettings then
+    -- DIY hooks: Pet Bar (fallback only) / Nameplate DR / SelfDR
+    local useUpstreamPets = sArenaPetFrameMixin and type(sArenaPetFrameMixin.Setup) == "function"
+    if (not useUpstreamPets) and self.layoutdb.petBar and self.UpdatePetBarSettings then
         self:UpdatePetBarSettings(self.layoutdb.petBar)
     end
     if self.layoutdb.drNameplate and self.UpdateNameplateDRSettings then

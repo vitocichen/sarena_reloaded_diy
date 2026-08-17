@@ -11,6 +11,10 @@ local UnitIsDeadOrGhost = UnitIsDeadOrGhost
 local UnitIsUnit = UnitIsUnit
 local floor = math.floor
 
+local function UseUpstreamPetFrames()
+    return sArenaPetFrameMixin and type(sArenaPetFrameMixin.Setup) == "function"
+end
+
 local function IsSec(v)
     return issecretvalue and issecretvalue(v) or false
 end
@@ -56,6 +60,8 @@ local function CreatePixelBorder(parent, size, r, g, b, a)
 end
 
 function sArenaFrameMixin:CreatePetBar()
+    -- Upstream already ships PetFrames; keep DIY PetBar as fallback only.
+    if UseUpstreamPetFrames() then return end
     if self.PetBar then return end
 
     local id = self:GetID()
@@ -453,6 +459,7 @@ function sArenaMixin:HideAllPetBars()
 end
 
 function sArenaMixin:UpdatePetBarSettings(db, info, val)
+    if UseUpstreamPetFrames() then return end
     if val ~= nil and info then
         db[info[#info]] = val
     end
