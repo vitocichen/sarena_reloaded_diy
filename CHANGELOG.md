@@ -1,13 +1,14 @@
-# DIY v1.1.1（MyDRs + MidnightDR 全量合并）
+# DIY v1.1.1（合并 MyDRs 递减时长 + MidnightDR 姓名板锚点）
 
-- **MyDRs v1.1.3 核心合并**：SelfDR.lua 的 DR_RESET_TIME 从 16 秒更新到 20 秒，与上游保持一致
-- **MidnightDR 姓名板锚点解析链全面升级**（HealthBarDR.lua）：
+- **MyDRs v1.1.3**：SelfDR.lua 的 DR_RESET_TIME 从 16 秒更新到 20 秒，与上游保持一致。MyDRs 的免疫预警边框与 Masque 支持**未**合并，DIY 侧继续沿用自己的实现
+- **MidnightDR 姓名板锚点解析链**（HealthBarDR.lua）：
   - `PlateToken()` 增加 `unitToken` / `unitFrame` / `TPFrame` 多级 fallback 查找，兼容 12.x 姓名板结构
-  - 新增 `IsNameplateAnchorFrame()` / `ResolveNameplateAnchorCandidate()` / `GetNameplateAnchorFrame()` 三级锚点解析函数
+  - `ResolveNameplateAnchorCandidate()` 照搬 MidnightDR：优先调用候选框自身的 `GetAnchor()`，拿不到才退回候选框本体
+  - `GetNameplateAnchorFrame()` 按 TPFrame → 姓名板 AnchorFrame → UnitFrame.AnchorFrame → UnitFrame → 姓名板本体的固定顺序尝试，末位兜底为 `UnitFrame or 姓名板`
   - `ResolveArenaByCompositeKey()` 返回 `(token, nameplate, anchor)` 三元组，缓存结构同步增强
-  - `CacheValid()` / `CacheBind()` / `GetDirectNameplateAnchor()` 全部适配新签名
-  - `GetBestTestNameplate()` 改用统一的 `GetNameplateRootAndAnchorForUnit()` 逻辑
-- **PetBar.lua + NameplateTrinket.lua**：跟随 MidnightDR 最新改动更新
+  - `GetDirectNameplate()` 只负责取姓名板根框，锚点解析统一交给 `GetNameplateAnchorFrame()`
+  - `GetNameplateRootAndAnchorForUnit()` 成为唯一入口，`GetNameplateAnchorForArena()` 与 `GetBestTestNameplate()` 都走它
+- PetBar.lua / NameplateTrinket.lua 本次未改动（MidnightDR 不包含这两个模块）
 - 完整保留 DIY 模块：HealthBarDR、PetBar、PetFrames、SelfDR
 
 ---

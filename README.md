@@ -1,6 +1,6 @@
 # sArena Reloaded DIY
 
-基于 sArena Reloaded v2.6.0e 的二次开发版本（DIY 子版本：v1.1.0）。
+基于 sArena Reloaded v2.0.6e 的二次开发版本（DIY 子版本：v1.1.1）。
 
 **DIY: DK-姜世离(燃烧之刃)**
 
@@ -30,8 +30,12 @@
 
 ## 更新记录
 
+### v1.1.1 (2026-08-17)
+- 合并 MyDRs v1.1.3：SelfDR 递减重置时间 16 秒 → 20 秒
+- 姓名板锚点解析对齐 MidnightDR：优先走姓名板自身的 `GetAnchor()`，再按 TPFrame / AnchorFrame / UnitFrame 顺序回退
+
 ### v1.1.0 (2026-08-17)
-- 基线升级到上游 v2.6.0e
+- 基线升级到上游 v2.0.6e
 - 修复 12.1 Class Color API 变更
 - 修复 Secret boolean taint 问题
 - 新增 Race Text 显示
