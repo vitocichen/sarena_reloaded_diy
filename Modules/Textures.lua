@@ -11,8 +11,9 @@ function sArenaMixin:CheckClassStacking()
 
     -- Count all players by class and track which classes have healers
     for i = 1, self.maxArenaOpponents do
-        local frame = self["arena"..i]
+        local frame = self["arena" .. i]
         if frame.class then
+            if frame.secretClass then return false end
             classCount[frame.class] = (classCount[frame.class] or 0) + 1
             if frame.isHealer then
                 classHasHealer[frame.class] = true
@@ -65,6 +66,9 @@ function sArenaMixin:UpdateTextures()
     self.modernCastbars = modernCastbars
     self.interruptStatusColorOn = interruptStatusColorOn
     self.highlightCastsOnMe = db.profile.highlightCastsOnMe
+    self.highlightCC = db.profile.highlightCC
+    self.highlightColor = db.profile.useHighlightColor and (db.profile.highlightColor or {0, 1, 0, 1}) or nil
+    self.glowCastbarIcon = db.profile.glowCastbarIcon
     if sArenaCastingBarExtensionMixin then
         sArenaCastingBarExtensionMixin.typeInfo = {
             filling = castTexture,
@@ -73,12 +77,19 @@ function sArenaMixin:UpdateTextures()
         }
     end
 
-    -- Update castbar colors
     self:UpdateCastbarColors()
 
     for i = 1, self.maxArenaOpponents do
         local frame = self["arena" .. i]
         local textureToUse = dpsTexture
+
+        if self.isMidnight then
+            if not frame.CastBar.unintTextureOverlay then
+                frame.CastBar.unintTextureOverlay = frame.CastBar:CreateTexture(nil, "ARTWORK", nil, 1)
+            end
+            frame.CastBar.unintTextureOverlay:SetTexture(castUninterruptibleTexture)
+        end
+        frame.CastBar.changeUnint = not (modernCastbars and keepDefaultModernTextures) and (castTexture ~= castUninterruptibleTexture)
 
         if frame.isHealer then
             if layout.retextureHealerClassStackOnly then
@@ -93,7 +104,12 @@ function sArenaMixin:UpdateTextures()
         frame.HealthBar:SetStatusBarTexture(textureToUse)
         frame.PowerBar:SetStatusBarTexture(dpsTexture)
 
-        -- Set background texture and color
+        frame.PetFrame.HealthBar:SetStatusBarTexture(dpsTexture)
+        if frame.PetFrame.HealthBar.hpUnderlay then
+            frame.PetFrame.HealthBar.hpUnderlay:SetTexture(bgTexture)
+            frame.PetFrame.HealthBar.hpUnderlay:SetVertexColor(bgColor[1], bgColor[2], bgColor[3], bgColor[4])
+        end
+
         if frame.HealthBar.hpUnderlay then
             frame.HealthBar.hpUnderlay:SetTexture(bgTexture)
             frame.HealthBar.hpUnderlay:SetVertexColor(bgColor[1], bgColor[2], bgColor[3], bgColor[4])
@@ -121,8 +137,39 @@ function sArenaMixin:UpdateTextures()
         if db.profile.currentLayout == "BlizzRetail" then
             frame.PowerBar:GetStatusBarTexture():SetDrawLayer("BACKGROUND", 2)
         end
+
+        if frame.CastBar.barHighlight then
+            local hc = self.highlightColor
+            if hc then
+                frame.CastBar.barHighlight:SetDesaturated(true)
+                frame.CastBar.barHighlight:SetVertexColor(hc[1], hc[2], hc[3], 1)
+            else
+                frame.CastBar.barHighlight:SetDesaturated(false)
+                frame.CastBar.barHighlight:SetVertexColor(1, 1, 1, 1)
+            end
+        end
+
+        if frame.CastBar.iconHighlight then
+            local iconGlow = frame.CastBar.iconHighlight
+            local hc = self.highlightColor
+            if hc then
+                iconGlow:SetVertexColor(hc[1], hc[2], hc[3], 1)
+            else
+                iconGlow:SetVertexColor(1, 0.55, 0.55, 1)
+            end
+            if not self.glowCastbarIcon then
+                iconGlow:SetAlpha(0)
+            end
+            local icon = frame.CastBar.Icon
+            local iconScale = layout.castBar and layout.castBar.iconScale or 1
+            local size = 16 * iconScale
+
+            local mult = 1.2
+            iconGlow:ClearAllPoints()
+            iconGlow:SetPoint("TOPLEFT", icon, "TOPLEFT", -(size * mult), size * mult)
+            iconGlow:SetPoint("BOTTOMRIGHT", icon, "BOTTOMRIGHT", size * mult, -(size * mult))
+        end
     end
 
-    -- Refresh test mode castbars if test mode is active
     self:RefreshTestModeCastbars()
 end

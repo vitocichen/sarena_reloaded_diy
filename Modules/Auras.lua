@@ -36,6 +36,17 @@ function sArenaFrameMixin:FindInterrupt(event, spellID, sourceName, sourceGUID)
         castBar.interruptedBy = interruptedByName
         castBar.Text:SetText(interruptedByName)
         castBar:Show()
+        if sArenaDebug then
+            print("Kicked ", self.unit, "showing castbar")
+        end
+        C_Timer.After(1.2, function()
+            if not (UnitCastingInfo(unit) or UnitChannelInfo(unit)) then
+                castBar:Hide()
+                if sArenaDebug then
+                    print("Kicked ", self.unit, "hiding castbar after 1.2s")
+                end
+            end
+        end)
         C_Timer.After(1, function()
             castBar.interruptedBy = nil
         end)
@@ -214,8 +225,9 @@ function sArenaFrameMixin:FindAura()
 
     local profile = self.parent and self.parent.db and self.parent.db.profile
     local hideOnIcon = profile and (profile.disableAurasOnClassIcon or profile.hideClassIcon)
+    local onlyCC = profile and profile.onlyShowCCAuras
 
-    if currentSpellID and not hideOnIcon then
+    if currentSpellID and not hideOnIcon and (not onlyCC or currentAuraCategory == "cc") then
         self.currentAuraSpellID = currentSpellID
         self.currentAuraStartTime = currentExpirationTime - currentDuration
         self.currentAuraDuration = currentDuration

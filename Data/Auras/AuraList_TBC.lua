@@ -133,13 +133,9 @@ sArenaMixin.auraList = {
     [1090]    = {9, "cc"},    -- Sleep
     [10326]   = {9, "cc"},    -- Turn Evil
     [19386]   = {9, "cc"},    -- Wyvern Sting
-    [24131]   = {9, "cc"},    -- Wyvern Sting
     [24132]   = {9, "cc"},    -- Wyvern Sting
-    [24133]   = {9, "cc"},    -- Wyvern Sting
-    [24134]   = {9, "cc"},    -- Wyvern Sting
     [24135]   = {9, "cc"},    -- Wyvern Sting
     [27068]   = {9, "cc"},    -- Wyvern Sting
-    [27069]   = {9, "cc"},    -- Wyvern Sting
     [710]     = {9, "cc"},    -- Banish
     [18647]   = {9, "cc"},    -- Banish
 
@@ -191,7 +187,8 @@ sArenaMixin.auraList = {
     [28730]   = {6, "cc"},    -- Arcane Torrent (Mana)
     [31935]   = {6, "cc"},    -- Avenger's Shield
 
-    [1766]    = {6, "cc"},    -- Kick (Rogue)
+    [1766]    = {5, "cc"},    -- Kick (Rogue)
+    [38768]   = {5, "cc"},    -- Kick (Rogue)
     [2139]    = {6, "cc"},    -- Counterspell (Mage)
     [6552]    = {6, "cc"},    -- Pummel (Warrior)
     [19647]   = {6, "cc"},    -- Spell Lock (Warlock)

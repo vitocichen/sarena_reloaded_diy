@@ -250,7 +250,7 @@ function layout:Initialize(frame)
     f:SetJustifyH("LEFT")
     f:SetJustifyV("BOTTOM")
     f:SetFontObject("SystemFont_Shadow_Med3")
-    f:SetFont("Fonts\\FRIZQT__.TTF", 14, "")
+    f:SetFont("Fonts\\FRIZQT__.TTF", 14, frame.parent:GetFontFlags(""))
     f:SetHeight(12)
 
     f = frame.DeathIcon
@@ -260,9 +260,9 @@ function layout:Initialize(frame)
 
     frame.PowerText:SetPoint("CENTER", frame.PowerBar)
     local fn, fs, fstyle = frame.HealthText:GetFont()
-    frame.HealthText:SetFont(fn, 10, "OUTLINE")
+    frame.HealthText:SetFont(fn, 10, frame.parent:GetFontFlags("OUTLINE"))
     local fn, fs, fstyle = frame.HealthText:GetFont()
-    frame.PowerText:SetFont(fn, 10, "OUTLINE")
+    frame.PowerText:SetFont(fn, 10, frame.parent:GetFontFlags("OUTLINE"))
     frame.PowerText:SetShadowOffset(0, 0)
     frame.HealthText:SetShadowOffset(0, 0)
 
@@ -422,7 +422,7 @@ function layout:UpdateOrientation(frame)
         end
 
         if txt.forceCastbarTextWidth then
-            castbarText:SetWidth(self.db.castBar.width or frame.CastBar:GetWidth())
+            castbarText:SetWidth((self.db.castBar.width or frame.CastBar:GetWidth()) / (txt.castbarSize or 1))
         else
             castbarText:SetWidth(0)
         end
@@ -446,5 +446,30 @@ function layout:UpdateOrientation(frame)
     self:UpdateHealthbarOrientation(frame)
 end
 
+layout.defaultSettings.petFrames = {
+    posX          = 0,
+    posY          = 0,
+    width         = 75,
+    height        = 20,
+    scale         = 1,
+    textSettings  = {
+        nameAnchor    = "LEFT",
+        nameOffsetX   = 0,
+        nameOffsetY   = 0,
+        nameSize      = 1,
+        healthAnchor  = "CENTER",
+        healthOffsetX = 0,
+        healthOffsetY = 0,
+        healthSize    = 1,
+    },
+    widgets = {
+        targetIndicator       = { enabled = true,  scale = 1, posX = 0, posY = 0 },
+        focusIndicator        = { enabled = true,  scale = 1, posX = 0, posY = 0 },
+        combatIndicator       = { enabled = false, scale = 1, posX = 0, posY = 0 },
+        partyTargetIndicators = { enabled = false, scale = 1, posX = 0, posY = 0, direction = "LEFT", spacing = 0 },
+    },
+}
+
+layout.petFrameBaseOffsets = { posX = 5, posY = -13 }
 sArenaMixin.layouts[layoutName] = layout
 sArenaMixin.defaultSettings.profile.layoutSettings[layoutName] = layout.defaultSettings

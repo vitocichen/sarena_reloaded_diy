@@ -213,6 +213,7 @@ function layout:Initialize(frame)
     f:SetSize(24, 24)
     f:Show()
     f.Texture:AddMaskTexture(f.Mask)
+    frame.auraSlotMask = f.Mask
     f.Mask:SetAllPoints(f.Texture)
 
     if not f.bgTexture then
@@ -289,7 +290,7 @@ function layout:Initialize(frame)
     f:SetPoint("BOTTOMLEFT", healthBar, "TOPLEFT", 2, 2)
     f:SetPoint("BOTTOMRIGHT", healthBar, "TOPRIGHT", -2, 2)
     f:SetHeight(12)
-    f:SetFont("Fonts\\FRIZQT__.TTF", 11, "")
+    f:SetFont("Fonts\\FRIZQT__.TTF", 11, frame.parent:GetFontFlags(""))
 
     f = frame.CastBar
     f:SetStatusBarTexture("Interface\\TargetingFrame\\UI-StatusBar")
@@ -300,17 +301,17 @@ function layout:Initialize(frame)
     f:SetSize(26, 26)
 
     local fn, fs, fstyle = frame.HealthText:GetFont()
-    frame.HealthText:SetFont(fn, 10, "OUTLINE")
+    frame.HealthText:SetFont(fn, 10, frame.parent:GetFontFlags("OUTLINE"))
     local fn, fs, fstyle = frame.HealthText:GetFont()
-    frame.PowerText:SetFont(fn, 10, "OUTLINE")
+    frame.PowerText:SetFont(fn, 10, frame.parent:GetFontFlags("OUTLINE"))
     frame.PowerText:SetAlpha(frame.parent.db.profile.hidePowerText and 0 or 1)
 
     local fn, fs, fstyle = frame.SpecNameText:GetFont()
-    frame.SpecNameText:SetFont(fn, fs, "OUTLINE")
+    frame.SpecNameText:SetFont(fn, fs, frame.parent:GetFontFlags("OUTLINE"))
     frame.SpecNameText:SetTextColor(1,1,1)
 
     frame.AuraStacks:SetPoint("BOTTOMLEFT", frame.ClassIcon, "BOTTOMLEFT", 1, -4)
-    frame.AuraStacks:SetFont("Interface\\AddOns\\sArena_Reloaded\\Textures\\arialn.ttf", 11, "THICKOUTLINE")
+    frame.AuraStacks:SetFont("Interface\\AddOns\\sArena_Reloaded\\Textures\\arialn.ttf", 11, frame.parent:GetFontFlags("THICKOUTLINE"))
 
     -- Frame background texture
     local frameTexture = frame.frameTexture
@@ -452,7 +453,7 @@ function layout:UpdateOrientation(frame)
         end
 
         if txt.forceCastbarTextWidth then
-            castbarText:SetWidth(self.db.castBar.width or frame.CastBar:GetWidth())
+            castbarText:SetWidth((self.db.castBar.width or frame.CastBar:GetWidth()) / (txt.castbarSize or 1))
         else
             castbarText:SetWidth(0)
         end
@@ -472,5 +473,31 @@ function layout:UpdateOrientation(frame)
     end
 end
 
+layout.defaultSettings.petFrames = {
+    posX          = 0,
+    posY          = 0,
+    width         = 77,
+    height        = 12,
+    scale         = 0.65,
+    frameStrata   = "LOW",
+    textSettings  = {
+        nameAnchor    = "LEFT",
+        nameOffsetX   = 0,
+        nameOffsetY   = -1,
+        nameSize      = 1,
+        healthAnchor  = "CENTER",
+        healthOffsetX = 0,
+        healthOffsetY = -1,
+        healthSize    = 1,
+    },
+    widgets = {
+        targetIndicator       = { enabled = true,  scale = 1, posX = 0, posY = 0 },
+        focusIndicator        = { enabled = true,  scale = 1, posX = 0, posY = 0 },
+        combatIndicator       = { enabled = false, scale = 1, posX = 0, posY = 0 },
+        partyTargetIndicators = { enabled = false, scale = 1, posX = 0, posY = 0, direction = "LEFT", spacing = 0 },
+    },
+}
+
+layout.petFrameBaseOffsets = { posX = -91, posY = -13 }
 sArenaMixin.layouts[layoutName] = layout
 sArenaMixin.defaultSettings.profile.layoutSettings[layoutName] = layout.defaultSettings

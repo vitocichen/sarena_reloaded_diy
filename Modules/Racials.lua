@@ -2,6 +2,7 @@ local GetTime = GetTime
 local isRetail = sArenaMixin.isRetail
 local isMidnight = sArenaMixin.isMidnight
 local isTBC = sArenaMixin.isTBC
+local isMoP = sArenaMixin.isMoP
 
 local racialSpells
 local racialData
@@ -135,7 +136,7 @@ else
 		[7744] = 120, -- Will of the Forsaken
 		[20554] = 180, -- Berserking
 		[20572] = 120, -- Blood Fury
-		[58984] = 10, -- Shadowmeld
+		[58984] = 120, -- Shadowmeld
 		[20589] = 105, -- Escape Artist
 		[20594] = 180, -- Stoneform
 		[59752] = 120, -- Will to Survive
@@ -172,6 +173,21 @@ else
 
 	if isTBC then -- Wotf does not share CD in TBC
 		racialData["Scourge"].sharedCD = nil
+
+		racialSpells[20600] = 180 -- Perception (Human Racial)
+		racialData["Human"].sharedCD = nil
+		racialData["Human"].texture = GetSpellTexture(20600)
+		racialData["Human"].spellID = 20600
+
+		racialSpells[20580] = 10 -- Shadowmeld (Nelf Racial)
+		racialData["NightElf"].texture = GetSpellTexture(20580)
+		racialData["NightElf"].spellID = 20580
+
+		racialData["Goblin"] = nil
+		racialData["Worgen"] = nil
+		racialData["Pandaren"] = nil
+	elseif isMoP then
+		racialData["Scourge"].sharedCD = 30
 	end
 
 	trinkets = {
@@ -213,12 +229,14 @@ function sArenaFrameMixin:FindRacial(spellID)
 	-- Racial used
 	if duration and not trinkets[spellID] then
 		-- Check if we're using replaceHumanRacialWithTrinket (MoP specific)
-		if not isRetail and self.race == "Human" and (self.parent.db.profile.replaceHumanRacialWithTrinket or self.parent.db.profile.forceShowTrinketOnHuman) then
+		if not isRetail and not isTBC and self.race == "Human" and (self.parent.db.profile.replaceHumanRacialWithTrinket or self.parent.db.profile.forceShowTrinketOnHuman) then
 			if self.parent.db.profile.forceShowTrinketOnHuman then
-			if self.Trinket.spellID and (self.Trinket.Texture:GetTexture() ~= self.parent.noTrinketTexture) then
+				if self.Trinket.spellID and (self.Trinket.Texture:GetTexture() ~= self.parent.noTrinketTexture) then
 					self.Trinket.Cooldown:SetCooldown(currTime, duration)
 				end
-				self.Racial.Cooldown:SetCooldown(currTime, duration)
+				if self.Racial.Texture:GetTexture() then
+					self.Racial.Cooldown:SetCooldown(currTime, duration)
+				end
 				self:UpdateTrinketIcon(false)
 			else
 				if self.Racial.Texture:GetTexture() then
@@ -277,14 +295,23 @@ end
 
 function sArenaFrameMixin:UpdateRacial()
 	self.race = nil
-	self.race = select(2, UnitRace(self.unit))
+	self.localizedRace = nil
+	local localizedRace, race = UnitRace(self.unit)
+	self.race = race
+	self.localizedRace = localizedRace
 	self.Racial.Texture:SetTexture(nil)
+
+	if issecretvalue(self.race) then
+		-- UnitRace secret in 12.1.
+		-- Not aware of any other ways to show race texture but can still show race text at least.
+		return
+	end
 
 	if (self.race) then
 
 		if (self.parent.db and (self.parent.db.profile.racialCategories[self.race] or (self.parent.db.profile.swapRacialTrinket or self.parent.db.profile.swapHumanTrinket) and self.race == "Human")) then
 			-- Handle MoP-specific Human racial replacement with trinket
-			if not isRetail and self.race == "Human" and self.parent.db.profile.replaceHumanRacialWithTrinket then
+			if not isRetail and not isTBC and self.race == "Human" and self.parent.db.profile.replaceHumanRacialWithTrinket then
 				-- Replace Human racial with Alliance trinket texture in racial slot
 				self.Racial.Texture:SetTexture(self:GetFactionTrinketIcon())
 				return

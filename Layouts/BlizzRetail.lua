@@ -222,11 +222,11 @@ function layout:Initialize(frame)
     healthText:SetPoint("CENTER", healthBar, "CENTER", 0, 0)
     healthText:SetDrawLayer("OVERLAY", 4)
     local font, size, flags = healthText:GetFont()
-    healthText:SetFont(font, size, "OUTLINE")
+    healthText:SetFont(font, size, frame.parent:GetFontFlags("OUTLINE"))
 
     local specNameText = frame.SpecNameText
     local font, size, flags = specNameText:GetFont()
-    specNameText:SetFont(font, size, "OUTLINE")
+    specNameText:SetFont(font, size, frame.parent:GetFontFlags("OUTLINE"))
 
     local powerText = frame.PowerText
     powerText:SetDrawLayer("OVERLAY", 4)
@@ -246,6 +246,7 @@ function layout:Initialize(frame)
     frame.ClassIcon:SetFrameLevel(7)
     frame.ClassIcon.Texture:SetTexCoord(0.05, 0.95, 0.1, 0.9)
     frame.ClassIcon.Texture:AddMaskTexture(frame.ClassIcon.Mask)
+    frame.auraSlotMask = frame.ClassIcon.Mask
     frame.ClassIcon.Mask:ClearAllPoints()
     frame.ClassIcon.Mask:SetPoint("CENTER", frame.ClassIcon, 0,1)
     frame.ClassIcon.Mask:SetSize(60, 57)
@@ -367,7 +368,7 @@ function layout:Initialize(frame)
     dispelBorder:SetPoint("TOPLEFT", dispel, "TOPLEFT", -7, 7)
     dispelBorder:SetPoint("BOTTOMRIGHT", dispel, "BOTTOMRIGHT", 7, -7)
     dispelBorder:SetDrawLayer("OVERLAY", 3)
-    dispelBorder:Show()
+    dispelBorder:Hide()
     dispel.Border = dispelBorder
     dispel.useModernBorder = true
 
@@ -418,6 +419,13 @@ function layout:Initialize(frame)
     end
     frameTexture:SetDrawLayer("OVERLAY", 5)
     frameTexture:Show()
+
+    -- if not frame.PetFrame.frameTexture then
+    --     frame.PetFrame.frameTexture = frame.PetFrame:CreateTexture(nil, "OVERLAY", nil, 5)
+    --     frame.PetFrame.frameTexture:SetPoint("TOPLEFT", frame.PetFrame, "TOPLEFT", -2, 4)
+    --     frame.PetFrame.frameTexture:SetPoint("BOTTOMRIGHT", frame.PetFrame, "BOTTOMRIGHT", 2, -4)
+    --     frame.PetFrame.frameTexture:SetAtlas("plunderstorm-stormbar-border")
+    -- end
 
     self:UpdateOrientation(frame)
 end
@@ -588,7 +596,7 @@ function layout:UpdateOrientation(frame)
         end
 
         if txt.forceCastbarTextWidth then
-            castbarText:SetWidth(self.db.castBar.width or frame.CastBar:GetWidth())
+            castbarText:SetWidth((self.db.castBar.width or frame.CastBar:GetWidth()) / (txt.castbarSize or 1))
         else
             castbarText:SetWidth(0)
         end
@@ -613,5 +621,31 @@ function layout:UpdateOrientation(frame)
     self:UpdateHealthbarOrientation(frame)
 end
 
+layout.defaultSettings.petFrames = {
+    posX          = 7,
+    posY          = 1,
+    width         = 99,
+    height        = 16,
+    scale         = 1,
+    frameStrata   = "LOW",
+    textSettings  = {
+        nameAnchor    = "LEFT",
+        nameOffsetX   = 0,
+        nameOffsetY   = -1,
+        nameSize      = 0.9,
+        healthAnchor  = "CENTER",
+        healthOffsetX = 0,
+        healthOffsetY = -1,
+        healthSize    = 0.9,
+    },
+    widgets = {
+        targetIndicator       = { enabled = true,  scale = 1, posX = -1, posY = -1 },
+        focusIndicator        = { enabled = true,  scale = 1, posX = -1, posY = -1 },
+        combatIndicator       = { enabled = false, scale = 1, posX = 0, posY = 0 },
+        partyTargetIndicators = { enabled = false, scale = 1, posX = 0, posY = 0, direction = "LEFT", spacing = 0 },
+    },
+}
+
+layout.petFrameBaseOffsets = { posX = -121, posY = -11 }
 sArenaMixin.layouts[layoutName] = layout
 sArenaMixin.defaultSettings.profile.layoutSettings[layoutName] = layout.defaultSettings

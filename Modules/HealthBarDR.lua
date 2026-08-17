@@ -113,12 +113,55 @@ end
 local npAnchorCache = {}
 local npTokenToArena = {}
 
+-- MDR-compatible plate token resolution: try multiple possible field names.
 local function PlateToken(np)
     local tok = SafeIndex(np, "namePlateUnitToken")
     if tok then return tok end
-    local uf = SafeIndex(np, "UnitFrame")
+    local tok2 = SafeIndex(np, "unitToken")
+    if tok2 then return tok2 end
+    local uf = SafeIndex(np, "UnitFrame") or SafeIndex(np, "unitFrame")
     tok = uf and SafeIndex(uf, "unit") or nil
-    return tok
+    if tok then return tok end
+    -- MDR: also check TPFrame as an intermediate
+    local tp = SafeIndex(np, "TPFrame")
+    if tp then
+        tok = SafeIndex(tp, "unit") or SafeIndex(tp, "namePlateUnitToken")
+        if tok then return tok end
+    end
+    return nil
+end
+
+-- MDR: determine whether a frame qualifies as a nameplate anchor candidate.
+local function IsNameplateAnchorFrame(frame)
+    if not frame or IsForbidden(frame) then return false end
+    return type(SafeIndex(frame, "SetPoint")) == "function"
+       and type(SafeIndex(frame, "GetFrameLevel")) == "function"
+end
+
+-- MDR: resolve the actual anchor frame through a chain of possible parents.
+local function ResolveNameplateAnchorCandidate(frame)
+    if not IsNameplateAnchorFrame(frame) then return nil end
+    -- Try TPFrame first (12.x nameplate structure)
+    local tp = SafeIndex(frame, "TPFrame")
+    local anchor = ResolveNameplateAnchorCandidate(tp)
+    if anchor then return anchor end
+    -- Try explicit AnchorFrame
+    anchor = ResolveNameplateAnchorCandidate(SafeIndex(frame, "AnchorFrame"))
+    if anchor then return anchor end
+    -- Try UnitFrame -> AnchorFrame
+    local uf = SafeIndex(frame, "UnitFrame") or SafeIndex(frame, "unitFrame")
+    anchor = ResolveNameplateAnchorCandidate(SafeIndex(uf, "AnchorFrame"))
+    if anchor then return anchor end
+    anchor = ResolveNameplateAnchorCandidate(uf)
+    if anchor then return anchor end
+    -- Final fallback: the frame itself
+    return frame
+end
+
+-- MDR-style: get the canonical anchor frame for a nameplate.
+local function GetNameplateAnchorFrame(nameplate)
+    if not nameplate or IsForbidden(nameplate) then return nil end
+    return ResolveNameplateAnchorCandidate(nameplate)
 end
 
 local function BuildCompositeKey(unit)
@@ -147,24 +190,24 @@ local function ResolveArenaByCompositeKey(unit, plates)
     local arenaKey = BuildCompositeKey(unit)
     if not arenaKey then return nil end
 
-    local foundTok, foundAnchor = nil, nil
+    local foundTok, foundNameplate, foundAnchor = nil, nil, nil
     for _, np in ipairs(plates) do
         if np and (not IsForbidden(np)) then
             local tok = PlateToken(np)
             if IsEnemyPlayerPlateToken(tok) then
                 local plateKey = BuildCompositeKey(tok)
                 if plateKey and plateKey == arenaKey then
-                    local anchor = SafeIndex(np, "UnitFrame") or np
+                    local anchor = GetNameplateAnchorFrame(np)
                     if foundTok and foundTok ~= tok then
                         return nil
                     end
-                    foundTok, foundAnchor = tok, anchor
+                    foundTok, foundNameplate, foundAnchor = tok, np, anchor
                 end
             end
         end
     end
 
-    return foundTok, foundAnchor
+    return foundTok, foundNameplate, foundAnchor
 end
 
 local function ClearArenaCache(arenaUnit)
@@ -178,43 +221,44 @@ end
 local function CacheValid(arenaUnit, plates)
     local c = npAnchorCache[arenaUnit]
     if not c or type(c.token) ~= "string" or not c.anchor or IsForbidden(c.anchor) then
-        return nil
+        return nil, nil
     end
 
     if not SafeUnitExists(c.token) then
         ClearArenaCache(arenaUnit)
-        return nil
+        return nil, nil
     end
 
     local arenaKey = BuildCompositeKey(arenaUnit)
     local tokenKey = BuildCompositeKey(c.token)
     if not arenaKey or not tokenKey or arenaKey ~= tokenKey then
         ClearArenaCache(arenaUnit)
-        return nil
+        return nil, nil
     end
 
     for _, np in ipairs(plates) do
         if np and (not IsForbidden(np)) then
             local tok = PlateToken(np)
             if tok == c.token then
-                local a = SafeIndex(np, "UnitFrame") or np
+                local a = GetNameplateAnchorFrame(np)
+                c.nameplate = np
                 c.anchor = a
-                return a
+                return np, a
             end
         end
     end
 
     ClearArenaCache(arenaUnit)
-    return nil
+    return nil, nil
 end
 
-local function CacheBind(arenaUnit, token, anchor)
+local function CacheBind(arenaUnit, token, nameplate, anchor)
     if not arenaUnit or not token or not anchor then return end
     local old = npAnchorCache[arenaUnit]
     if old and old.token and old.token ~= token then
         npTokenToArena[old.token] = nil
     end
-    npAnchorCache[arenaUnit] = { token = token, anchor = anchor }
+    npAnchorCache[arenaUnit] = { token = token, nameplate = nameplate, anchor = anchor }
     npTokenToArena[token] = arenaUnit
 end
 
@@ -222,19 +266,19 @@ local function GetDirectNameplateAnchor(unit, plates)
     if type(C_NamePlate) == "table" and type(C_NamePlate.GetNamePlateForUnit) == "function" then
         local ok, np = pcall(C_NamePlate.GetNamePlateForUnit, unit)
         if ok and np and (not IsForbidden(np)) then
-            return SafeIndex(np, "UnitFrame") or np
+            return GetNameplateAnchorFrame(np), np
         end
     end
 
     if type(unit) == "string" and unit:match("^nameplate%d+$") and type(plates) == "table" then
         for _, np in ipairs(plates) do
             if np and (not IsForbidden(np)) and PlateToken(np) == unit then
-                return SafeIndex(np, "UnitFrame") or np
+                return GetNameplateAnchorFrame(np), np
             end
         end
     end
 
-    return nil
+    return nil, nil
 end
 
 function sArenaMixin:GetNameplateAnchorForArena(unit)
@@ -242,12 +286,12 @@ function sArenaMixin:GetNameplateAnchorForArena(unit)
     if not ok or not plates then return nil end
 
     if type(unit) == "string" and unit:find("^arena%d$") then
-        local cached = CacheValid(unit, plates)
-        if cached then return cached end
+        local cachedNp, cachedAnchor = CacheValid(unit, plates)
+        if cachedAnchor then return cachedAnchor end
 
-        local tok, anchor = ResolveArenaByCompositeKey(unit, plates)
+        local tok, nameplate, anchor = ResolveArenaByCompositeKey(unit, plates)
         if tok and anchor then
-            CacheBind(unit, tok, anchor)
+            CacheBind(unit, tok, nameplate, anchor)
             return anchor
         end
 
@@ -255,7 +299,8 @@ function sArenaMixin:GetNameplateAnchorForArena(unit)
         return nil
     end
 
-    return GetDirectNameplateAnchor(unit, plates)
+    local anchor, _ = GetDirectNameplateAnchor(unit, plates)
+    return anchor
 end
 
 function sArenaMixin:ClearNameplateAnchorCache(token)
@@ -598,21 +643,49 @@ function sArenaMixin:RefreshAllNameplateDR()
 end
 
 function sArenaMixin:GetBestTestNameplate()
-    local a = self:GetNameplateAnchorForArena("target")
+    -- MDR-compatible: try target/mouseover through proper anchor resolution,
+    -- then fall back to scanning visible nameplates.
+    local np, a = GetNameplateRootAndAnchorForUnit("target")
     if a then return a end
-    a = self:GetNameplateAnchorForArena("mouseover")
+    np, a = GetNameplateRootAndAnchorForUnit("mouseover")
     if a then return a end
     local ok, plates = pcall(C_NamePlate.GetNamePlates)
     if ok and plates then
         for _, p in ipairs(plates) do
-            local uf = p and (SafeIndex(p, "UnitFrame") or p)
-            if uf and (not IsForbidden(uf)) then
-                local shownOk, shown = pcall(function() return uf:IsShown() end)
-                if shownOk and shown then return uf end
+            local anchor = GetNameplateAnchorFrame(p)
+            if anchor and (not IsForbidden(anchor)) then
+                local shownOk, shown = pcall(function() return anchor:IsShown() end)
+                if shownOk and shown then return anchor end
             end
         end
     end
     return nil
+end
+
+-- MDR-style: get both nameplate root and anchor frame for a unit.
+local function GetNameplateRootAndAnchorForUnit(unit)
+    local ok, plates = pcall(C_NamePlate.GetNamePlates)
+    if not ok or not plates then return nil, nil end
+
+    if type(unit) == "string" and unit:find("^arena%d$") then
+        local cachedNp, cachedAnchor = CacheValid(unit, plates)
+        if cachedAnchor then return cachedNp, cachedAnchor end
+
+        local tok, nameplate, anchor = ResolveArenaByCompositeKey(unit, plates)
+        if tok and anchor then
+            CacheBind(unit, tok, nameplate, anchor)
+            return nameplate, anchor
+        end
+
+        ClearArenaCache(unit)
+        return nil, nil
+    end
+
+    local nameplate = GetDirectNameplateAnchor(unit, plates)
+    if nameplate then
+        return nameplate, GetNameplateAnchorFrame(nameplate)
+    end
+    return nil, nil
 end
 
 -- Test mode uses a dedicated set of frames (_testNPDRFrames) instead of arena1.drFramesNP,

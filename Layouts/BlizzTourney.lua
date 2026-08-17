@@ -226,7 +226,7 @@ function layout:Initialize(frame)
     frame.Dispel:SetSize(25, 25)
 
     frame.AuraStacks:SetPoint("BOTTOMLEFT", frame.ClassIcon, "BOTTOMLEFT", 1, -2)
-    frame.AuraStacks:SetFont("Interface\\AddOns\\sArena_Reloaded\\Textures\\arialn.ttf", 14, "THICKOUTLINE")
+    frame.AuraStacks:SetFont("Interface\\AddOns\\sArena_Reloaded\\Textures\\arialn.ttf", 14, frame.parent:GetFontFlags("THICKOUTLINE"))
 
     local hp = frame.HealthBar
     hp:SetSize(87, 23)
@@ -240,6 +240,7 @@ function layout:Initialize(frame)
     f:SetSize(34, 34)
     f:Show()
     f.Texture:AddMaskTexture(f.Mask)
+    frame.auraSlotMask = f.Mask
 
     f.Mask:SetSize(34, 34)
 
@@ -320,13 +321,13 @@ function layout:Initialize(frame)
     frame.PowerBar:SetHeight(10)
 
     local fn, fs, fstyle = frame.HealthText:GetFont()
-    frame.HealthText:SetFont(fn, fs, "OUTLINE")
+    frame.HealthText:SetFont(fn, fs, frame.parent:GetFontFlags("OUTLINE"))
     local fn, fs, fstyle = frame.HealthText:GetFont()
-    frame.PowerText:SetFont(fn, fs, "OUTLINE")
+    frame.PowerText:SetFont(fn, fs, frame.parent:GetFontFlags("OUTLINE"))
     frame.PowerText:SetAlpha(frame.parent.db.profile.hidePowerText and 0 or 1)
 
     local fn, fs, fstyle = frame.SpecNameText:GetFont()
-    frame.SpecNameText:SetFont(fn, fs, "OUTLINE")
+    frame.SpecNameText:SetFont(fn, fs, frame.parent:GetFontFlags("OUTLINE"))
     frame.SpecNameText:SetTextColor(1,1,1)
 
     local underlay = frame.TexturePool:Acquire()
@@ -486,7 +487,7 @@ function layout:UpdateOrientation(frame)
         end
 
         if txt.forceCastbarTextWidth then
-            castbarText:SetWidth(self.db.castBar.width or frame.CastBar:GetWidth())
+            castbarText:SetWidth((self.db.castBar.width or frame.CastBar:GetWidth()) / (txt.castbarSize or 1))
         else
             castbarText:SetWidth(0)
         end
@@ -520,5 +521,30 @@ function layout:UpdateOrientation(frame)
     name:SetHeight(12)
 end
 
+layout.defaultSettings.petFrames = {
+    posX          = 0,
+    posY          = 0,
+    width         = 50,
+    height        = 19,
+    scale         = 0.7,
+    textSettings  = {
+        nameAnchor    = "LEFT",
+        nameOffsetX   = 0,
+        nameOffsetY   = 0,
+        nameSize      = 1.1,
+        healthAnchor  = "CENTER",
+        healthOffsetX = 0,
+        healthOffsetY = 0,
+        healthSize    = 1.1,
+    },
+    widgets = {
+        targetIndicator       = { enabled = true,  scale = 1.25, posX = 0, posY = 0 },
+        focusIndicator        = { enabled = true,  scale = 1.25, posX = 0, posY = 0 },
+        combatIndicator       = { enabled = false, scale = 1, posX = 0, posY = 0 },
+        partyTargetIndicators = { enabled = false, scale = 1, posX = 0, posY = 0, direction = "LEFT", spacing = 0 },
+    },
+}
+
+layout.petFrameBaseOffsets = { posX = 58, posY = 48 }
 sArenaMixin.layouts[layoutName] = layout
 sArenaMixin.defaultSettings.profile.layoutSettings[layoutName] = layout.defaultSettings

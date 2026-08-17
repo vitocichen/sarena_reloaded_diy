@@ -3,7 +3,7 @@ local pcall = pcall
 local GetTime = GetTime
 local C_LossOfControl = C_LossOfControl
 
-local DR_RESET_TIME = 16
+local DR_RESET_TIME = 20
 
 local DR_CATS = { "stun", "disorient", "incapacitate", "root", "silence", "knockback", "disarm" }
 

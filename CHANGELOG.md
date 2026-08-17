@@ -1,3 +1,17 @@
+# DIY v1.1.1（MyDRs + MidnightDR 全量合并）
+
+- **MyDRs v1.1.3 核心合并**：SelfDR.lua 的 DR_RESET_TIME 从 16 秒更新到 20 秒，与上游保持一致
+- **MidnightDR 姓名板锚点解析链全面升级**（HealthBarDR.lua）：
+  - `PlateToken()` 增加 `unitToken` / `unitFrame` / `TPFrame` 多级 fallback 查找，兼容 12.x 姓名板结构
+  - 新增 `IsNameplateAnchorFrame()` / `ResolveNameplateAnchorCandidate()` / `GetNameplateAnchorFrame()` 三级锚点解析函数
+  - `ResolveArenaByCompositeKey()` 返回 `(token, nameplate, anchor)` 三元组，缓存结构同步增强
+  - `CacheValid()` / `CacheBind()` / `GetDirectNameplateAnchor()` 全部适配新签名
+  - `GetBestTestNameplate()` 改用统一的 `GetNameplateRootAndAnchorForUnit()` 逻辑
+- **PetBar.lua + NameplateTrinket.lua**：跟随 MidnightDR 最新改动更新
+- 完整保留 DIY 模块：HealthBarDR、PetBar、PetFrames、SelfDR
+
+---
+
 # DIY v1.0.9（姓名版递减：免疫红边 + 不再污染战斗）
 
 - 修复 v1.0.8 引入的姓名版递减图标 **免疫态边框/发光功能** 在 11.x 客户端下的两个问题：

@@ -7,7 +7,7 @@ local interruptList = sArenaMixin.interruptList
 
 local function GetInterruptSpell()
     for spellID, _ in pairs(interruptList) do
-        if IsSpellKnownOrOverridesKnown(spellID) or (UnitExists("pet") and IsSpellKnownOrOverridesKnown(spellID, true)) or IsSpellKnown(spellID) then
+        if IsSpellKnownOrOverridesKnown(spellID) or (UnitExists("pet") and IsSpellKnownOrOverridesKnown(spellID, true)) or IsPlayerSpell(spellID) then
             return spellID
         end
     end
@@ -16,6 +16,23 @@ end
 
 local isMidnight = sArenaMixin.isMidnight
 local playerKick = GetInterruptSpell()
+
+function sArenaMixin:UpdateShadowWordDeathInterrupt()
+    local enabled = self.db and self.db.profile.includeShadowWordDeath
+    local isHealerPriest = self.healerSpecIDs[self.playerSpecID]
+    local shadowWordDeathSpellId = 32379
+
+    if enabled and isHealerPriest then
+        interruptList[shadowWordDeathSpellId] = 0
+    else
+        interruptList[shadowWordDeathSpellId] = nil
+    end
+
+    playerKick = GetInterruptSpell()
+
+    self:UpdateInterruptTracking()
+    self:UpdateCastbarInterruptStatus()
+end
 
 -- Recheck interrupt spells when lock resummons/sacrifices pet
 local petSummonSpells = {
