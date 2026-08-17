@@ -47,5 +47,5 @@
 
 ## 致谢
 
-原作者: Stako, Bodify (sArena Reloaded)  
+Credits: Stako, Bodify (sArena Reloaded)  
 参考插件: GladiusEx, MidnightDR, MyDRs

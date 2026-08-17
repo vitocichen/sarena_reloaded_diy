@@ -6,7 +6,7 @@
 ## IconTexture: 135884
 ## OptionalDeps: sArena, sArena_Updated2_by_sammers
 ## X-Category: PvP/Arena
-## X-Credits: Stako, Bodify, Tekkub, Starship, Kouri, Kollektiv, Lyn, haste, evl, Zork, jturel, wardz, A3st (delayy), sammers21, Aeded, Xaryu, Mageiden
+## Credits: Stako, Bodify, Tekkub, Starship, Kouri, Kollektiv, Lyn, haste, evl, Zork, jturel, wardz, A3st (delayy), sammers21, Aeded, Xaryu, Mageiden
 ## X-DIY: DK-姜世离(燃烧之刃)
 ## X-DIY-Version: v1.1.1
 ## SavedVariables: sArena_ReloadedDB
