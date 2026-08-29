@@ -973,6 +973,10 @@ local SPELLS = {
         [201158]=6,[204085]=6,[212638]=6,[233395]=6,[235963]=6,[268966]=6,[285515]=6,
         [324382]=6,[342375]=6,[356356]=6,[356738]=6,[355689]=6,[378760]=6,[386770]=6,
         [393456]=6,[454787]=6,[16979]=6,
+        -- Death Knight: Chains of Ice cast (Deathchill root aura is 204085)
+        [45524]=4,
+        -- Death Knight ghoul Leap / Dark Transformation Shambling Rush
+        [47482]=2,[91802]=2,[91807]=2,
     },
     disarm = {
         [207777]=5,[209749]=5,[233759]=5,[236077]=5,[407031]=5,[407032]=5,
@@ -1445,7 +1449,8 @@ local function WorldDR_Tick()
 end
 
 function sArenaMixin:WorldDR_OnSpellcastSucceeded(unit, _, spellID)
-    if unit ~= "player" or type(spellID) ~= "number" then return end
+    -- Include pet: ghoul Leap / Shambling Rush and mage Freeze fire on pet, not player.
+    if (unit ~= "player" and unit ~= "pet") or type(spellID) ~= "number" then return end
     if not self.db or not WorldDR_IsEnabled() or not WorldDR_IsEnabledForZone(self.db) then
         return
     end
